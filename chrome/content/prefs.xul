@@ -3,13 +3,50 @@
 
 <!DOCTYPE prefwindow SYSTEM "chrome://MouseControl/locale/prefs.dtd">
 
-<prefwindow xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="&settingsTitle;">
+<prefwindow xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="&settingsTitle;" ondialogaccept="MouseControlPrefs.accept()">
+  <script>
+  <![CDATA[
+	var MouseControlPrefs =
+	{
+		clearSSM: function()	{
+			if (confirm('Are you sure you want to clear ALL saved site specific zoom levels?'))	{
+				
+			}
+		},
+		accept: function()	{
+			var mainWindow = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator).getMostRecentWindow("navigator:browser");
+			if (document.getElementById('zoomStyle').value == 2)	{
+				mainWindow.MouseControl.globalZoom = mainWindow.ZoomManager.zoom;
+				mainWindow.MouseControl.prefs.setCharPref('globalZoom',mainWindow.MouseControl.globalZoom);
+			} else {
+				mainWindow.MouseControl.globalZoom = 0;
+				mainWindow.MouseControl.prefs.setCharPref('globalZoom','0');
+			}
+		}
+	}
+  ]]>
+  </script>
   <prefpane>
     <preferences>
       <preference id="scrollUpMoveRight" name="extensions.MouseControl@neocodex.us.scrollUpMoveRight" type="bool" />
       <preference id="newTabRelativeToCurrent" name="extensions.MouseControl@neocodex.us.newTabRelativeToCurrent" type="bool" />
+      <preference id="zoomStyle" name="extensions.MouseControl@neocodex.us.zoomStyle" type="int" />
+      <preference id="zoomAffect" name="browser.zoom.full" type="bool" />
+      <preference id="secDblClickAble" name="extensions.MouseControl@neocodex.us.secDblClickAble" type="bool" />
+      <preference id="primClickAble" name="extensions.MouseControl@neocodex.us.primClickAble" type="bool" />
     </preferences>
-
+    <groupbox>
+	<caption label="&scrollingUp;"/>
+	<radiogroup preference="scrollUpMoveRight">
+     		<radio value="false" label="&moveLeft;"/>
+      		<radio value="true" label="&moveRight;"/>
+	</radiogroup>
+    </groupbox>
+    <groupbox>
+	<caption label="&features;"/>
+     	<checkbox preference="secDblClickAble" label="&secDblClickAble;"/>
+      	<checkbox preference="primClickAble" label="&primClickAble;"/>
+    </groupbox>
     <groupbox>
 	<caption label="&newTab;"/>
 	<radiogroup preference="newTabRelativeToCurrent">
@@ -18,10 +55,18 @@
 	</radiogroup>
     </groupbox>
     <groupbox>
-	<caption label="&scrollingUp;"/>
-	<radiogroup preference="scrollUpMoveRight">
-     		<radio value="false" label="&moveLeft;"/>
-      		<radio value="true" label="&moveRight;"/>
+	<caption label="&zoomStyle;"/>
+	<radiogroup preference="zoomStyle">
+     		<radio value="0" label="&zoomStyleTabOnly;"/>
+      		<radio value="1" label="&zoomStyleSiteSpecific;"/>
+      		<radio value="2" label="&zoomStyleGlobal;"/>
+	</radiogroup>
+    </groupbox>
+    <groupbox>
+	<caption label="&zoomAffect;"/>
+	<radiogroup preference="zoomAffect">
+     		<radio value="true" label="&zoomAffectAll;"/>
+      		<radio value="false" label="&zoomAffectText;"/>
 	</radiogroup>
     </groupbox>
 

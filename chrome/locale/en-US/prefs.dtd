@@ -2,6 +2,19 @@
 <!ENTITY scrollingUp "Tab Scroll Direction">
 <!ENTITY moveRight "Scrolling up/down moves tab focus RIGHT/LEFT">
 <!ENTITY moveLeft "Scrolling up/down moves tab focus LEFT/RIGHT">
-<!ENTITY newTab "New Tab Position">
+<!ENTITY newTab "New/Duplicated Tab Position">
 <!ENTITY newTabRelative "Open tab next to current tab">
 <!ENTITY newTabLast "Open at end of tab bar">
+
+<!ENTITY zoomStyle "Zoom Style and Memory">
+<!ENTITY zoomStyleTabOnly "Modifies zoom temporarily just for current tab, all tabs will start at default zoom, and zoom of currently open tabs will not change">
+<!ENTITY zoomStyleSiteSpecific "Modifies and remembers zoom of all pages with same hostname">
+<!ENTITY zoomStyleGlobal "Modifies zoom across all tabs and windows. Zoom level remembered. Site specifc zooms in memory are ignored and remain unchanged in memory.">
+
+<!ENTITY zoomAffect "Zoom Affected Area">
+<!ENTITY zoomAffectAll "Zoom all content">
+<!ENTITY zoomAffectText "Zoom text only">
+
+<!ENTITY features "Enable/Disable Features">
+<!ENTITY secDblClickAble "Enable secondary double click to open new tab/duplicate current tab">
+<!ENTITY primClickAble "Enable primary click and scroll to zoom">
