@@ -5,12 +5,12 @@ var MouseControl = {
 	wm: Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator),
 	itabHistory: [],
 	lastUp: 0,
-	newTabbed: 0,
 	register: function(event) {
 		gBrowser.mPanelContainer.addEventListener("DOMMouseScroll", MouseControl.scrollHandler, true);
 		gBrowser.mPanelContainer.addEventListener("mousedown", MouseControl.downHandler, true);
 		gBrowser.mPanelContainer.addEventListener("mouseup", MouseControl.upHandler, true);
 		gBrowser.mPanelContainer.addEventListener("mousemove", MouseControl.moveHandler, true);
+		//gBrowser.tabContainer.addEventListener("blur", MouseControl.mouseOutHandler, true);
 		gBrowser.tabContainer.addEventListener("TabSelect", MouseControl.tabSeld, false);
 		gBrowser.tabContainer.addEventListener("TabOpen", MouseControl.tabOpened, false);
 		gBrowser.tabContainer.addEventListener("TabClose", MouseControl.tabClosed, false);
@@ -36,6 +36,7 @@ var MouseControl = {
 		FullZoom.onLocationChange=function FullZoom_onLocationChange(aURI,aIsTabSwitch,aBrowser){MouseControl.globalZoom=MouseControl.prefs.getCharPref('globalZoom');MouseControl.zoomStyle=MouseControl.prefs.getIntPref('zoomStyle');if(!this.siteSpecfic&&MouseControl.zoomStyle==2&&MouseControl.globalZoom>0){if(ZoomManager.zoom!=MouseControl.globalZoom){ZoomManager.setZoomForBrowser(aBrowser||gBrowser.selectedBrowser,MouseControl.globalZoom)}return}if(!aURI||aIsTabSwitch&&!this.siteSpecific){return}if(aURI.spec=="about:blank"){this._applyPrefToSetting(undefined,aBrowser);return}var self=this;Services.contentPrefs.getPref(aURI,this.name,function(aResult){var browser=aBrowser||gBrowser.selectedBrowser;if(aURI.equals(browser.currentURI)){self._applyPrefToSetting(aResult,browser)}})};
 		FullZoom._applySettingToPref=function FullZoom__applySettingToPref(){MouseControl.globalZoom=MouseControl.prefs.getCharPref('globalZoom');MouseControl.zoomStyle=MouseControl.prefs.getIntPref('zoomStyle');if(!this.siteSpecfic&&MouseControl.zoomStyle==2&&MouseControl.globalZoom>0){var zoomLevel=ZoomManager.zoom;MouseControl.globalZoom=zoomLevel;MouseControl.prefs.setCharPref('globalZoom',zoomLevel)}if(!this.siteSpecific||gInPrintPreviewMode||content.document instanceof Ci.nsIImageDocument){return}var zoomLevel=ZoomManager.zoom;Services.contentPrefs.setPref(gBrowser.currentURI,this.name,zoomLevel)};
 		FullZoom.reset=function FullZoom_reset(){if(typeof this.globalValue!="undefined"){ZoomManager.zoom=this.globalValue}else{ZoomManager.reset()}MouseControl.globalZoom=MouseControl.prefs.getCharPref('globalZoom');MouseControl.zoomStyle=MouseControl.prefs.getIntPref('zoomStyle');if(!this.siteSpecfic&&MouseControl.zoomStyle==2&&MouseControl.globalZoom){var zoomLevel=ZoomManager.zoom;MouseControl.globalZoom=zoomLevel;MouseControl.prefs.setCharPref('globalZoom',zoomLevel)}this._removePref();};
+		FullScreen._collapseCallback = function(){if(!MouseControl.down){FullScreen.mouseoverToggle(false)}};
 	},
 	unregister: function(event) {
 		gBrowser.mPanelContainer.removeEventListener("DOMMouseScroll", MouseControl.scrollHandler, true);
@@ -52,24 +53,24 @@ var MouseControl = {
 		if ((!MouseControl.inscroll && MouseControl.down) || MouseControl.dblDown) {
 			if (window.fullScreen) {
 				FullScreen.mouseoverToggle(true);
-				if (MouseControl.dblDown && !MouseControl.duped)	{
-				} else {
-					gBrowser.mPanelContainer.removeEventListener("mousemove", FullScreen._collapseCallback, false);
-				}
 			}
 			var menu = document.getElementById('contentAreaContextMenu');
 			if (menu.state == 'open') {
 				menu.hidePopup();
 			}
-			MouseControl.inscroll = true;
-			MouseControl.restoreFocus();
+			var setInScroll = true; //will go on, if the first block of mozuserselect doesnt happen then it will still set it inscroll
+			//MouseControl.inscroll = true;
+			//MouseControl.restoreFocus();
 		}
-		if (!MouseControl.inscroll && MouseControl.pdown) {
+		if (!MouseControl.inscroll && ((MouseControl.pdown && MouseControl.SecondaryTrigger == 0) || (MouseControl.down && MouseControl.PrimaryTrigger == 0) || (MouseControl.dblDown && MouseControl.PrimaryTrigger == 0)) ) {
 			MouseControl.inscroll = true;
 			MouseControl.restoreFocus();
 			if (gBrowser.contentDocument.body)	{
 				gBrowser.contentDocument.body.style.MozUserSelect = '-moz-none';
 			}
+		} else if (setInScroll)	{
+			MouseControl.inscroll = true;
+			MouseControl.restoreFocus();
 		}
 	},
 	restoreFocus: function() {
@@ -104,6 +105,11 @@ var MouseControl = {
 			event.returnValue = false;
 			event.stopPropagation();
 		} else if (MouseControl.pdown) {
+			MouseControl.inzoom = true;
+			var menu = document.getElementById('contentAreaContextMenu');
+			if (menu.state == 'open') {
+				menu.hidePopup();
+			}
 			MouseControl.setInscroll();
 			if (event.detail > 0)	{
 				FullZoom.reduce();
@@ -131,17 +137,18 @@ var MouseControl = {
 			event.preventDefault();
 			event.returnValue = false;
 			event.stopPropagation();
-			if (event.button == 1) {
+			if (event.button == MouseControl.PrimaryAltTrig) {
 				MouseControl.setInscroll();
 				clearTimeout(MouseControl.undoClosedTabTimeout);
 				MouseControl.closedTabUndid = false;
-				MouseControl.undoClosedTabTimeout = setTimeout(MouseControl.undoCloseTab, 200);
+				var HoldDelay = MouseControl.prefs.getIntPref('HoldDelay');
+				MouseControl.undoClosedTabTimeout = setTimeout(MouseControl.undoCloseTab, HoldDelay); //used to be HoldDelay - 100
 			}
 		} else if (MouseControl.pdown) {
 			event.preventDefault();
 			event.returnValue = false;
 			event.stopPropagation();
-			if (event.button == 1) {
+			if (event.button == MouseControl.SecondaryAltTrig) {
 				MouseControl.restoreFocus();
 				MouseControl.inscroll = true;
 				FullZoom.reset();
@@ -150,15 +157,23 @@ var MouseControl = {
 				}
 			}
 		} else {
-			if (event.button == 2 && !MouseControl.down && !MouseControl.pdown) {
+			MouseControl.PrimaryTrigger = MouseControl.prefs.getIntPref('PrimaryTrigger');
+			if (MouseControl.PrimaryTrigger == 1)	{
+				MouseControl.PrimaryAltTrig = 2;
+			} else {
+				MouseControl.PrimaryAltTrig = 1;
+			}
+			if (event.button == MouseControl.PrimaryTrigger && !MouseControl.down && !MouseControl.pdown) {
 				MouseControl.down = true;
 				var secDblClickAble = MouseControl.prefs.getBoolPref('secDblClickAble');
-				if (secDblClickAble && new Date().getTime() - MouseControl.lastDown <= 200)	{
+				var DblClickSpeed = MouseControl.prefs.getIntPref('DblClickSpeed');
+				if (secDblClickAble && new Date().getTime() - MouseControl.lastDown <= DblClickSpeed)	{
 					//trigger dbl on mouse up
 					MouseControl.dblDown = true;
 					MouseControl.setInscroll();
 					MouseControl.duped = false;
-					MouseControl.dupeTO = setTimeout(MouseControl.dupeTab,300);
+					var HoldDelay = MouseControl.prefs.getIntPref('HoldDelay');
+					MouseControl.dupeTO = setTimeout(MouseControl.dupeTab,HoldDelay);
 					event.preventDefault();
 					event.returnValue = false;
 					event.stopPropagation();
@@ -174,14 +189,21 @@ var MouseControl = {
 				}
 			}
 			var primClickAble = MouseControl.prefs.getBoolPref('primClickAble');
-			if (primClickAble && event.button == 0 && !MouseControl.down && !MouseControl.pdown) {
+			MouseControl.SecondaryTrigger = MouseControl.prefs.getIntPref('SecondaryTrigger');
+			if (MouseControl.SecondaryTrigger == 1)	{
+				MouseControl.SecondaryAltTrig = 0;
+			} else {
+				MouseControl.SecondaryAltTrig = 1;
+			}
+			if (primClickAble && event.button == MouseControl.SecondaryTrigger && !MouseControl.down && !MouseControl.pdown) {
 				MouseControl.focPreDown = MouseControl.fm.focusedElement;
 				MouseControl.pdown = true;
+				MouseControl.dataTransfer = event.dataTransfer;
 			}
 		}
 	},
 	upHandler: function(event) {
-		if (event.button == 0 || event.button == 1) {
+		if (event.button == MouseControl.SecondaryTrigger || event.button == MouseControl.PrimaryAltTrig) {
 			if (!MouseControl.closedTabUndid) {
 				clearTimeout(MouseControl.undoClosedTabTimeout);
 			}
@@ -191,11 +213,14 @@ var MouseControl = {
 				event.stopPropagation();
 			}
 			if (MouseControl.pdown)	{
-				if (event.button == 0)	{
+				if (event.button == MouseControl.SecondaryTrigger)	{
+					if (MouseControl.inzoom)	{
+						MouseControl.lastUp = new Date().getTime();
+					}
 					MouseControl.offscroll();
 				}
 			}
-		} else if (event.button == 2) {
+		} else if (event.button == MouseControl.PrimaryTrigger) {
 			if (MouseControl.inscroll || MouseControl.dblDown) {
 				MouseControl.lastUp = new Date().getTime();
 				event.preventDefault();
@@ -212,13 +237,8 @@ var MouseControl = {
 			}
 			MouseControl.offscroll();
 		}
-	},
-	clickHandler: function(event) {
-		if (MouseControl.down) {
-			event.preventDefault();
-			event.returnValue = false;
-			event.stopPropagation();
-			if (event.button == 1) {
+		if (MouseControl.down)	{
+			if (event.button == MouseControl.PrimaryAltTrig) {
 				if (!MouseControl.closedTabUndid) {
 					//clearTimeout(MouseControl.undoClosedTabTimeout);
 					if (new Date().getTime() < MouseControl.domainCloseLimit)	{
@@ -228,18 +248,28 @@ var MouseControl = {
 							MouseControl.itabHistory.splice(MouseControl.itabHistory.length - 1, 1);
 						}
 						MouseControl.setInscroll();
-						MouseControl.targetHostname = gBrowser.currentURI.asciiHost;
+						MouseControl.targetDomain = gBrowser.currentURI;
 						gBrowser.removeCurrentTab();
-						MouseControl.domainCloseLimit = new Date().getTime() + 200;
+						var DblClickSpeed = MouseControl.prefs.getIntPref('DblClickSpeed');
+						MouseControl.domainCloseLimit = new Date().getTime() + DblClickSpeed;
 					}
 				} else {
 					MouseControl.closedTabUndid = false;
 				}
 			}
-			if (event.button == 0) {
+			if (event.button == MouseControl.SecondaryTrigger) {
+				MouseControl.inzoom = false;
 				MouseControl.setInscroll();
+				MouseControl.lastUp = new Date().getTime();
 				MouseControl.jumpTab();
 			}
+		}
+	},
+	clickHandler: function(event) {
+		if (MouseControl.down) {
+			event.preventDefault();
+			event.returnValue = false;
+			event.stopPropagation();
 		} else if (MouseControl.pdown)	{
 			event.preventDefault();
 			event.returnValue = false;
@@ -253,11 +283,22 @@ var MouseControl = {
 		}
 	},
 	dblHandler: function(event)	{
-		if (new Date().getTime() - MouseControl.lastUp <= 100 || new Date().getTime() - MouseControl.newTabbed <= 100)	{
+		if (new Date().getTime() - MouseControl.lastUp <= 100)	{
 			event.preventDefault();
 			event.returnValue = false;
 			event.stopPropagation();
 		}
+	},
+	mouseOutHandler: function(event)	{
+			MouseControl.lc = event.target;
+			if (!MouseControl.closedTabUndid) {
+				clearTimeout(MouseControl.undoClosedTabTimeout);
+			}
+			if (MouseControl.down || MouseControl.pdown)	{
+				MouseControl.lastUp = new Date().getTime();
+				MouseControl.offscroll();
+			}
+
 	},
 	undoCloseTab: function() {
 		MouseControl.closedTabUndid = true;
@@ -269,8 +310,14 @@ var MouseControl = {
 		for (var index = 0; index < tabbrowser.tabContainer.childNodes.length; index++) {
 			// Get the next tab
 			var currentTab = tabbrowser.tabContainer.childNodes[index];
-			if (!currentTab.pinned && gBrowser.getBrowserForTab(currentTab).currentURI.asciiHost == MouseControl.targetHostname)	{
-				closeThese.push(currentTab);
+			if (!currentTab.pinned)	{
+				if (gBrowser.getBrowserForTab(currentTab).currentURI.prePath == 'about:')	{
+					if (gBrowser.getBrowserForTab(currentTab).currentURI.path == MouseControl.targetDomain.path)	{
+						closeThese.push(currentTab);
+					}
+				} else if (gBrowser.getBrowserForTab(currentTab).currentURI.prePath == MouseControl.targetDomain.prePath) {
+					closeThese.push(currentTab);
+				}
 			}
 		}
 		for (var i=0; i<closeThese.length; i++)	{
@@ -292,13 +339,16 @@ var MouseControl = {
 		//document.getElementById('contentAreaContextMenu').hidePopup();
 		var relativeToCurrent = MouseControl.prefs.getBoolPref('newTabRelativeToCurrent');
 		if (relativeToCurrent) {
-			//var newIndex = gBrowser.selectedTab._tPos + 1;
-			eval('('+uneval(BrowserOpenTab).replace('inBackground:','relatedToCurrent:true,inBackground:')+')')();
-			//gBrowser.moveTabTo(gBrowser.tabContainer.childNodes[gBrowser.tabContainer.childNodes.length-1], newIndex);
+			if (uneval(BrowserOpenTab).indexOf('inBackground') > -1)	{
+				eval('('+uneval(BrowserOpenTab).replace('inBackground:','relatedToCurrent:true,inBackground:')+')')();
+			} else {
+				var newIndex = gBrowser.selectedTab._tPos + 1;
+				BrowserOpenTab();
+				gBrowser.moveTabTo(gBrowser.tabContainer.childNodes[gBrowser.tabContainer.childNodes.length-1], newIndex);
+			}
 		} else {
 			BrowserOpenTab();
 		}
-		//MouseControl.newTabbed = new Date().getTime();
 		MouseControl.lastUp = new Date().getTime();
 	},
 	jumpTab: function() {
@@ -333,6 +383,8 @@ var MouseControl = {
 			event.preventDefault();
 			event.returnValue = false;
 			event.stopPropagation();
+		} else {
+			document.getElementById('searchbar').value = new Date().getTime() - MouseControl.lastUp;
 		}
 	},
 	offscroll: function() {
@@ -344,7 +396,8 @@ var MouseControl = {
 			if (window.fullScreen) {
 				FullScreen.mouseoverToggle(false);
 			}
-		} else if (MouseControl.inscroll && MouseControl.pdown)	{
+		}
+		if (!MouseControl.inscroll && ((MouseControl.pdown && MouseControl.SecondaryTrigger == 0) || (MouseControl.down && MouseControl.PrimaryTrigger == 0) || (MouseControl.dblDown && MouseControl.PrimaryTrigger == 0)) ) {
 			if (gBrowser.contentDocument.body)	{
 				gBrowser.contentDocument.body.style.MozUserSelect = '';
 			}
@@ -352,6 +405,7 @@ var MouseControl = {
 		MouseControl.down = false;
 		MouseControl.pdown = false;
 		MouseControl.inscroll = false;
+		MouseControl.inzoom = false;
 	},
 	tabSeld: function() {
 		if (!MouseControl.inscroll) {

@@ -1,19 +1,47 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://MouseControl/content/prefs.css" type="text/css"?>
 
 <!DOCTYPE prefwindow SYSTEM "chrome://MouseControl/locale/prefs.dtd">
 
-<prefwindow xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="&settingsTitle;" ondialogaccept="MouseControlPrefs.accept()">
+<prefwindow xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="MouseControl - &Options;" id="MouseControlOpts" onload="MouseControlPrefs.load()">
   <script>
   <![CDATA[
 	var MouseControlPrefs =
 	{
+		load: function()
+		{
+			this.disableFeature('MCFNew',!document.getElementById('secDblClickAble').value)
+			this.disableFeature('MCFZoom',!document.getElementById('primClickAble').value)
+		},
 		clearSSM: function()	{
 			if (confirm('Are you sure you want to clear ALL saved site specific zoom levels?'))	{
 				
 			}
 		},
-		accept: function()	{
+		more: function(subject,content)	{
+			var params = {inn:[document.getElementById('MoreInfo').value,subject,content,document.getElementById('MouseControlOpts').getBoundingClientRect().width], out:null};
+			window.openDialog('chrome://MouseControl/content/More.xul', '','chrome, dialog, modal, resizable=no,width=10px,height=10px',params).focus();
+		},
+		disableFeature: function(feature,val)
+		{
+			var nodes = document.getElementsByClassName(feature);
+			var linkDisp = val ? 'none' : '';
+			for (var i=0; i<nodes.length; i++){
+				if (nodes[i].classList.contains('text-link')) {
+					nodes[i].style.display = linkDisp;
+				} else {
+					nodes[i].disabled = val;
+				}
+			}
+		},
+		accept: function()
+		{
+			var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
+			if (document.getElementById('primClickAble').value == true && document.getElementById('PrimaryTrigger').value == document.getElementById('SecondaryTrigger').value)	{
+				prompts.alert(null, 'MouseControl - '+document.getElementById('ERROR').value, document.getElementById('TriggerConflict').value);
+				return false;
+			}
 			var mainWindow = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator).getMostRecentWindow("navigator:browser");
 			if (document.getElementById('zoomStyle').value == 2)	{
 				mainWindow.MouseControl.globalZoom = mainWindow.ZoomManager.zoom;
@@ -22,11 +50,34 @@
 				mainWindow.MouseControl.globalZoom = 0;
 				mainWindow.MouseControl.prefs.setCharPref('globalZoom','0');
 			}
+			
+			if (document.getElementById('PrimaryTrigger').value != 2 || (document.getElementById('primClickAble').value == true && document.getElementById('SecondaryTrigger').value != 0))	{
+				var result = prompts.confirm(null, 'MouseControl - WARNING', 'Using non-default values for the primary and/or secondary trigger is not optimized yet, you may experience unexpected behavior. Are you sure you want to continue?');
+				if (!result)	{
+					return false;
+				}
+			}
+			document.getElementById('MouseControlOpts').acceptDialog();
+		},
+		defaults: function()
+		{
+			document.getElementById('scrollUpMoveRight').value = false;
+			document.getElementById('newTabRelativeToCurrent').value = true;
+			document.getElementById('zoomStyle').value = -1;
+			document.getElementById('zoomAffect').value = true;
+			document.getElementById('secDblClickAble').value = true;
+			document.getElementById('primClickAble').value = false;
+			document.getElementById('PrimaryTrigger').value = 2;
+			document.getElementById('DblClickSpeed').value = 200;
+			document.getElementById('HoldDelay').value = 300;
+			document.getElementById('SecondaryTrigger').value = 0;
+			this.disableFeature('MCFNew',!document.getElementById('secDblClickAble').value)
+			this.disableFeature('MCFZoom',!document.getElementById('primClickAble').value)
 		}
 	}
   ]]>
   </script>
-  <prefpane>
+  <prefpane style="padding:0;">
     <preferences>
       <preference id="scrollUpMoveRight" name="extensions.MouseControl@neocodex.us.scrollUpMoveRight" type="bool" />
       <preference id="newTabRelativeToCurrent" name="extensions.MouseControl@neocodex.us.newTabRelativeToCurrent" type="bool" />
@@ -34,41 +85,122 @@
       <preference id="zoomAffect" name="browser.zoom.full" type="bool" />
       <preference id="secDblClickAble" name="extensions.MouseControl@neocodex.us.secDblClickAble" type="bool" />
       <preference id="primClickAble" name="extensions.MouseControl@neocodex.us.primClickAble" type="bool" />
-    </preferences>
-    <groupbox>
-	<caption label="&scrollingUp;"/>
-	<radiogroup preference="scrollUpMoveRight">
-     		<radio value="false" label="&moveLeft;"/>
-      		<radio value="true" label="&moveRight;"/>
-	</radiogroup>
-    </groupbox>
-    <groupbox>
-	<caption label="&features;"/>
-     	<checkbox preference="secDblClickAble" label="&secDblClickAble;"/>
-      	<checkbox preference="primClickAble" label="&primClickAble;"/>
-    </groupbox>
-    <groupbox>
-	<caption label="&newTab;"/>
-	<radiogroup preference="newTabRelativeToCurrent">
-     		<radio value="true" label="&newTabRelative;"/>
-      		<radio value="false" label="&newTabLast;"/>
-	</radiogroup>
-    </groupbox>
-    <groupbox>
-	<caption label="&zoomStyle;"/>
-	<radiogroup preference="zoomStyle">
-     		<radio value="0" label="&zoomStyleTabOnly;"/>
-      		<radio value="1" label="&zoomStyleSiteSpecific;"/>
-      		<radio value="2" label="&zoomStyleGlobal;"/>
-	</radiogroup>
-    </groupbox>
-    <groupbox>
-	<caption label="&zoomAffect;"/>
-	<radiogroup preference="zoomAffect">
-     		<radio value="true" label="&zoomAffectAll;"/>
-      		<radio value="false" label="&zoomAffectText;"/>
-	</radiogroup>
-    </groupbox>
 
+      <preference id="PrimaryTrigger" name="extensions.MouseControl@neocodex.us.PrimaryTrigger" type="int" />
+      <preference id="DblClickSpeed" name="extensions.MouseControl@neocodex.us.DblClickSpeed" type="int" />
+      <preference id="HoldDelay" name="extensions.MouseControl@neocodex.us.HoldDelay" type="int" />
+      <preference id="SecondaryTrigger" name="extensions.MouseControl@neocodex.us.SecondaryTrigger" type="int" />
+    </preferences>
+
+	<vbox id="StringsJS">
+		<label id="MoreInfo" value="&MoreInfo;"/>
+		<label id="ERROR" value="&ERROR;"/>
+		<label id="TriggerConflict" value="&TriggerConflict;"/>
+	</vbox>
+	<vbox id="main">
+		<vbox>
+		    <hbox style="margin-bottom:2px;">
+		        <hbox align="end" flex="1">
+				<label style="background:url(chrome://MouseControl/skin/icon-shadow.png) no-repeat scroll left bottom transparent;width:34px;height:37px;margin:0 8px 0 5px;"/>
+				<label style="background:url(chrome://MouseControl/skin/title.png) no-repeat scroll left bottom transparent;width:205px;height:28px;margin:0 6px 2px 0;"/>
+				<label value="&VERSION;" style="margin:0;"/>
+		        </hbox>
+		        <label value="&Options;" style="font-weight:bold;color:#44474d;"/>
+		    </hbox>
+		    <groupbox>
+			<caption label="&General;"/>
+			<hbox align="baseline">
+				<label value="&PrimaryTrigger;" flex="1"/>
+				<menulist preference="PrimaryTrigger">
+					<menupopup>
+						<menuitem label="&PrimaryMouseButton;" value="0"/>
+						<menuitem label="&MiddleMouseButton;" value="1"/>
+						<menuitem label="&SecondaryMouseButton;" value="2"/>
+					</menupopup>
+				</menulist>
+			</hbox>
+			<hbox align="baseline">
+				<label value="&ScrollDirection;" flex="1"/>
+				<menulist preference="scrollUpMoveRight">
+					<menupopup>
+						<menuitem label="&UpDnTabLtRt;" value="false"/>
+						<menuitem label="&UpDnTabRtLt;" value="true"/>
+					</menupopup>
+				</menulist>
+			</hbox>
+			<hbox align="baseline">
+				<label value="&DblClickSpeed; &ms;"/>
+				<label value="&Info;" style="margin-left:0;" class="text-link info" onclick="MouseControlPrefs.more('&General;: &DblClickSpeed;','&InfoDblClickSpeed;')"/><seperator flex="1"/>
+				<textbox size="3" preference="DblClickSpeed" style="text-align:center;"/>
+			</hbox>
+			<hbox align="baseline">
+				<label value="&HoldDelay; &ms;"/>
+				<label value="&Info;" style="margin-left:0;" class="text-link info" onclick="MouseControlPrefs.more('&General;: &HoldDelay;','&InfoHoldDelay;')"/><seperator flex="1"/>
+				<textbox size="3" preference="HoldDelay" style="text-align:center;"/>
+			</hbox>
+		    </groupbox>
+		    <groupbox>
+			<caption label="&SecondaryFeatures;"/>
+		     	<checkbox preference="secDblClickAble" label="&FeatPrimTrigDbl;" oncommand="MouseControlPrefs.disableFeature('MCFNew',!this.checked)"/>
+			<hbox align="baseline">
+				<checkbox preference="primClickAble" label="&FeatSecTrigZoom;" flex="1" oncommand="MouseControlPrefs.disableFeature('MCFZoom',!this.checked)"/>
+				<menulist disabled="true" class="MCFZoom" preference="SecondaryTrigger">
+					<menupopup>
+						<menuitem label="&PrimaryMouseButton;" value="0"/>
+						<menuitem label="&MiddleMouseButton;" value="1"/>
+						<menuitem label="&SecondaryMouseButton;" value="2"/>
+					</menupopup>
+				</menulist>
+			</hbox>
+		    </groupbox>
+		    <groupbox>
+			<caption>
+				<label value="&NewTabPos;" class="MCFNew"/>
+			</caption>
+			<radiogroup preference="newTabRelativeToCurrent" class="MCFNew">
+		      		<radio value="false" label="&EndOfTabBar;"/>
+		     		<radio value="true" label="&NextToCurrentTab;"/>
+			</radiogroup>
+		    </groupbox>
+		    <groupbox>
+			<caption>
+				<label value="&ZoomStyleAndMemory;" class="MCFZoom"/>
+			</caption>
+			<radiogroup preference="zoomStyle" class="MCFZoom">
+	      			<hbox align="center">
+					<radio value="2" label="&Global;" oncommand="return MouseControlPrefs.GlobalZoomWarn()"/>
+					<label value="&Info;" class="text-link MCFZoom info" onclick="MouseControlPrefs.more('&ZoomStyleAndMemory;: &Global;','&InfoGlobal;')"/>
+				</hbox>
+		      		<hbox align="center">
+					<radio value="1" label="&SiteSpecific;"/>
+					<label value="&Info;" class="text-link MCFZoom info" onclick="MouseControlPrefs.more('&ZoomStyleAndMemory;: &SiteSpecific;','&InfoSiteSpecific;')"/>
+				</hbox>
+				<hbox align="center">
+					<radio value="0" label="&Temporary;"/>
+					<label value="&Info;" class="text-link MCFZoom info" onclick="MouseControlPrefs.more('&ZoomStyleAndMemory;: &Temporary;','&InfoTemporary;')"/>
+				</hbox>
+			</radiogroup>
+		    </groupbox>
+		    <groupbox>
+			<caption>
+				<label value="&ZoomAffectedArea;" class="MCFZoom"/>
+			</caption>
+			<radiogroup preference="zoomAffect" class="MCFZoom">
+	     			<radio value="true" label="&AllContent;"/>
+	      			<radio value="false" label="&TextOnly;"/>
+			</radiogroup>
+		    </groupbox>
+		</vbox>
+	</vbox>
+	<vbox align="end">
+		<label value="Restore Defaults" class="text-link quicklinks" onclick="MouseControlPrefs.defaults()"/>
+	</vbox>
+	<vbox align="center">
+	    <hbox style="height:3em;" align="center">
+	        <label value="APPLY" class="text-link applylink" dlgtype="accept" onclick="MouseControlPrefs.accept()"/>
+		<spacer width="10"/>
+	        <label value="CANCEL" class="text-link closelink" dlgtype="cancel" onclick="document.getElementById('MouseControlOpts').cancelDialog()"/>
+	    </hbox>
+	</vbox>
   </prefpane>
 </prefwindow>

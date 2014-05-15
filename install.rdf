@@ -4,7 +4,7 @@
 		<em:id>MouseControl@neocodex.us</em:id>
 		<em:name>MouseControl</em:name>
 		<em:type>2</em:type>
-		<em:version>1.3</em:version>
+		<em:version>1.4</em:version>
 		<em:creator>Noitidart</em:creator>
 		<em:homepageURL>http://www.neocodex.us/personal/noit/mousecontrol/about.htm</em:homepageURL>
 		<em:iconURL>chrome://MouseControl/skin/icon.png</em:iconURL>
@@ -13,11 +13,11 @@
 		<em:contributor>TabScroller by yrb for ideas</em:contributor>
 		<em:contributor>aegiswindstorm for ideas and testing linux compatability (direction preference, new tab feature)</em:contributor>
 		<em:contributor>yetanotherfish for testing mac compatibility</em:contributor>
-		<em:contributor>ake79</em:contributor>
-		<em:contributor>lithopsian</em:contributor>
-		<em:contributor>max1million</em:contributor>
-		<em:contributor>michaelschade</em:contributor>
-		<em:contributor>patrickjdempsey</em:contributor>
+		<em:contributor>ake79 for guiding me about extensions</em:contributor>
+		<em:contributor>lithopsian for guiding me about extensions</em:contributor>
+		<em:contributor>max1million for guiding me about extensions</em:contributor>
+		<em:contributor>michaelschade for guiding me about extensions</em:contributor>
+		<em:contributor>patrickjdempsey for guiding me about extensions</em:contributor>
 		<em:contributor>David Vignoni for icon</em:contributor>
 		<em:localized>
 			<Description>

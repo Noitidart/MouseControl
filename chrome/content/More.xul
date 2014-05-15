@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<dialog id="MouseControl_More" title="MouseControl - " xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" style="padding:0;" onload="MouseControlMore.setData();">
+  <script>  
+  <![CDATA[
+  var MouseControlMore =
+  {
+    setData: function()  {
+	document.getElementById('MouseControl_More').setAttribute('title','MouseControl - '+window.arguments[0].inn[0]);
+	document.getElementById('subject').value = window.arguments[0].inn[1];
+	document.getElementById('content').textContent = window.arguments[0].inn[2];
+	document.getElementById('content').style.width = Math.round(window.arguments[0].inn[3]*.67)+'px';
+	window.sizeToContent();
+	centerWindowOnScreen();
+    }
+  }
+  ]]>
+  </script>
+	<vbox style="background-color:#f7f7f7;padding:10px;">
+        	<hbox align="start" flex="1">
+			<image src='chrome://MouseControl/skin/icon-shadow.png' style="padding:0 7px 0 0;"/>
+		        <vbox>
+				<label value="Zoom Memory and Style: Temporary" style="font-weight:bold;" id="subject"/>
+				<description id="content" style="width:300px;">
+					...
+				</description>
+	                </vbox>
+	        </hbox>
+	</vbox>
+	<vbox align="center">
+		<hbox style="height:3em;" align="center">
+			<label value="" dlgtype="accept" style="display:none;"/>
+			<label value="Close" class="text-link" dlgtype="cancel" onclick="document.getElementById('MouseControl_More').cancelDialog()"/>
+		</hbox>
+	</vbox>
+
+</dialog>

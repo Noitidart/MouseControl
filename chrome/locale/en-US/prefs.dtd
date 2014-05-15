@@ -1,20 +1,43 @@
-<!ENTITY settingsTitle "MouseControl Settings">
-<!ENTITY scrollingUp "Tab Scroll Direction">
-<!ENTITY moveRight "Scrolling up/down moves tab focus RIGHT/LEFT">
-<!ENTITY moveLeft "Scrolling up/down moves tab focus LEFT/RIGHT">
-<!ENTITY newTab "New/Duplicated Tab Position">
-<!ENTITY newTabRelative "Open tab next to current tab">
-<!ENTITY newTabLast "Open at end of tab bar">
+<!ENTITY VERSION "1.4">
 
-<!ENTITY zoomStyle "Zoom Style and Memory">
-<!ENTITY zoomStyleTabOnly "Modifies zoom temporarily just for current tab, all tabs will start at default zoom, and zoom of currently open tabs will not change">
-<!ENTITY zoomStyleSiteSpecific "Modifies and remembers zoom of all pages with same hostname">
-<!ENTITY zoomStyleGlobal "Modifies zoom across all tabs and windows. Zoom level remembered. Site specifc zooms in memory are ignored and remain unchanged in memory.">
+<!ENTITY Options "Options">
+<!ENTITY ERROR "ERROR">
+<!ENTITY TriggerConflict "Sorry, cannot continue because your trigger buttons are in conflict with each other. Please assign a different mouse button for each feature.">
 
-<!ENTITY zoomAffect "Zoom Affected Area">
-<!ENTITY zoomAffectAll "Zoom all content">
-<!ENTITY zoomAffectText "Zoom text only">
+<!ENTITY PrimaryMouseButton "Primary Mouse Button">
+<!ENTITY MiddleMouseButton "Middle Mouse Button">
+<!ENTITY SecondaryMouseButton "Secondary Mouse Button">
 
-<!ENTITY features "Enable/Disable Features">
-<!ENTITY secDblClickAble "Enable secondary double click to open new tab/duplicate current tab">
-<!ENTITY primClickAble "Enable primary click and scroll to zoom">
+<!ENTITY General "General">
+<!ENTITY PrimaryTrigger "Primary Trigger">
+<!ENTITY ScrollDirection "Scroll Direction">
+<!ENTITY UpDnTabRtLt "UP/DOWN moves tab focus RIGHT/LEFT">
+<!ENTITY UpDnTabLtRt "UP/DOWN moves tab focus LEFT/RIGHT">
+<!ENTITY DblClickSpeed "Double Click Speed">
+<!ENTITY HoldDelay "Hold Delay">
+<!ENTITY ms "(ms)">
+<!ENTITY InfoDblClickSpeed "This does not affect the double click speed of your browser. Double clicks in MouseControl work slightly different. After a click there is X amount of time availble where the consequent click will register as a double click. X is this setting. Currently affecting: Hostname Close and New Tab">
+<!ENTITY InfoHoldDelay "The amount of time the mouse button needs to be depressed before an action happens. Currently this affects only two functions: Undo Tab Close and Duplicate Tab.">
+
+
+<!ENTITY NewTabPos "New/Duplicated Tab Position">
+<!ENTITY EndOfTabBar "End of Tab Bar">
+<!ENTITY NextToCurrentTab "Next to Current Tab">
+
+<!ENTITY ZoomStyleAndMemory "Zoom Style and Memory">
+<!ENTITY Temporary "Temporary">
+<!ENTITY SiteSpecific "Site Specific">
+<!ENTITY Global "Global">
+<!ENTITY ZoomAffectedArea "Zoom Affected Area">
+<!ENTITY AllContent "All Content">
+<!ENTITY TextOnly "Text Only">
+<!ENTITY InfoGlobal "Modifying zoom in any tab will propogate across all tabs in all windows. The zoom level is remembered during sessions. Site specific zooms in memory are ignored and remain unchanged.">
+<!ENTITY InfoSiteSpecific "Firefox ships with this behavior as default. Zoom is modified and remembered per host name. All sites with no zoom change are at the default zoom level.">
+<!ENTITY InfoTemporary "All tabs start at default zoom level. Zooming with this behavior only modifies the level in the current tab. All past and future pages in this tab will reatain the same zoom.">
+
+<!ENTITY SecondaryFeatures "Secondary Features">
+<!ENTITY FeatPrimTrigDbl "Primary trigger double click opens new tab/duplicates current tab">
+<!ENTITY FeatSecTrigZoom "Secondary trigger enables scroll to zoom">
+
+<!ENTITY MoreInfo "More Info">
+<!ENTITY Info "Info">
