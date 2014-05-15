@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+	<Description about="urn:mozilla:install-manifest">
+		<em:id>MouseControl@neocodex.us</em:id>
+		<em:type>2</em:type>
+		<em:name>MouseControl</em:name>
+		<em:version>1.0</em:version>
+		<em:creator>Noitidart</em:creator>
+		<em:homepageURL>http://www.neocodex.us/</em:homepageURL>
+		<em:iconURL>chrome://MouseControl/skin/icon.png</em:iconURL>
+		<em:contributor>FoxTabs by The FoxTab Team for ideas</em:contributor>
+		<em:contributor>TabScroller by yrb for ideas</em:contributor>
+		<em:contributor>ake79</em:contributor>
+		<em:contributor>lithopsian</em:contributor>
+		<em:contributor>max1million</em:contributor>
+		<em:contributor>michaelschade</em:contributor>
+		<em:contributor>patrickjdempsey</em:contributor>
+		<em:contributor>David Vignoni for icon</em:contributor>
+		<em:description>
+			Switch,close,undo close,and quick return tab control all through just
+			your left,right,and scroll mouse buttons.DIRECTIONS:Hold down right click.Scroll
+			up/down with scroll button to go through tabs,during scrolling left clicking
+			will bring you back to your initial tab.If you left click without scrolling
+			OR you are on your initial tab after scrolling then left clicking will
+			jump to your last used tab.Clicking the scroll button will close the tab.Pressing
+			down on the scroll button and not releasing for a bit will undo the last
+			closed tab.Remember the right mosue button must be pressed during all actions.
+		</em:description>
+		<em:targetApplication>
+			<Description>
+				<em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
+				<!-- Firefox -->
+				<em:minVersion>3.0</em:minVersion>
+				<em:maxVersion>4.0b8pre</em:maxVersion>
+			</Description>
+		</em:targetApplication>
+	</Description>
+</RDF>
