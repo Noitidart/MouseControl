@@ -1,0 +1,7 @@
+<!ENTITY settingsTitle "MouseControl Settings">
+<!ENTITY scrollingUp "Tab Scroll Direction">
+<!ENTITY moveRight "Scrolling up/down moves tab focus RIGHT/LEFT">
+<!ENTITY moveLeft "Scrolling up/down moves tab focus LEFT/RIGHT">
+<!ENTITY newTab "New Tab Position">
+<!ENTITY newTabRelative "Open tab next to current tab">
+<!ENTITY newTabLast "Open at end of tab bar">

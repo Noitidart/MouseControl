@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<!DOCTYPE prefwindow SYSTEM "chrome://MouseControl/locale/prefs.dtd">
+
+<prefwindow xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="&settingsTitle;">
+  <prefpane>
+    <preferences>
+      <preference id="scrollUpMoveRight" name="extensions.MouseControl@neocodex.us.scrollUpMoveRight" type="bool" />
+      <preference id="newTabRelativeToCurrent" name="extensions.MouseControl@neocodex.us.newTabRelativeToCurrent" type="bool" />
+    </preferences>
+
+    <groupbox>
+	<caption label="&newTab;"/>
+	<radiogroup preference="newTabRelativeToCurrent">
+     		<radio value="true" label="&newTabRelative;"/>
+      		<radio value="false" label="&newTabLast;"/>
+	</radiogroup>
+    </groupbox>
+    <groupbox>
+	<caption label="&scrollingUp;"/>
+	<radiogroup preference="scrollUpMoveRight">
+     		<radio value="false" label="&moveLeft;"/>
+      		<radio value="true" label="&moveRight;"/>
+	</radiogroup>
+    </groupbox>
+
+  </prefpane>
+</prefwindow>
