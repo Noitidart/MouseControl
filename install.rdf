@@ -4,30 +4,16 @@
 		<em:id>MouseControl@neocodex.us</em:id>
 		<em:name>MouseControl</em:name>
 		<em:type>2</em:type>
-		<em:version>1.4</em:version>
+		<em:version>1.5</em:version>
 		<em:creator>Noitidart</em:creator>
 		<em:homepageURL>http://www.neocodex.us/personal/noit/mousecontrol/about.htm</em:homepageURL>
 		<em:iconURL>chrome://MouseControl/skin/icon.png</em:iconURL>
 		<em:optionsURL>chrome://MouseControl/content/prefs.xul</em:optionsURL>
-		<em:contributor>FoxTabs by The FoxTab Team for ideas</em:contributor>
-		<em:contributor>TabScroller by yrb for ideas</em:contributor>
-		<em:contributor>aegiswindstorm for ideas and testing linux compatability (direction preference, new tab feature)</em:contributor>
-		<em:contributor>yetanotherfish for testing mac compatibility</em:contributor>
-		<em:contributor>ake79 for guiding me about extensions</em:contributor>
-		<em:contributor>lithopsian for guiding me about extensions</em:contributor>
-		<em:contributor>max1million for guiding me about extensions</em:contributor>
-		<em:contributor>michaelschade for guiding me about extensions</em:contributor>
-		<em:contributor>patrickjdempsey for guiding me about extensions</em:contributor>
-		<em:contributor>David Vignoni for icon</em:contributor>
 		<em:localized>
 			<Description>
 				<em:locale>en-US</em:locale>
 				<em:name>MouseControl</em:name>
- 				<em:description>
-					Switch, close, undo close, new, and quick return tab control all through just 
-					your left, right, and scroll mouse buttons. See addon listing for complete 
-					directions.
-				</em:description>
+ 				<em:description>Switch, close, undo close, jump, new, duplicate, and zoom tab control all through just your left, right, and scroll mouse buttons. See addon listing for complete  directions.</em:description>
 			</Description>
 		</em:localized>
 		<em:bootstrap>false</em:bootstrap>
@@ -36,7 +22,7 @@
 			<Description>
 				<em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
 				<!-- Firefox -->
-				<em:minVersion>3.0</em:minVersion>
+				<em:minVersion>3.0.*</em:minVersion>
 				<em:maxVersion>4.0.*</em:maxVersion>
 			</Description>
 		</em:targetApplication>

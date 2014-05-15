@@ -1,15 +1,9 @@
-<!ENTITY VERSION "1.4">
+<!ENTITY VERSION "1.5">
 
 <!ENTITY Options "Options">
-<!ENTITY ERROR "ERROR">
-<!ENTITY TriggerConflict "Sorry, cannot continue because your trigger buttons are in conflict with each other. Please assign a different mouse button for each feature.">
-
-<!ENTITY PrimaryMouseButton "Primary Mouse Button">
-<!ENTITY MiddleMouseButton "Middle Mouse Button">
-<!ENTITY SecondaryMouseButton "Secondary Mouse Button">
 
 <!ENTITY General "General">
-<!ENTITY PrimaryTrigger "Primary Trigger">
+<!ENTITY PrimTrig "Primary Trigger">
 <!ENTITY ScrollDirection "Scroll Direction">
 <!ENTITY UpDnTabRtLt "UP/DOWN moves tab focus RIGHT/LEFT">
 <!ENTITY UpDnTabLtRt "UP/DOWN moves tab focus LEFT/RIGHT">
@@ -31,13 +25,32 @@
 <!ENTITY ZoomAffectedArea "Zoom Affected Area">
 <!ENTITY AllContent "All Content">
 <!ENTITY TextOnly "Text Only">
-<!ENTITY InfoGlobal "Modifying zoom in any tab will propogate across all tabs in all windows. The zoom level is remembered during sessions. Site specific zooms in memory are ignored and remain unchanged.">
-<!ENTITY InfoSiteSpecific "Firefox ships with this behavior as default. Zoom is modified and remembered per host name. All sites with no zoom change are at the default zoom level.">
+<!ENTITY InfoGlobal "Modifying zoom in any tab will propogate across all tabs in all windows. The zoom level is remembered across sessions. Site specific zooms in memory are ignored and remain unchanged.">
+<!ENTITY InfoSiteSpecific "Firefox ships with this behavior as default. Zoom is modified and remembered per hostname. All sites with no zoom change are at the default zoom level.">
 <!ENTITY InfoTemporary "All tabs start at default zoom level. Zooming with this behavior only modifies the level in the current tab. All past and future pages in this tab will reatain the same zoom.">
 
-<!ENTITY SecondaryFeatures "Secondary Features">
-<!ENTITY FeatPrimTrigDbl "Primary trigger double click opens new tab/duplicates current tab">
+<!ENTITY Features "Features">
+<!ENTITY FeatPrimTrigDbl "Primary trigger double click creates new/duplicated tab">
 <!ENTITY FeatSecTrigZoom "Secondary trigger enables scroll to zoom">
+<!ENTITY FeatPrimTrig "Primary trigger enables general tab functions">
 
-<!ENTITY MoreInfo "More Info">
 <!ENTITY Info "Info">
+
+<!ENTITY TrigConfigDesc "From here you can choose an alternative setup to the default layout of the mouse. The scroll wheel is standard and by &quot;Middle&quot; mouse button it implies the click of the button.">
+
+<!ENTITY HideZoomDisplay "Hide Zoom Display">
+<!ENTITY ShowZoomDisplay "Show Zoom Display">
+
+<!ENTITY TrigLayout "Trigger Layout">
+<!ENTITY Prim "Primary">
+<!ENTITY PrimAlt "Primary Alt">
+<!ENTITY PrimAlt2 "Primary Alt 2">
+<!ENTITY Sec "Secondary">
+<!ENTITY SecAlt "Secondary Alt">
+
+<!ENTITY Left "Left">
+<!ENTITY Middle "Middle">
+<!ENTITY Right "Right">
+
+<!ENTITY RestoreDefaults "Restore Defaults">
+<!ENTITY Apply "APPLY">

@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
-<dialog id="MouseControl_More" title="MouseControl - " xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" style="padding:0;" onload="MouseControlMore.setData();">
+<dialog id="MouseControl_More" title="MouseControl - " xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" style="padding:0;" onload="MCMore.setData();">
   <script>  
   <![CDATA[
-  var MouseControlMore =
+  var MCMore =
   {
     setData: function()  {
 	document.getElementById('MouseControl_More').setAttribute('title','MouseControl - '+window.arguments[0].inn[0]);
