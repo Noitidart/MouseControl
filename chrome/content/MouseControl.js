@@ -5,6 +5,7 @@ var MouseControl = {
 	wm: Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator),
 	itabHistory: [],
 	lastUp: 0,
+	newTabbed: 0,
 	register: function(event) {
 		gBrowser.mPanelContainer.addEventListener("DOMMouseScroll", MouseControl.scrollHandler, true);
 		gBrowser.mPanelContainer.addEventListener("mousedown", MouseControl.downHandler, true);
@@ -150,10 +151,10 @@ var MouseControl = {
 			}
 		} else {
 			if (event.button == 2 && !MouseControl.down && !MouseControl.pdown) {
+				MouseControl.down = true;
 				var secDblClickAble = MouseControl.prefs.getBoolPref('secDblClickAble');
 				if (secDblClickAble && new Date().getTime() - MouseControl.lastDown <= 200)	{
 					//trigger dbl on mouse up
-					MouseControl.down = true;
 					MouseControl.dblDown = true;
 					MouseControl.setInscroll();
 					MouseControl.duped = false;
@@ -163,7 +164,6 @@ var MouseControl = {
 					event.stopPropagation();
 					return false;
 				}
-				MouseControl.down = true;
 				MouseControl.dblDown = false;
 				MouseControl.lastDown = new Date().getTime();
 				document.getElementById('contentAreaContextMenu').popupBoxObject.setConsumeRollupEvent(Components.interfaces.nsIPopupBoxObject.ROLLUP_NO_CONSUME);
@@ -182,6 +182,9 @@ var MouseControl = {
 	},
 	upHandler: function(event) {
 		if (event.button == 0 || event.button == 1) {
+			if (!MouseControl.closedTabUndid) {
+				clearTimeout(MouseControl.undoClosedTabTimeout);
+			}
 			if (MouseControl.down || (MouseControl.pdown && MouseControl.inscroll)) {
 				event.preventDefault();
 				event.returnValue = false;
@@ -201,6 +204,7 @@ var MouseControl = {
 			}
 			if (MouseControl.dblDown && !MouseControl.duped)	{
 				clearTimeout(MouseControl.dupeTO);
+				MouseControl.setInscroll();
 				MouseControl.newTab();
 			}
 			if (MouseControl.itabHistory.length > 0 && MouseControl.itabHistory[MouseControl.itabHistory.length - 1] != gBrowser.selectedTab) {
@@ -216,7 +220,7 @@ var MouseControl = {
 			event.stopPropagation();
 			if (event.button == 1) {
 				if (!MouseControl.closedTabUndid) {
-					clearTimeout(MouseControl.undoClosedTabTimeout);
+					//clearTimeout(MouseControl.undoClosedTabTimeout);
 					if (new Date().getTime() < MouseControl.domainCloseLimit)	{
 						MouseControl.closeDomain();
 					} else {
@@ -234,17 +238,7 @@ var MouseControl = {
 			}
 			if (event.button == 0) {
 				MouseControl.setInscroll();
-				if (MouseControl.itabHistory.length > 0) {
-					if (gBrowser.selectedTab != MouseControl.itabHistory[MouseControl.itabHistory.length - 1]) {
-						if (MouseControl.itabHistory[MouseControl.itabHistory.length - 1].parentNode) {
-							gBrowser.selectedTab = MouseControl.itabHistory[MouseControl.itabHistory.length - 1];
-						} else {
-							MouseControl.jumpTab();
-						}
-					} else {
-						MouseControl.jumpTab();
-					}
-				}
+				MouseControl.jumpTab();
 			}
 		} else if (MouseControl.pdown)	{
 			event.preventDefault();
@@ -259,7 +253,7 @@ var MouseControl = {
 		}
 	},
 	dblHandler: function(event)	{
-		if (new Date().getTime() - MouseControl.lastUp <= 100)	{
+		if (new Date().getTime() - MouseControl.lastUp <= 100 || new Date().getTime() - MouseControl.newTabbed <= 100)	{
 			event.preventDefault();
 			event.returnValue = false;
 			event.stopPropagation();
@@ -284,6 +278,7 @@ var MouseControl = {
 		}
 	},
 	dupeTab: function() {
+		//MouseControl.setInscroll();
 		MouseControl.duped = true;
 		var newIndex = gBrowser.tabContainer.childNodes.length;
 		var tab = MouseControl.ss.duplicateTab(window, gBrowser.selectedTab);
@@ -301,13 +296,21 @@ var MouseControl = {
 			eval('('+uneval(BrowserOpenTab).replace('inBackground:','relatedToCurrent:true,inBackground:')+')')();
 			//gBrowser.moveTabTo(gBrowser.tabContainer.childNodes[gBrowser.tabContainer.childNodes.length-1], newIndex);
 		} else {
-			BrowserOpenTab()
+			BrowserOpenTab();
 		}
+		//MouseControl.newTabbed = new Date().getTime();
+		MouseControl.lastUp = new Date().getTime();
 	},
 	jumpTab: function() {
 		var jumped = false;
 		if (MouseControl.itabHistory.length > 1) {
 			for (var i = MouseControl.itabHistory.length - 1; i >= 0; i--) {
+				if (!MouseControl.itabHistory[i].parentNode)	{
+					//MouseControl.notifier.showAlertNotification('chrome://MouseControl/skin/icon.png', 'MouseControl Notification', 'Force cleaned history.');
+					MouseControl.cleanHistory();
+					MouseControl.jumpTab();
+					return;
+				}
 				if (gBrowser.selectedTab != MouseControl.itabHistory[i]) {
 					gBrowser.selectedTab = MouseControl.itabHistory[i];
 					jumped = true;
