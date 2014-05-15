@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://MouseControl/content/link.css" type="text/css"?>
 <dialog id="MouseControl_More" title="MouseControl - " xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" style="padding:0;" onload="MCMore.setData();">
   <script>  
   <![CDATA[

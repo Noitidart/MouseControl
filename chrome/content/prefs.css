@@ -1,7 +1,8 @@
 groupbox { background-color:#f7f7f7;-moz-appearance:none;border-radius:5px; }
 caption { background-color:#f7f7f7; }
-.applylink { font-size:1.5em;text-decoration:none;margin-top:-.3em; }
-.closelink { font-size:1.5em;color:#AD2930;text-decoration:none;margin-top:-.3em; }
+.text-link {color:#000066}
+.applylink { font-size:1.5em;text-decoration:none;margin-top:-1em; }
+.closelink { font-size:1.5em;color:#AD2930;text-decoration:none;margin-top:-1em; }
 .quicklinks { font-size:.8em;color:gray;margin-top:3px; }
 .applylink:hover { color:#528f6c; }
 .closelink:hover { color:#528f6c; }

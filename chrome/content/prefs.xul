@@ -25,10 +25,10 @@
 			//make sure settings are proper, mousecontrol pref is dominating. meaning if discrepancy found in settings it will be adjust to be in accordance with users mousecontrol settings
 			var recWin = this.wm.getMostRecentWindow("navigator:browser");
 			if (zoomStyle == 2)	{
-				if (MouseControl.globalZoom <= ZoomManager.MIN) {
+				if (recWin.MouseControl.globalZoom <= recWin.ZoomManager.MIN) {
 					//should never happen
 					//alert('MouseControl Exception 34');
-					MouseControl.globalZoom = ZoomManager.MIN;
+					recWin.MouseControl.globalZoom = recWin.ZoomManager.MIN;
 				}
 				if (recWin.gPrefService.getBoolPref('browser.zoom.siteSpecific'))	{
 					//can happen if user change browser.zoom.siteSpecific from 3rd party source
@@ -133,7 +133,7 @@
 			var nodes = document.getElementsByClassName(feature);
 			var linkDisp = val ? 'none' : '';
 			for (var i=0; i<nodes.length; i++){
-				if (nodes[i].classList.contains('text-link')) {
+				if (/\Wtext-link\W/.test(nodes[i].classList)) {
 					nodes[i].style.display = linkDisp;
 				} else {
 					nodes[i].disabled = val;
@@ -273,7 +273,7 @@
 			<hbox align="baseline">
 				<label value="&TrigLayout;" flex="1"/>
 				<textbox size="1" style="opacity:0;" disabled="true"/>
-				<label value="" onmouseover="MCOps.TrigOver()" onmouseout="MCOps.TrigOut()" onclick="MCOps.TrigIntOpen()" class="text-link" style="text-align:right;" id="TrigLbl"/>
+				<label value="" onmouseover="MCOps.TrigOver()" onmouseout="MCOps.TrigOut()" onclick="this.blur();MCOps.TrigIntOpen()" class="text-link" style="text-align:right;" id="TrigLbl"/>
 			</hbox>
 		    </groupbox>
 		    <groupbox>
@@ -334,9 +334,11 @@
 	</vbox>
 	<vbox align="center">
 	    <hbox style="height:3em;" align="center">
-	        <label value="&Apply;" class="text-link applylink" dlgtype="accept" onclick="MCOps.accept()"/>
+	        <label value="&APPLY;" class="text-link applylink" onclick="MCOps.accept()"/>
 		<spacer width="10"/>
-	        <label value="CANCEL" class="text-link closelink" dlgtype="cancel" onclick="document.getElementById('MCOps').cancelDialog()"/>
+	        <label value="&CANCEL;" class="text-link closelink" onclick="document.getElementById('MCOps').cancelDialog()"/>
+	        <label value="a" dlgtype="accept" style="display:none;"/>
+	        <label value="c" dlgtype="cancel" style="display:none;"/>
 	    </hbox>
 	</vbox>
   </prefpane>

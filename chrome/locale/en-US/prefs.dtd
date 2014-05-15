@@ -1,4 +1,4 @@
-<!ENTITY VERSION "1.5">
+<!ENTITY VERSION "1.5.1">
 
 <!ENTITY Options "Options">
 
@@ -32,11 +32,11 @@
 <!ENTITY Features "Features">
 <!ENTITY FeatPrimTrigDbl "Primary trigger double click creates new/duplicated tab">
 <!ENTITY FeatSecTrigZoom "Secondary trigger enables scroll to zoom">
-<!ENTITY FeatPrimTrig "Primary trigger enables general tab functions">
+<!ENTITY FeatPrimTrig "Primary trigger enables click/scroll to change and close tabs">
 
 <!ENTITY Info "Info">
 
-<!ENTITY TrigConfigDesc "From here you can choose an alternative setup to the default layout of the mouse. The scroll wheel is standard and by &quot;Middle&quot; mouse button it implies the click of the button.">
+<!ENTITY TrigConfigDesc "Customize the action button configuration. Specifically, the clickable buttons only. The scroll wheel is fixed.">
 
 <!ENTITY HideZoomDisplay "Hide Zoom Display">
 <!ENTITY ShowZoomDisplay "Show Zoom Display">
@@ -53,4 +53,5 @@
 <!ENTITY Right "Right">
 
 <!ENTITY RestoreDefaults "Restore Defaults">
-<!ENTITY Apply "APPLY">
+<!ENTITY APPLY "APPLY">
+<!ENTITY CANCEL "CANCEL">

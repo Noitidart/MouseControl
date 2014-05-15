@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://MouseControl/content/link.css" type="text/css"?>
 <!DOCTYPE prefwindow SYSTEM "chrome://MouseControl/locale/prefs.dtd">
 
 <dialog id="MouseControl_TrigInt" title="MouseControl - &TrigLayout;" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" style="padding:0;" onload="MCTrig.setData();">
@@ -12,13 +13,21 @@
 		{
 			TrigLayout: [],
 			setData: function()  {
-				window.sizeToContent();
-				centerWindowOnScreen();
 				this.strbundle = document.getElementById('strings');
 				this.desc = document.getElementById('desc');
 				this.descDefault = this.strbundle.getString('descDefault');
-				this.desc.textContent = this.descDefault;
 
+				var main = document.getElementById('main');
+				var lastH;
+				for (var i=0; i<5; i++){
+					lastH = main.boxObject.height;
+					this.desc.textContent = this.strbundle.getString('desc'+i);
+					if (main.boxObject.height > lastH) {
+						main.style.height = main.boxObject.height + 'px';
+					}
+				}
+
+				this.desc.textContent = this.descDefault;
 				var menulists = document.getElementsByTagName('menulist');
 
 				var inn = window.arguments[0].inn;
@@ -33,6 +42,9 @@
 					menulists[i].parentNode.addEventListener('mouseout',function(){MCTrig.undescribe()},false);
 				}
 				document.getElementById('mouse').style.backgroundImage = 'url("http://img.photobucket.com/albums/v135/noitidart/base.png")';
+				window.sizeToContent();
+				centerWindowOnScreen();
+				this.desc.textContent = this.descDefault;
 			},
 			flag: function(saving)	{
 				var menulists = document.getElementsByTagName('menulist');
@@ -94,7 +106,6 @@
 			undescribe: function()
 			{
 				this.desc.textContent = this.descDefault;
-				this.loadMouse([['b'],[]]);
 			},
 			run: function()
 			{
@@ -115,17 +126,17 @@
 	]]>
 	</script>
 	<vbox style="background-color:#f7f7f7;padding:10px;">
-		<hbox>
-			<vbox style="width:175px;" onclick="MCTrig.run()" >
+		<hbox id="main">
+			<vbox style="width:175px;">
 				<label value="&TrigLayout;" style="font-weight:bold;"/>
-				<description>&TrigConfigDesc;</description>
+				<description style="margin-bottom:1em;">&TrigConfigDesc;</description>
 				<spacer flex="1"/>
 				<description id="desc"/>
 			</vbox>
 			<vbox>
-				<hbox align="center" id="mouse" style="width:150px;height:175px;background: url('chrome://MouseControl/skin/loader.gif') no-repeat scroll 50% 50% transparent;">
-					<spacer flex="1"/>
-				</hbox>
+				<spacer flex="1"/>
+				<hbox align="center" id="mouse" style="width:150px;height:175px;background: url('chrome://MouseControl/skin/loader.gif') no-repeat scroll 50% 50% transparent;" />
+				<spacer flex="1"/>
 			</vbox>
 			<vbox style="width:175px;margin-left:3px;">
 				<spacer flex="1"/>
