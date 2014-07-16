@@ -4,9 +4,8 @@
 		<em:id>MouseControl@neocodex.us</em:id>
 		<em:name>MouseControl</em:name>
 		<em:type>2</em:type>
-		<em:version>1.5.1</em:version>
+		<em:version>1.5.2</em:version>
 		<em:creator>Noitidart</em:creator>
-		<em:homepageURL>http://www.neocodex.us/personal/noit/mousecontrol/about.htm</em:homepageURL>
 		<em:iconURL>chrome://MouseControl/skin/icon.png</em:iconURL>
 		<em:optionsURL>chrome://MouseControl/content/prefs.xul</em:optionsURL>
 		<em:localized>
@@ -22,8 +21,8 @@
 			<Description>
 				<em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
 				<!-- Firefox -->
-				<em:minVersion>3.0</em:minVersion>
-				<em:maxVersion>5.*</em:maxVersion>
+				<em:minVersion>18.0</em:minVersion>
+				<em:maxVersion>31.*</em:maxVersion>
 			</Description>
 		</em:targetApplication>
 	</Description>
