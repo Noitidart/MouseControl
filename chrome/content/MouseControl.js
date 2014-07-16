@@ -26,13 +26,71 @@ var MouseControl = {
 
 		MouseControl.wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
 
-		MouseControl.onLocationChange = FullZoom.onLocationChange.toSource();
-		if (ZoomManager.setZoomForBrowser)	{
-			var setZoomCode = 'ZoomManager.setZoomForBrowser(aBrowser||gBrowser.selectedBrowser,MouseControl.globalZoom)';
-		} else {
-			var setZoomCode = 'ZoomManager.zoom=MouseControl.globalZoom';
+		FullZoom.onLocationChange = function FullZoom_onLocationChange(aURI, aIsTabSwitch, aBrowser) {
+		    //start - MouseControl
+		    MouseControl.globalZoom = MouseControl.prefs.getCharPref('globalZoom');
+		    MouseControl.zoomStyle = MouseControl.prefs.getIntPref('zoomStyle');
+		    if (!this.siteSpecific && MouseControl.zoomStyle == 2 && MouseControl.globalZoom > 0) {
+		        if (ZoomManager.zoom != MouseControl.globalZoom) {
+		            try {
+		                ZoomManager.setZoomForBrowser(aBrowser || gBrowser.selectedBrowser, MouseControl.globalZoom)
+		            } catch (ex) {
+		                ZoomManager.zoom = MouseControl.globalZoom;
+		            }
+		        }
+		        return
+		    }
+		    //end - MouseControl
+		    // Ignore all pending async zoom accesses in the browser.  Pending accesses
+		    // that started before the location change will be prevented from applying
+		    // to the new location.
+		    let browser = aBrowser || gBrowser.selectedBrowser;
+		    this._ignorePendingZoomAccesses(browser);
+
+		    if (!aURI || (aIsTabSwitch && !this.siteSpecific)) {
+		        this._notifyOnLocationChange();
+		        return;
+		    }
+
+		    // Avoid the cps roundtrip and apply the default/global pref.
+		    if (aURI.spec == "about:blank") {
+		        this._applyPrefToZoom(undefined, browser,
+		            this._notifyOnLocationChange.bind(this));
+		        return;
+		    }
+
+		    // Media documents should always start at 1, and are not affected by prefs.
+		    if (!aIsTabSwitch && browser.isSyntheticDocument) {
+		        ZoomManager.setZoomForBrowser(browser, 1);
+		        // _ignorePendingZoomAccesses already called above, so no need here.
+		        this._notifyOnLocationChange();
+		        return;
+		    }
+
+		    // See if the zoom pref is cached.
+		    let ctxt = this._loadContextFromBrowser(browser);
+		    let pref = this._cps2.getCachedByDomainAndName(aURI.spec, this.name, ctxt);
+		    if (pref) {
+		        this._applyPrefToZoom(pref.value, browser,
+		            this._notifyOnLocationChange.bind(this));
+		        return;
+		    }
+
+		    // It's not cached, so we have to asynchronously fetch it.
+		    let value = undefined;
+		    let token = this._getBrowserToken(browser);
+		    this._cps2.getByDomainAndName(aURI.spec, this.name, ctxt, {
+		        handleResult: function (resultPref) value = resultPref.value,
+		        handleCompletion: function () {
+		            if (!token.isCurrent) {
+		                this._notifyOnLocationChange();
+		                return;
+		            }
+		            this._applyPrefToZoom(value, browser,
+		                this._notifyOnLocationChange.bind(this));
+		        }.bind(this)
+		    });
 		}
-		FullZoom.onLocationChange = eval(MouseControl.onLocationChange.replace('{',"{MouseControl.globalZoom=MouseControl.prefs.getCharPref('globalZoom');MouseControl.zoomStyle=MouseControl.prefs.getIntPref('zoomStyle');if(!this.siteSpecific&&MouseControl.zoomStyle==2&&MouseControl.globalZoom>0){if(ZoomManager.zoom!=MouseControl.globalZoom){"+setZoomCode+"}return}"));
 
 		FullZoom._applyZoomToPref = function FullZoom__applyZoomToPref(browser) {
 			MouseControl.globalZoom = MouseControl.prefs.getCharPref('globalZoom');
@@ -203,9 +261,89 @@ var MouseControl = {
 
 		
 
-		FullZoom._applyZoomToPref = eval(MouseControl._applyZoomToPref);
-		FullZoom.onLocationChange = eval(MouseControl.onLocationChange);
-		//FullZoom.reset = function FullZoom_reset(){if(typeof this.globalValue!="undefined"){ZoomManager.zoom=this.globalValue}else{ZoomManager.reset()}this._removePref()};
+		FullZoom._applyZoomToPref = function FullZoom__applyPrefToZoom(aValue, aBrowser, aCallback) {
+		    if (!this.siteSpecific || gInPrintPreviewMode) {
+		        this._executeSoon(aCallback);
+		        return;
+		    }
+
+		    // The browser is sometimes half-destroyed because this method is called
+		    // by content pref service callbacks, which themselves can be called at any
+		    // time, even after browsers are closed.
+		    if (!aBrowser.parentNode || aBrowser.isSyntheticDocument) {
+		        this._executeSoon(aCallback);
+		        return;
+		    }
+
+		    if (aValue !== undefined) {
+		        ZoomManager.setZoomForBrowser(aBrowser, this._ensureValid(aValue));
+		        this._ignorePendingZoomAccesses(aBrowser);
+		        this._executeSoon(aCallback);
+		        return;
+		    }
+
+		    let token = this._getBrowserToken(aBrowser);
+		    this._getGlobalValue(aBrowser, function (value) {
+		        if (token.isCurrent) {
+		            ZoomManager.setZoomForBrowser(aBrowser, value === undefined ? 1 : value);
+		            this._ignorePendingZoomAccesses(aBrowser);
+		        }
+		        this._executeSoon(aCallback);
+		    });
+		};
+		
+		FullZoom.onLocationChange = function FullZoom_onLocationChange(aURI, aIsTabSwitch, aBrowser) {
+		    // Ignore all pending async zoom accesses in the browser.  Pending accesses
+		    // that started before the location change will be prevented from applying
+		    // to the new location.
+		    let browser = aBrowser || gBrowser.selectedBrowser;
+		    this._ignorePendingZoomAccesses(browser);
+
+		    if (!aURI || (aIsTabSwitch && !this.siteSpecific)) {
+		        this._notifyOnLocationChange();
+		        return;
+		    }
+
+		    // Avoid the cps roundtrip and apply the default/global pref.
+		    if (aURI.spec == "about:blank") {
+		        this._applyPrefToZoom(undefined, browser,
+		            this._notifyOnLocationChange.bind(this));
+		        return;
+		    }
+
+		    // Media documents should always start at 1, and are not affected by prefs.
+		    if (!aIsTabSwitch && browser.isSyntheticDocument) {
+		        ZoomManager.setZoomForBrowser(browser, 1);
+		        // _ignorePendingZoomAccesses already called above, so no need here.
+		        this._notifyOnLocationChange();
+		        return;
+		    }
+
+		    // See if the zoom pref is cached.
+		    let ctxt = this._loadContextFromBrowser(browser);
+		    let pref = this._cps2.getCachedByDomainAndName(aURI.spec, this.name, ctxt);
+		    if (pref) {
+		        this._applyPrefToZoom(pref.value, browser,
+		            this._notifyOnLocationChange.bind(this));
+		        return;
+		    }
+
+		    // It's not cached, so we have to asynchronously fetch it.
+		    let value = undefined;
+		    let token = this._getBrowserToken(browser);
+		    this._cps2.getByDomainAndName(aURI.spec, this.name, ctxt, {
+		        handleResult: function (resultPref) value = resultPref.value,
+		        handleCompletion: function () {
+		            if (!token.isCurrent) {
+		                this._notifyOnLocationChange();
+		                return;
+		            }
+		            this._applyPrefToZoom(value, browser,
+		                this._notifyOnLocationChange.bind(this));
+		        }.bind(this)
+		    });
+		};
+
 		FullZoom.reset = function() {
 			let browser = gBrowser.selectedBrowser;
 			let token = FullZoom._getBrowserToken(browser);
@@ -265,10 +403,10 @@ var MouseControl = {
 		if (MouseControl.zoomStyle != zoomStyle)	{
 			MouseControl.zoomStyle = zoomStyle;
 			if (zoomStyle == 1 || zoomStyle == 2)	{
-				if (MouseControl.onLocationChange.indexOf('(aURI, aIsTabSwitch, aBrowser)') >= 0)	{
-					FullZoom.onLocationChange(gBrowser.currentURI,true,gBrowser);
-				} else if (MouseControl.onLocationChange.indexOf('(aURI, aBrowser)') >= 0) {
-					FullZoom.onLocationChange(gBrowser.currentURI,gBrowser);
+				if (FullZoom.onLocationChange.length == 3)	{
+					FullZoom.onLocationChange(gBrowser.currentURI, true, gBrowser);
+				} else if (FullZoom.onLocationChange.length == 2) {
+					FullZoom.onLocationChange(gBrowser.currentURI, gBrowser);
 				} else {
 					FullZoom.onLocationChange(gBrowser.currentURI);
 				}
@@ -453,7 +591,7 @@ var MouseControl = {
 			} else {
 				var direction = event.deltaY > 0 ? 1 : -1;
 			}
-			console.log('direction on tab scroll = ' + event.deltaY);
+			//console.log('direction on tab scroll = ' + event.deltaY);
 			gBrowser.mTabContainer.advanceSelectedTab(direction, true);
 			event.preventDefault();
 			event.returnValue = false;
@@ -463,7 +601,7 @@ var MouseControl = {
 			event.returnValue = false;
 			event.stopPropagation();
 			MouseControl.setInzoom(event);
-			console.log('deltaY on zoom scroll = ' + event.deltaY);
+			//console.log('deltaY on zoom scroll = ' + event.deltaY);
 			if (event.deltaY > 0)	{
 				FullZoom.reduce();
 			} else	{
@@ -789,13 +927,9 @@ var MouseControl = {
 	},
 	newTab: function() {
 		if (MouseControl.relativeToCurrent) {
-			if (uneval(BrowserOpenTab).indexOf('inBackground') > -1)	{
-				eval('('+uneval(BrowserOpenTab).replace('inBackground:','relatedToCurrent:true,inBackground:')+')')();
-			} else {
-				var newIndex = gBrowser.selectedTab._tPos + 1;
-				BrowserOpenTab();
-				gBrowser.moveTabTo(gBrowser.tabContainer.childNodes[gBrowser.tabContainer.childNodes.length-1], newIndex);
-			}
+			var newIndex = gBrowser.selectedTab._tPos + 1;
+			BrowserOpenTab();
+			gBrowser.moveTabTo(gBrowser.tabContainer.childNodes[gBrowser.tabContainer.childNodes.length-1], newIndex);
 		} else {
 			BrowserOpenTab();
 		}
