@@ -2,9 +2,9 @@ var MouseControl = {
 	itabHistory: [],
 	lastUp: 0,
 	covers: ['APPLET','EMBED','OBJECT'],
-	v: '1.5.1',
+	v: '1.5.2',
 	register: function(event) {
-		window.addEventListener("DOMMouseScroll", MouseControl.scrollHandler, true);
+		window.addEventListener("wheel", MouseControl.scrollHandler, true);
 		window.addEventListener("mousedown", MouseControl.downHandler, true);
 		window.addEventListener("mouseup", MouseControl.upHandler, true); //the stopPropogation in upHandler is what messes up FireGestures
 		window.addEventListener("click", MouseControl.clickHandler, true);
@@ -32,12 +32,79 @@ var MouseControl = {
 		} else {
 			var setZoomCode = 'ZoomManager.zoom=MouseControl.globalZoom';
 		}
-		FullZoom.onLocationChange = eval(MouseControl.onLocationChange.replace('{',"{MouseControl.globalZoom=MouseControl.prefs.getCharPref('globalZoom');MouseControl.zoomStyle=MouseControl.prefs.getIntPref('zoomStyle');if(!this.siteSpecfic&&MouseControl.zoomStyle==2&&MouseControl.globalZoom>0){if(ZoomManager.zoom!=MouseControl.globalZoom){"+setZoomCode+"}return}"));
+		FullZoom.onLocationChange = eval(MouseControl.onLocationChange.replace('{',"{MouseControl.globalZoom=MouseControl.prefs.getCharPref('globalZoom');MouseControl.zoomStyle=MouseControl.prefs.getIntPref('zoomStyle');if(!this.siteSpecific&&MouseControl.zoomStyle==2&&MouseControl.globalZoom>0){if(ZoomManager.zoom!=MouseControl.globalZoom){"+setZoomCode+"}return}"));
 
-		MouseControl._applySettingToPref = FullZoom._applySettingToPref.toSource();
-		FullZoom._applySettingToPref = eval(MouseControl._applySettingToPref.replace("{","{MouseControl.globalZoom=MouseControl.prefs.getCharPref('globalZoom');MouseControl.zoomStyle=MouseControl.prefs.getIntPref('zoomStyle');if(!this.siteSpecfic&&MouseControl.zoomStyle==2&&MouseControl.globalZoom>0){var zoomLevel=ZoomManager.zoom;MouseControl.globalZoom=zoomLevel;MouseControl.prefs.setCharPref('globalZoom',zoomLevel);var browserWindows=MouseControl.wm.getEnumerator('navigator:browser');while(browserWindows.hasMoreElements()){var browserWindow=browserWindows.getNext();if(browserWindow.gBrowser!=gBrowser){browserWindow.ZoomManager.zoom=zoomLevel}}}"));
-		FullZoom.reset = function FullZoom_reset(){if(typeof this.globalValue!="undefined"){ZoomManager.zoom=this.globalValue}else{ZoomManager.reset()}MouseControl.globalZoom=MouseControl.prefs.getCharPref('globalZoom');MouseControl.zoomStyle=MouseControl.prefs.getIntPref('zoomStyle');if(!this.siteSpecfic&&MouseControl.zoomStyle==2&&MouseControl.globalZoom>0){var zoomLevel=ZoomManager.zoom;MouseControl.globalZoom=zoomLevel;MouseControl.prefs.setCharPref('globalZoom',zoomLevel);var browserWindows=MouseControl.wm.getEnumerator("navigator:browser");while(browserWindows.hasMoreElements()){var browserWindow=browserWindows.getNext();if(browserWindow.gBrowser!=gBrowser){browserWindow.ZoomManager.reset()}}}this._removePref()};
-		FullScreen._collapseCallback = function(){if(!MouseControl.down){FullScreen.mouseoverToggle(false)}};
+		FullZoom._applyZoomToPref = function FullZoom__applyZoomToPref(browser) {
+			MouseControl.globalZoom = MouseControl.prefs.getCharPref('globalZoom');
+			MouseControl.zoomStyle = MouseControl.prefs.getIntPref('zoomStyle');
+			if (!this.siteSpecific && MouseControl.zoomStyle == 2 && MouseControl.globalZoom > 0) {
+				var zoomLevel = ZoomManager.zoom;
+				MouseControl.globalZoom = zoomLevel;
+				MouseControl.prefs.setCharPref('globalZoom', zoomLevel);
+				var browserWindows = MouseControl.wm.getEnumerator('navigator:browser');
+				while (browserWindows.hasMoreElements()) {
+					var browserWindow = browserWindows.getNext();
+					if (browserWindow.gBrowser != gBrowser) {
+						browserWindow.ZoomManager.zoom = zoomLevel;
+					}
+				}
+				Services.obs.notifyObservers(null, "browser-fullZoom:zoomChange", zoomLevel);
+				return;
+			}
+			
+			Services.obs.notifyObservers(null, "browser-fullZoom:zoomChange", "");
+			if (!this.siteSpecific ||
+				gInPrintPreviewMode ||
+				browser.isSyntheticDocument)
+			  return;
+
+			this._cps2.set(browser.currentURI.spec, this.name,
+						   ZoomManager.getZoomForBrowser(browser),
+						   this._loadContextFromBrowser(browser), {
+			  handleCompletion: function () {
+				this._isNextContentPrefChangeInternal = true;
+			  }.bind(this),
+			});
+		  };
+		FullZoom.reset = function() {
+			let browser = gBrowser.selectedBrowser;
+			let token = FullZoom._getBrowserToken(browser);
+			FullZoom._getGlobalValue(browser, function (value) {
+			  if (token.isCurrent) {
+				ZoomManager.setZoomForBrowser(browser, value === undefined ? 1 : value);
+				FullZoom._ignorePendingZoomAccesses(browser);
+				FullZoom._executeSoon(function () {
+				  // _getGlobalValue may be either sync or async, so notify asyncly so
+				  // observers are guaranteed consistent behavior.
+				  Services.obs.notifyObservers(null, "browser-fullZoom:reset", "");
+				});
+			  }
+			});
+			
+			//start mousecontrol stuff
+				MouseControl.globalZoom = MouseControl.prefs.getCharPref('globalZoom');
+				MouseControl.zoomStyle = MouseControl.prefs.getIntPref('zoomStyle');
+				if (!this.siteSpecific && MouseControl.zoomStyle == 2 && MouseControl.globalZoom > 0) {
+					var zoomLevel = ZoomManager.zoom;
+					MouseControl.globalZoom = zoomLevel;
+					MouseControl.prefs.setCharPref('globalZoom', zoomLevel);
+					var browserWindows = MouseControl.wm.getEnumerator("navigator:browser");
+					while (browserWindows.hasMoreElements()) {
+						var browserWindow = browserWindows.getNext();
+						if (browserWindow.gBrowser != gBrowser) {
+							browserWindow.ZoomManager.reset()
+						}
+					}
+				}
+			//end mousecontrol stuff
+			
+			FullZoom._removePref(browser);
+		};
+		FullScreen._collapseCallback = function() {
+			if(!MouseControl.down){
+				FullScreen.mouseoverToggle(false)
+			}
+		};
 
 		var Cover = document.createElement('panel');
 		Cover.setAttribute('style','-moz-window-shadow:none;-moz-appearance:none;background-color:steelblue;border:1px solid #AAA;opacity:.4');
@@ -62,7 +129,7 @@ var MouseControl = {
 		disp.appendChild(dispLbl);
 		document.getElementById('content').appendChild(disp);
 		MouseControl.ZoomDisp = disp;
-
+		
 		setTimeout(function () {
 			var parseVersionString = function (str) {
 				var x = str.split('.');
@@ -104,7 +171,7 @@ var MouseControl = {
 		}, 1000);
 	},
 	unregister: function(event) {
-		window.removeEventListener("DOMMouseScroll", MouseControl.scrollHandler, true);
+		window.removeEventListener("wheel", MouseControl.scrollHandler, true);
 		window.removeEventListener("mousedown", MouseControl.downHandler, true);
 		window.removeEventListener("mouseup", MouseControl.upHandler, true);
 		window.removeEventListener("click", MouseControl.clickHandler, true);
@@ -117,7 +184,7 @@ var MouseControl = {
 		window.removeEventListener('dragstart',MouseControl.dragstartHandler,true);
 
 
-		window.removeEventListener("DOMMouseScroll", MouseControl.scrollHandler, true);
+		window.removeEventListener("wheel", MouseControl.scrollHandler, true);
 		window.removeEventListener("mousedown", MouseControl.downHandler, true);
 		window.removeEventListener("mouseup", MouseControl.upHandler, true); //the stopPropogation in upHandler is what messes up FireGestures
 		window.removeEventListener("click", MouseControl.clickHandler, true);
@@ -136,9 +203,26 @@ var MouseControl = {
 
 		
 
-		FullZoom._applySettingToPref = eval(MouseControl._applySettingToPref);
+		FullZoom._applyZoomToPref = eval(MouseControl._applyZoomToPref);
 		FullZoom.onLocationChange = eval(MouseControl.onLocationChange);
-		FullZoom.reset = function FullZoom_reset(){if(typeof this.globalValue!="undefined"){ZoomManager.zoom=this.globalValue}else{ZoomManager.reset()}this._removePref()};
+		//FullZoom.reset = function FullZoom_reset(){if(typeof this.globalValue!="undefined"){ZoomManager.zoom=this.globalValue}else{ZoomManager.reset()}this._removePref()};
+		FullZoom.reset = function() {
+			let browser = gBrowser.selectedBrowser;
+			let token = FullZoom._getBrowserToken(browser);
+			FullZoom._getGlobalValue(browser, function (value) {
+			  if (token.isCurrent) {
+				ZoomManager.setZoomForBrowser(browser, value === undefined ? 1 : value);
+				FullZoom._ignorePendingZoomAccesses(browser);
+				FullZoom._executeSoon(function () {
+				  // _getGlobalValue may be either sync or async, so notify asyncly so
+				  // observers are guaranteed consistent behavior.
+				  Services.obs.notifyObservers(null, "browser-fullZoom:reset", "");
+				});
+			  }
+			});
+			
+			FullZoom._removePref(browser);
+		};
 		FullScreen._collapseCallback = function(){FullScreen.mouseoverToggle(false)};
 
 		//remove zoom indicator
@@ -155,6 +239,7 @@ var MouseControl = {
 		MouseControl.SecondaryFeat = MouseControl.prefs.getBoolPref('SecondaryFeat');
 		MouseControl.SecTrig = MouseControl.prefs.getIntPref('SecTrig');
 		MouseControl.SecAltTrig = MouseControl.prefs.getIntPref('SecAltTrig');
+		MouseControl.SecAlt2Trig = 2;
 
 		MouseControl.HoldDelay = MouseControl.prefs.getIntPref('HoldDelay')
 		MouseControl.DblClickSpeed = MouseControl.prefs.getIntPref('DblClickSpeed');
@@ -364,10 +449,11 @@ var MouseControl = {
 		if (MouseControl.down) {
 			MouseControl.setInscroll(event);
 			if (MouseControl.scrollUpMoveRight) {
-				var direction = event.detail > 0 ? -1 : 1;
+				var direction = event.deltaY > 0 ? -1 : 1;
 			} else {
-				var direction = event.detail > 0 ? 1 : -1;
+				var direction = event.deltaY > 0 ? 1 : -1;
 			}
+			console.log('direction on tab scroll = ' + event.deltaY);
 			gBrowser.mTabContainer.advanceSelectedTab(direction, true);
 			event.preventDefault();
 			event.returnValue = false;
@@ -377,7 +463,8 @@ var MouseControl = {
 			event.returnValue = false;
 			event.stopPropagation();
 			MouseControl.setInzoom(event);
-			if (event.detail > 0)	{
+			console.log('deltaY on zoom scroll = ' + event.deltaY);
+			if (event.deltaY > 0)	{
 				FullZoom.reduce();
 			} else	{
 				FullZoom.enlarge();
@@ -445,6 +532,15 @@ var MouseControl = {
 				if (MouseControl.zoomStyle == 2)	{
 					MouseControl.globalZoom = 1;
 				}
+			} else if (event.button == MouseControl.SecAlt2Trig) {
+				event.preventDefault();
+				event.returnValue = false;
+				event.stopPropagation();
+				MouseControl.setInzoom(event);
+				if (MouseControl.ZoomDisplay && MouseControl.ZoomDisp.state != 'closed') {
+					MouseControl.ZoomDisp.hidePopup();
+				}
+				event.target.parentNode.removeChild(event.target);
 			} else {
 				if (MouseControl.inzoom)	{
 					event.preventDefault();
@@ -772,7 +868,8 @@ var MouseControl = {
 	noConsume: function(event)	{
 		if (event.target != document.getElementById('contentAreaContextMenu')) { return }
 		if (event.target.popupBoxObject)	{
-			event.target.popupBoxObject.setConsumeRollupEvent(Components.interfaces.nsIPopupBoxObject.ROLLUP_NO_CONSUME);
+			//event.target.popupBoxObject.setConsumeRollupEvent(Components.interfaces.nsIPopupBoxObject.ROLLUP_NO_CONSUME);
+			event.target.setAttribute('consumeoutsideclicks', 'false');
 		}
 	},
 	hideC: function() {
@@ -864,7 +961,8 @@ var utils = gBrowser.contentDocument.childNodes[0].ownerDocument.defaultView.Que
 		MouseControl.Cover.childNodes[0].style.height = h+'px';
 		MouseControl.Cover.childNodes[0].style.width = w+'px';
 MouseControl.Cover.childNodes[0].textContent = '||||||||||||||||||||||||';
-MouseControl.Cover.popupBoxObject.setConsumeRollupEvent(Components.interfaces.nsIPopupBoxObject.ROLLUP_NO_CONSUME); //dont need this cuz adding no_consome to all popups via listener
+//MouseControl.Cover.popupBoxObject.setConsumeRollupEvent(Components.interfaces.nsIPopupBoxObject.ROLLUP_NO_CONSUME); //dont need this cuz adding no_consome to all popups via listener
+MouseControl.Cover.setAttribute('consumeoutsideclicks', 'false');
 		MouseControl.Cover.openPopup(gBrowser.mPanelContainer, 'overlap', 0, 0, false, false);
 	},
 	hideCover: function() {
