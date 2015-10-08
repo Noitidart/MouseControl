@@ -284,12 +284,29 @@ var winTypes = function() {
 	// FUNCTION TYPES
 	this.MONITORENUMPROC = ctypes.FunctionType(this.CALLBACK_ABI, this.BOOL, [this.HMONITOR, this.HDC, this.LPRECT, this.LPARAM]);
 	this.LowLevelMouseProc = ctypes.FunctionType(this.CALLBACK_ABI, this.LRESULT, [this.INT, this.WPARAM, this.LPARAM]);
+	this.WNDPROC = ctypes.FunctionType(this.CALLBACK_ABI, this.LRESULT, [
+		this.HWND,		// hwnd,
+		this.UINT,		// uMsg,
+		this.WPARAM,	// wParam,
+		this.LPARAM	// lParam
+	]);
 	
 	// some more guess types
 	this.HOOKPROC = this.LowLevelMouseProc.ptr; // not a guess really, as this is the hook type i use, so yeah it has to be a pointer to it
 	
 	// STRUCTS USING FUNC TYPES
-
+	this.WNDCLASS = ctypes.StructType('tagWNDCLASS', [
+		{ style: this.UINT },
+		{ lpfnWndProc: this.WNDPROC.ptr },
+		{ cbClsExtra: this.INT },
+		{ cbWndExtra: this.INT },
+		{ hInstance: this.HINSTANCE },
+		{ hIcon: this.HICON },
+		{ hCursor: this.HCURSOR },
+		{ hbrBackground: this.HBRUSH },
+		{ lpszMenuName: this.LPCTSTR },
+		{ lpszClassName: this.LPCTSTR }
+	]);
 }
 
 var winInit = function() {
@@ -316,6 +333,7 @@ var winInit = function() {
 		ENUM_CURRENT_SETTINGS: self.TYPE.DWORD.size == 4 ? /*use 8 letters for size 4*/ self.TYPE.DWORD('0xFFFFFFFF') : /*size is 8 so use 16 letters*/ self.TYPE.DWORD('0xFFFFFFFFFFFFFFFF'),
 		ENUM_REGISTRY_SETTINGS: self.TYPE.DWORD.size == 4 ? self.TYPE.DWORD('0xFFFFFFFE') : self.TYPE.DWORD('0xFFFFFFFFFFFFFFFE'),
 		HORZRES: 8,
+		HWND_MESSAGE: -3,
 		LOGPIXELSX: 88,
 		LOGPIXELSY: 90,
 		MONITOR_DEFAULTTONEAREST: 2,
@@ -349,7 +367,9 @@ var winInit = function() {
 		WM_XBUTTONUP: 0x20C,
 		WM_XBUTTONDBLCLK: 0x20D,
 		WM_MOUSEHWHEEL: 0x20E,
-		WH_MOUSE_LL: 14
+		WH_MOUSE_LL: 14,
+		RIDEV_INPUTSINK: 0x00000100,
+		WM_CREATE: 0x0001
 	};
 
 	var _lib = {}; // cache for lib
@@ -540,6 +560,23 @@ var winInit = function() {
 				self.TYPE.LPVOID		// lpParam
 			);
 		},
+		DefWindowProc: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms633572%28v=vs.85%29.aspx
+			 * LRESULT WINAPI DefWindowProc(
+			 *   __in_ HWND   hWnd,
+			 *   __in_ UINT   Msg,
+			 *   __in_ WPARAM wParam,
+			 *   __in_ LPARAM lParam
+			 * );
+			 */
+			return lib('user32').declare(ifdef_UNICODE ? 'DefWindowProcW' : 'DefWindowProcA', self.TYPE.ABI,
+				self.TYPE.LRESULT,	// return
+				self.TYPE.HWND,		// hWnd
+				self.TYPE.UINT,		// Msg
+				self.TYPE.WPARAM,	// wParam
+				self.TYPE.LPARAM	// lParam
+			);
+		},
 		DeleteDC: function() {
 			/* http://msdn.microsoft.com/en-us/library/windows/desktop/dd183489%28v=vs.85%29.aspx
 			 * BOOL DeleteDC(
@@ -560,6 +597,17 @@ var winInit = function() {
 			return lib('gdi32').declare('DeleteObject', self.TYPE.ABI,
 				self.TYPE.BOOL,		// return
 				self.TYPE.HGDIOBJ	// hObject
+			);
+		},
+		DestroyWindow: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms632682%28v=vs.85%29.aspx
+			 * BOOL WINAPI DestroyWindow(
+			 *   __in_ HWND hWnd
+			 * );
+			 */
+			return lib('user32').declare('DestroyWindow', self.TYPE.ABI,
+				self.TYPE.BOOL,	// return
+				self.TYPE.HWND	// hWnd
 			);
 		},
 		EnumDisplayDevices: function() {
@@ -843,6 +891,17 @@ var winInit = function() {
 				self.TYPE.UINT		// wRemoveMsg
 			);
 		},
+		RegisterClass: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms633586%28v=vs.85%29.aspx
+			 * ATOM WINAPI RegisterClass(
+			 *   __in_ const WNDCLASS *lpWndClass
+			 * );
+			 */
+			return lib('user32').declare(ifdef_UNICODE ? 'RegisterClassW' : 'RegisterClassA', self.TYPE.ABI,
+				self.TYPE.ATOM,			// return
+				self.TYPE.WNDCLASS.ptr	// *lpWndClass
+			);
+		},
 		ReleaseDC: function() {
 			/* http://msdn.microsoft.com/en-us/library/windows/desktop/dd162920%28v=vs.85%29.aspx
 			 * int ReleaseDC(
@@ -890,6 +949,19 @@ var winInit = function() {
 				self.TYPE.INT,				// cx
 				self.TYPE.INT,				// cy
 				self.TYPE.UINT				// uFlags
+			);
+		},
+		UnregisterClass: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644899%28v=vs.85%29.aspx
+			 * BOOL WINAPI UnregisterClass(
+			 *   __in_     LPCTSTR   lpClassName,
+			 *   __in_opt_ HINSTANCE hInstance
+			 * );
+			 */
+			return lib('user32').declare(ifdef_UNICODE ? 'UnregisterClassW' : 'UnregisterClassA', self.TYPE.ABI,
+				self.TYPE.BOOL,		// return
+				self.TYPE.LPCTSTR,	// lpClassName
+				self.TYPE.HINSTANCE	// hInstance
 			);
 		},
 		////////////////// mousecontrol stuff

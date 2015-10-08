@@ -47,7 +47,6 @@ self.onmessage = function(aMsgEvent) {
 };
 
 ////// end of imports and definitions
-
 function init(objCore) {
 	//console.log('in worker init');
 	
@@ -89,12 +88,18 @@ function init(objCore) {
 
 // Start - Addon Functionality
 
+var terminators = [];
 self.onclose = function() {
-	console.error('doing onclose');
-	stopMonitor();
+	console.log('MMSyncWorker.js terminating');
+	
+	// stopMonitor();
+	
+	for (var i=0; i<terminators.length; i++) {
+		terminators[i]();
+	}
 }
 
-function winStartMessageLoopOLD(wMsgFilterMin, wMsgFilterMax) {
+function winStartMessageLoopOLDER(wMsgFilterMin, wMsgFilterMax) {
 	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
 	// based on http://stackoverflow.com/questions/6901063/how-to-create-a-pure-winapi-window
 	
@@ -119,7 +124,7 @@ function winStartMessageLoopOLD(wMsgFilterMin, wMsgFilterMax) {
 				console.log('no message found:', rez_PeekMessage);
 			}
 			if (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
-				setTimeout(checkForMessage, 1000);
+				setTimeout(checkForMessage, 10);
 			} else {
 				console.log('message loop ended');
 			}
@@ -130,7 +135,7 @@ function winStartMessageLoopOLD(wMsgFilterMin, wMsgFilterMax) {
 	// console.log('message loop ended');
 }
 
-function winStartMessageLoop(wMsgFilterMin, wMsgFilterMax) {
+function winStartMessageLoopOLD(wMsgFilterMin, wMsgFilterMax) {
 	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
 	// based on http://stackoverflow.com/questions/6901063/how-to-create-a-pure-winapi-window
 	
@@ -151,6 +156,112 @@ function winStartMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 	// }
 	
 	console.log('message loop ended');
+}
+
+function winStartMessageLoop() {
+	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
+	
+	// based on http://ochameau.github.io/2010/08/24/jsctypes-unleashed/
+	if (OSStuff.msgWinHwnd) {
+		throw new Error('already registered class window, this message loop thing can only be called once');
+	}
+	
+	var windowProc = function(hwnd, uMsg, wParam, lParam) {
+		
+		var eventType;
+		for (var p in OSStuff.mouseConsts) {
+			if (cutils.jscEqual(OSStuff.mouseConsts[p], lParam)) {
+				eventType = p;
+				break;
+			}
+		}
+		
+		console.info('windowProc | ', 'eventType:', eventType, 'uMsg:', uMsg, 'wParam:', wParam, 'lParam:', lParam);
+		// 0 means that we handle this event
+		// return 0; 
+		
+		// Mandatory use default win32 procedure!
+		var rez_DefWindowProc = ostypes.API('DefWindowProc')(hwnd, uMsg, wParam, lParam);
+		console.log('rez_DefWindowProc:', rez_DefWindowProc, rez_DefWindowProc.toString());
+		
+		return rez_DefWindowProc;
+	};
+	
+	// Define a custom Window Class in order to bind our custom Window Proc
+	var wndclass = ostypes.TYPE.WNDCLASS();
+	wndclass.lpszClassName = ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol');
+	wndclass.lpfnWndProc = ostypes.TYPE.WNDPROC.ptr(windowProc);
+	var rez_registerClass = ostypes.API('RegisterClass')(wndclass.address());
+	console.info('rez_registerClass:', rez_registerClass, rez_registerClass.toString());
+	if (cutils.jscEqual(rez_registerClass, 0)) {
+		console.warn('failed to register class, last error:', ctypes.winLastError);
+		// throw new Error('failed to register class');
+	}
+	
+	// Create a Message event only Window using this custom class
+	var msgWinHwnd = ostypes.API('CreateWindowEx')(0, wndclass.lpszClassName, ostypes.TYPE.LPCTSTR.targetType.array()('window-mozilla-firefox-addon-mousecontrol'), 0, 0, 0, 0, 0,  ostypes.TYPE.HWND(ostypes.CONST.HWND_MESSAGE), null, null, null);
+	console.info('msgWinHwnd:', msgWinHwnd, msgWinHwnd.toString());
+	
+	if (msgWinHwnd.isNull()) {
+		console.error('failed to create window, last error:', ctypes.winLastError);
+		throw new Error('failed to create window');
+	}
+	
+	OSStuff.msgWinHwnd = msgWinHwnd;
+	
+	terminators.push(function() {
+		// var rez_destroyWindow = ostypes.API('DestroyWindow')(OSStuff.msgWinHwnd);
+		// console.log('rez_destroyWindow:', rez_destroyWindow);
+		
+		// var rez_UnregisterClass = ostypes.API('UnregisterClass')(ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol'), null);
+		// console.log('rez_UnregisterClass:', rez_UnregisterClass);
+	});
+	
+				var rid_js = new Array(1);
+				rid_js[0] = ostypes.TYPE.RAWINPUTDEVICE(1, 2, ostypes.CONST.RIDEV_INPUTSINK, msgWinHwnd); // mouse
+				// ostypes.CONST.RIDEV_INPUTSINK because this tells it to get events even when not focused
+				
+				/*
+				usUsagePage
+				1 for generic desktop controls
+				2 for simulation controls
+				3 for vr
+				4 for sport
+				5 for game
+				6 for generic device
+				7 for keyboard
+				8 for leds
+				9 button
+				*/
+				
+				/*
+				usUsage values when usUsagePage is 1
+				0 - undefined
+				1 - pointer
+				2 - mouse
+				3 - reserved
+				4 - joystick
+				5 - game pad
+				6 - keyboard
+				7 - keypad
+				8 - multi-axis controller
+				9 - Tablet PC controls
+				*/
+				
+				var rid_c = ostypes.TYPE.RAWINPUTDEVICE.array(rid_js.length)(rid_js);
+				var rez_registerDevices = ostypes.API('RegisterRawInputDevices')(rid_c, rid_js.length, ostypes.TYPE.RAWINPUTDEVICE.size);
+				console.info('rez_registerDevices:', rez_registerDevices.toString(), uneval(rez_registerDevices), cutils.jscGetDeepest(rez_registerDevices));
+				if (rez_registerDevices == false) {
+					console.error('Failed rez_registerDevices, winLastError:', ctypes.winLastError);
+					throw new Error({
+						name: 'os-api-error',
+						message: 'Failed rez_registerDevices, winLastError: "' + ctypes.winLastError + '" and rez_registerDevices: "' + rez_registerDevices.toString(),
+						winLastError: ctypes.winLastError
+					});
+				}
+	
+
+	
 }
 
 function syncMonitorMouse() {
@@ -184,6 +295,10 @@ function syncMonitorMouse() {
 						WM_MOUSEHWHEEL: 0x20E
 					};
 				};
+				
+				winStartMessageLoop();
+				// winStartMessageLoopOLDER(ostypes.CONST.WM_LBUTTONDOWN, ostypes.CONST.WM_MOUSEHWHEEL);
+				// winStartMessageLoopOLDER(0, 0);
 				
 				/*
 				OSStuff.myLLMouseHook_js = function(nCode, wParam, lParam) {
@@ -222,8 +337,7 @@ function syncMonitorMouse() {
 				}
 				*/
 				
-				// winStartMessageLoop(ostypes.CONST.WM_LBUTTONDOWN, ostypes.CONST.WM_MOUSEHWHEEL);
-				winStartMessageLoop(0, 0);
+
 				
 			break
 		case 'gtk':
