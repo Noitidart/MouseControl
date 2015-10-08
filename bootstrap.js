@@ -9,6 +9,8 @@ const self = {
 const myServices = {};
 Cu.import('resource://gre/modules/Services.jsm');
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
+Cu.import('resource://gre/modules/osfile.jsm');
+Cu.import('resource://gre/modules/devtools/Console.jsm');
 XPCOMUtils.defineLazyGetter(myServices, 'as', function(){ return Cc['@mozilla.org/alerts-service;1'].getService(Ci.nsIAlertsService) });
 
 function startup(aData, aReason) {

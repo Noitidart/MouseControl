@@ -35,7 +35,39 @@
 <link href="selectbox.css" type="text/css" rel="stylesheet" />
 		<script type="text/javascript" src="jquery.js"></script>
 		<script type="text/javascript" src="selectbox.js"></script>
+		<script>
+			/*start - chrome stuff*/
+			const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+			Cu.import('resource://gre/modules/osfile.jsm');
+			Cu.import('resource://gre/modules/Services.jsm');
+			Cu.import('resource://gre/modules/addons/XPIProvider.jsm');
+			
+			var MouseControl = XPIProvider.bootstrapScopes['MouseControl@jetpack'];
+			const installPath = MouseControl.self.aData.installPath.path; //platform specific so no need to normalize
+			const funcsFilePath = OS.Path.join(installPath, 'funcs.json');
+			const TDecoder = new TextDecoder();
+			
+			var funcsFileContents; //holds contents after reading funcsFilePath
+			
+			
+			document.addEventListener('DOMContentLoaded', init, false);
+			
+			function init() {
+				var promise = OS.File.read(funcsFilePath);
+				promise.then(
+				  function onSuc(array) {
+					funcsFileContents = TDecoder.decode(array);
+				  },
+				  function onRej(aReason) {
+					console.log('Promise Rejected', 'OS.File.read(funcsFilePath)', 'aReason:', aReason);
+				  }
+				);
+			}
+			
+			/*end - chrome stuff*/
+		</script>
 		<script type="text/javascript">
+			/*start - jquery stuff*/
 			$(function () {
 				$("select").selectbox({
 					effect: 'fade'
