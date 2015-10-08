@@ -41,27 +41,80 @@
 			Cu.import('resource://gre/modules/osfile.jsm');
 			Cu.import('resource://gre/modules/Services.jsm');
 			Cu.import('resource://gre/modules/addons/XPIProvider.jsm');
+			Cu.import('resource://gre/modules/Promise.jsm');
 			
 			var MouseControl = XPIProvider.bootstrapScopes['MouseControl@jetpack'];
 			const installPath = MouseControl.self.aData.installPath.path; //platform specific so no need to normalize
 			const funcsFilePath = OS.Path.join(installPath, 'funcs.json');
 			const TDecoder = new TextDecoder();
 			
-			var funcsFileContents; //holds contents after reading funcsFilePath
-			
+			var funcsFileContents; //holds contents after reading funcsFilePath, should unprased json
+			var funcsFileObj; //parsed json
 			
 			document.addEventListener('DOMContentLoaded', init, false);
-			
+			console.log('JSON:', JSON);
 			function init() {
-				var promise = OS.File.read(funcsFilePath);
+				var promise = readFuncs();
 				promise.then(
-				  function onSuc(array) {
-					funcsFileContents = TDecoder.decode(array);
-				  },
-				  function onRej(aReason) {
-					console.log('Promise Rejected', 'OS.File.read(funcsFilePath)', 'aReason:', aReason);
-				  }
+					function(aVal) {
+						console.info('Promise Success: `readFuncs()`', 'aVal:', aVal);
+						console.info('funcsFileContents:', funcsFileContents);
+					},
+					function(aReason) {
+						console.error('Promise Rejected: `readFuncs()`', 'aReason:', aReason);
+						alert('Failed to read functions file. See console for more detail. Please reload the page to try again.');
+						document.body.textContent = 'Failed to read functions file. See console for more detail. Please reload the page to try again.';
+					}
 				);
+			}
+			
+			function readFuncs() {
+				try {
+					var promise = OS.File.read(funcsFilePath);
+					return promise.then(
+					  function onSuc(array) {
+						funcsFileContents = TDecoder.decode(array);
+						funcsFileObj = JSON.parse(funcsFileContents); //if it cant parse the try-catch will catch it
+						return Promise.resolve('read');
+					  },
+					  function onRej(aReason) {
+						var __proto__all = Object.getOwnPropertyNames(aReason.__proto__);
+						var __proto__enum = Object.keys(aReason.__proto__);
+						var __proto__nonenum = __proto__all.filter(function (k) { //the nonenum are the error reasons, like `becauseClosed` `becauseExists` `becauseNoSuchFile` etc
+							return __proto__enum.indexOf(k) == -1; //if not found in enum, return true so we keep it
+						});
+
+						var aReasonStr = [];
+						Array.prototype.forEach.call(__proto__nonenum, function (k) {
+							if (aReason[k]) {
+								aReasonStr.push(k);
+							}
+						});
+						
+						if (aReasonStr.indexOf('becauseNoSuchFile') > -1) {
+							console.warn('Promise Rejected: `OS.File.read(funcsFilePath)`', 'aReasonStr:', aReasonStr.join(','), 'aReason:', aReason, 'will now write new file with default functions');
+							var promise2 = OS.File.writeAtomic(funcsFilePath, MouseControl.funcsFileContentsDefault, {tmpPath: funcsFilePath + '.tmp', encoding:'utf-8'});
+							return promise2.then(
+								function(aVal) {
+									funcsFileContents = MouseControl.funcsFileContentsDefault;
+									funcsFileObj = JSON.parse(funcsFileContents);
+									return Promise.resolve('wrote');
+								},
+								function(aReason) {
+									console.log('Promise2 Rejected: `OS.File.writeAtomic`', 'aReason:', aReason, 'will now throw this back to the main promise of `readFuncs()`, so this will be logged twice');
+									return Promise.reject(aReason);
+								}
+							);
+						} else {
+							console.error('Promise Rejected: `OS.File.read(funcsFilePath)`', 'aReasonStr:', aReasonStr.join(','), 'aReason:', aReason, 'dont know how to handle this so return this rejection to main promise of `readFuncs()`');
+							return Promise.reject(aReason);
+						}
+					  }
+					);
+				} catch (ex) {
+					console.warn('readFuncs Ex Occured:', ex);
+					return Promise.reject(ex);
+				}
 			}
 			
 			/*end - chrome stuff*/
