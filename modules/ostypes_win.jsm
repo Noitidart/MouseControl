@@ -869,6 +869,16 @@ var winInit = function() {
 				self.TYPE.UINT,					// uiNumDevices
 				self.TYPE.UINT					// cbSize
 			);
+		},
+		GetCurrentThreadId: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms683183%28v=vs.85%29.aspx
+			 * DWORD WINAPI GetCurrentThreadId(
+			 *   void
+			 * );
+			 */
+			return lib('kernel32').declare('GetCurrentThreadId', self.TYPE.ABI,
+				self.TYPE.DWORD	// return
+			);
 		}
 	};
 	// end - predefine your declares here
