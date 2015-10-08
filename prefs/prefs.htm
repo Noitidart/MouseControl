@@ -23,7 +23,12 @@
 	
 	.configure-function {
 		background: transparent url(wrench.png) no-repeat center center;
-		left: calc(100% - 20px);
+		left: calc(100% - 23px);
+	}
+	
+	.share-function {
+		background: transparent url(network-tri.png) no-repeat center center;
+		left: calc(100% - 6px);
 	}
 </style>
 <link href="selectbox.css" type="text/css" rel="stylesheet" />
@@ -34,6 +39,7 @@
 				$("select").selectbox({
 					effect: 'fade'
 				});
+				
 			});
 			function addSubheads() {
 				//to the config div it adds a subhead over every group of opts
@@ -357,7 +363,7 @@ button.import:hover {
 		<div id="configWrap">
 			<div class="configSubhead">TABS<hr></div>
 			<span class="opt" group="tabs">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div><div class="pseudo-config share-function"></div>
 				<span>
 					Select Tab to Right
 					<small>Focuses tab to right of current tab</small>
@@ -366,7 +372,7 @@ button.import:hover {
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>
 					Select Tab to Left
 					<small>Focuses tab to left of current tab</small>
@@ -375,7 +381,7 @@ button.import:hover {
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>
 					Jump to Last Tab
 					<small>Selects previously used tab across windows. If executed during moving select right/left, will select initial tab </small>
@@ -384,50 +390,50 @@ button.import:hover {
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>Close Tab</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>Open Last Closed Tab</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>Close All Tabs of Current Domain</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>New Tab</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>Duplicate Tab</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<div class="configSubhead">ZOOM<hr></div>
 			<span class="opt" group="zoom">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>Zoom In</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="zoom">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>Zoom Out</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="zoom">
-				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 				<span>Reset Zoom</span>
 				<span>blah blah blah</span>
 			</span>
@@ -473,7 +479,7 @@ button.import:hover {
 	
 	#configWrap .opt span {
 		flex-grow: 1;
-		width: 50% !important;
+		width: 45% !important;
 	}
 	
 		#configWrap .opt span:first-of-type {
