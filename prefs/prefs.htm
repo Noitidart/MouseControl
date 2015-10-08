@@ -1,22 +1,29 @@
 <html>
 <head>
-<title></title>
+<title>MouseControl - Preferences</title>
 <style>
-	.config-pseduo {
-		position: absolute !important;
-		top: 0;
-		left: -13px;
-		display: block;
-		height: 13px;
+	.pseudo-config {
+		display: none;
+		position: absolute;
 		width: 13px;
-		background-color: steelblue;
+		height: 13px;
+		top: calc(50% - (13px / 2));
+		opacity: .2;
+		cursor: pointer;
+	}
+	
+	.pseudo-config:hover {
+		opacity: .6;
+	}
+	
+	.trash-function {
+		background: transparent url(trash.png) no-repeat center center;
+		left: 0;
 	}
 	
 	.configure-function {
 		background: transparent url(wrench.png) no-repeat center center;
-	}	
-	.trash-function {
-		background: transparent url(trash.png) no-repeat center center;
+		left: calc(100% - 20px);
 	}
 </style>
 <link href="selectbox.css" type="text/css" rel="stylesheet" />
@@ -27,69 +34,7 @@
 				$("select").selectbox({
 					effect: 'fade'
 				});
-				
-				//$('#configWrap .opt').live('click', checkIfOverPseduo);
-				$('#configWrap .opt').live('mouseenter', optsEntered);
-				$('#configWrap .opt').live('mouseleave', optsLeft);
 			});
-			
-			function optsEntered(e) {
-				$(e.target).prepend('<div class="config-pseudo configure-function">1</div>');
-				$(e.target).prepend('<div class="config-pseudo trash-function">1</div>');
-			}
-			
-			function optsLeft(e) {
-				$(e.target).find('.config-pseudo').remove();
-			}
-			
-			function checkIfOverPseduo(e) {
-				var target = $(e.target).offsetParent();
-				console.log('target=', target);
-				
-				 var elemWidth = $(target).width();
-				 var elemHeight = $(target).height();
-				 var elemPosition = $(target).offset();
-				 var minLeft = elemPosition.left + 13; //as width of :before el is 13
-				 var maxLeft = elemPosition.left + elemWidth - 13; //as width of :after el is 13
-
-				
-				console.log('e.pageX=', e.pageX);
-				console.log('minLeft=', minLeft);
-				console.log('maxLeft=', maxLeft);
-				 
-				 if (e.pageX < minLeft) {
-					console.log('over :before');
-				 } else if (e.pageX > maxLeft) {
-					console.log('over :after');
-				 } else {
-					console.log('within');
-				 }
-				
-				
-			}
-			
-			$.fn.toEm = function(settings){
-				settings = jQuery.extend({
-					scope: 'body'
-				}, settings);
-				var that = parseInt(this[0],10),
-					scopeTest = jQuery('<div style="display: none; font-size: 1em; margin: 0; padding:0; height: auto; line-height: 1; border:0;">&nbsp;</div>').appendTo(settings.scope),
-					scopeVal = scopeTest.height();
-				scopeTest.remove();
-				return (that / scopeVal).toFixed(8) + 'em';
-			};
-
-
-			$.fn.toPx = function(settings){
-				settings = jQuery.extend({
-					scope: 'body'
-				}, settings);
-				var that = parseFloat(this[0]),
-					scopeTest = jQuery('<div style="display: none; font-size: 1em; margin: 0; padding:0; height: auto; line-height: 1; border:0;">&nbsp;</div>').appendTo(settings.scope),
-					scopeVal = scopeTest.height();
-				scopeTest.remove();
-				return Math.round(that * scopeVal) + 'px';
-			};
 			function addSubheads() {
 				//to the config div it adds a subhead over every group of opts
 				
@@ -412,6 +357,7 @@ button.import:hover {
 		<div id="configWrap">
 			<div class="configSubhead">TABS<hr></div>
 			<span class="opt" group="tabs">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>
 					Select Tab to Right
 					<small>Focuses tab to right of current tab</small>
@@ -420,6 +366,7 @@ button.import:hover {
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>
 					Select Tab to Left
 					<small>Focuses tab to left of current tab</small>
@@ -428,6 +375,7 @@ button.import:hover {
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>
 					Jump to Last Tab
 					<small>Selects previously used tab across windows. If executed during moving select right/left, will select initial tab </small>
@@ -436,42 +384,50 @@ button.import:hover {
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>Close Tab</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>Open Last Closed Tab</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>Close All Tabs of Current Domain</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>New Tab</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>Duplicate Tab</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<div class="configSubhead">ZOOM<hr></div>
 			<span class="opt" group="zoom">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>Zoom In</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="zoom">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>Zoom Out</span>
 				<span>blah blah blah</span>
 			</span>
 			<hr>
 			<span class="opt" group="zoom">
+				<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div>
 				<span>Reset Zoom</span>
 				<span>blah blah blah</span>
 			</span>
@@ -511,28 +467,10 @@ button.import:hover {
 		position: relative;
 	}
 	
-	#configWrap .opt:hover:after {
-		content: '';
-		width: 13px;
-		height: 13px;
-		position: absolute;
-		margin-top: -.55em;
-		background: transparent url(wrench.png) no-repeat center center;
-		opacity: .2;
-		cursor: pointer;
-	}	
-	#configWrap .opt:hover:before {
-		content: '';
-		width: 13px;
-		height: 13px;
-		position: absolute;
-		margin-left: -2em;
-		margin-top: -.55em;
-		background: transparent url(trash.png) no-repeat center center;
-		opacity: .3;
-		cursor: pointer;
+	#configWrap .opt:hover .pseudo-config {
+		display: block;
 	}
-
+	
 	#configWrap .opt span {
 		flex-grow: 1;
 		width: 50% !important;
