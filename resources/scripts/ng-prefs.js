@@ -103,6 +103,12 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			templateUrl: 'chrome://mousecontrol/content/resources/directives/configWrap.htm'
 		};
 	}])
+	.directive('configGroup', [function() {
+		return {
+			restrict: 'E',
+			templateUrl: 'chrome://mousecontrol/content/resources/directives/configGroup.htm'
+		};
+	}])
 	.directive('configRow', [function() {
 		return {
 			restrict: 'E',
@@ -121,41 +127,34 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			templateUrl: 'chrome://mousecontrol/content/resources/directives/configRow.htm'
 		};
 	}])
+	.filter('groupBy', function() {
+		// purely ng-gui function
+		return function(arr,property) {
+			if (typeof property !=='string') {
+				throw new Error('need a property to check for')
+			}
+			return Object.keys(arr.reduce(isUn,{}));
+
+			function isUn(obj,item) {
+				obj[item[property]] = true;
+				return obj;
+			}
+		}
+	})
 	.controller('BodyController', ['$scope', '$sce', '$q', '$timeout', function($scope, $sce, $q, $timeout) {
 		var BC = this;
 		BC.options = [
-			{
-				groupName: 'General',
-				items: [
-					{label:'Automatic Updates', type:'select', values:{0:'On', 1:'Off'}, desc: ''},
-					{label:'Restore Defaults', type:'button', values:['Restore'], desc: ''},
-					{label:'Export & Import', type:'button', values:['Export', 'Import'], desc: ''}
-				]
-			},
-			{
-				groupName: 'Timing',
-				items: [
-					{label:'Double Click Speed', type:'text', pref_name:'dbl-click-speed', desc: 'If you want to double click a mouse button, after the first release, you have to depress then release that button within this much time'},
-					{label:'Hold Duration', type:'text', pref_name:'hold-duration', desc: 'A mouse button must be depressed this long before it is counted as a hold'}
-				]
-			},
-			{
-				groupName: 'Tabs',
-				items: [
-					{label:'New Tab Position ', type:'select', pref_name:'new-tab-pos', values:{0:'End of Tab Bar', 1:'Next to Current Tab'}, desc: ''},
-					{label:'Duplicated Tab Position', type:'select', pref_name:'dup-tab-pos', values:{0:'End of Tab Bar', 1:'Next to Current Tab'}, desc: ''}
-				]
-			},
-			{
-				groupName: 'Zoom',
-				items: [
-					{label:'Zoom Level Indicator', type:'select', pref_name:'zoom-indicator', values:{0:'Hide', 1:'Show'}, desc: 'As you zoom it will show a panel with the percent of current zoom'},
-					{label:'Zoom Context', type:'select', pref_name:'zoom-context', values:{0:'All Content', 1:'Text Only'}, desc: ''},
-					{label:'Zoom Style', type:'select', pref_name:'zoom-style', values:{0:'Global', 1:'Site Specifc', 2:'Temporary'}, desc: ''}
-				]
-			}
+			{groupName: 'General', label:'Automatic Updates', type:'select', values:{0:'On', 1:'Off'}, desc: ''},
+			{groupName: 'General', label:'Restore Defaults', type:'button', values:['Restore'], desc: ''},
+			{groupName: 'General',label:'Export & Import', type:'button', values:['Export', 'Import'], desc: ''},
+			{groupName: 'Timing', label:'Double Click Speed', type:'text', pref_name:'dbl-click-speed', desc: 'If you want to double click a mouse button, after the first release, you have to depress then release that button within this much time'},
+			{groupName: 'Timing', label:'Hold Duration', type:'text', pref_name:'hold-duration', desc: 'A mouse button must be depressed this long before it is counted as a hold'},
+			{groupName: 'Tabs', label:'New Tab Position ', type:'select', pref_name:'new-tab-pos', values:{0:'End of Tab Bar', 1:'Next to Current Tab'}, desc: ''},
+			{groupName: 'Tabs', label:'Duplicated Tab Position', type:'select', pref_name:'dup-tab-pos', values:{0:'End of Tab Bar', 1:'Next to Current Tab'}, desc: ''},
+			{groupName: 'Zoom', label:'Zoom Level Indicator', type:'select', pref_name:'zoom-indicator', values:{0:'Hide', 1:'Show'}, desc: 'As you zoom it will show a panel with the percent of current zoom'},
+			{groupName: 'Zoom', label:'Zoom Context', type:'select', pref_name:'zoom-context', values:{0:'All Content', 1:'Text Only'}, desc: ''},
+			{groupName: 'Zoom', label:'Zoom Style', type:'select', pref_name:'zoom-style', values:{0:'Global', 1:'Site Specifc', 2:'Temporary'}, desc: ''}
 		];
-		
 		var init = function() {
 			bootstrapCallbacks['ng-fetchConfig_request'] = function(aConfigJson) {
 				delete bootstrapCallbacks['ng-fetchConfig_request'];
@@ -167,11 +166,9 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			contentMMFromContentWindow_Method2(window).sendAsyncMessage(core.addon.id, ['fetchConfig_request', 'ng-fetchConfig_request'])
 		};
 		
-		
 		init();
 		
 	}]);
-
 // start - common helper functions
 function contentMMFromContentWindow_Method2(aContentWindow) {
 	if (!gCFMM) {

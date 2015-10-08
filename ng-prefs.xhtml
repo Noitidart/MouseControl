@@ -19,10 +19,8 @@
 	<body ng-controller="BodyController as BC">
 		<header/>
 		<div class="main_wrap">
-			<option-group ng-repeat="aGroup in BC.options" />
-			<config-wrap>
-				<config-row ng-repeat="aConfig in BC.configs" />
-			</config-wrap>
+			<option-group ng-repeat="aGroupName in BC.options | groupBy:'groupName'" />
+			<config-wrap />
 		</div>
 	</body>
 </html>

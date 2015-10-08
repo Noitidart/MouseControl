@@ -1,3 +1,4 @@
 <div id="config_wrap">
-	<config-row ng-repeat="aConfig in BC.configs" />
+	this is the config wrap
+	<config-group ng-repeat="aGroupName in BC.configs | groupBy:'group'" />
 </div>

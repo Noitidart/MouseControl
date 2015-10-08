@@ -42,7 +42,9 @@ const myPrefBranch = 'extensions.' + core.addon.id + '.';
 
 var bootstrap = this; // needed for SIPWorker and SICWorker
 var gConfigJsonDefault = [
-	{name:'Jump to Last Tab', group:'Tabs', desc:'Selects the previously focused tab across all windows', config:'0+2', func:''}
+	{name:'Jump to Last Tab', group:'Tabs', desc:'Selects the previously focused tab across all windows', config:'0+2', func:''},
+	{name:'Close Tab', group:'Tabs', desc:'Closes the current tab and if this was the only tab in the window, the window will be closed', config:'0+2', func:''},
+	{name:'Reset Zoom', group:'Zoom', desc:'Reset the zoom of the document in the tab to one-hundred percent', config:'2+1', func:''}
 ];
 
 // Lazy Imports
