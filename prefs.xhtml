@@ -10,9 +10,9 @@
 		<script src="chrome://mousecontrol/content/resources/scripts/angular.min.js"></script>
 		<script src="chrome://mousecontrol/content/resources/scripts/prefs.js"></script>
 		<!-- start temporary resources during transition from prefs.htm to prefs.xhtml angularized -->
-		<link href="chrome://mousecontrol/content/selectbox.css" type="text/css" rel="stylesheet" />
-		<script type="text/javascript" src="chrome://mousecontrol/content/jquery.js"></script>
-		<script type="text/javascript" src="chrome://mousecontrol/content/selectbox.js"></script>
+		<link href="chrome://mousecontrol/content/prefs/selectbox.css" type="text/css" rel="stylesheet" />
+		<script type="text/javascript" src="chrome://mousecontrol/content/prefs/jquery.js"></script>
+		<script type="text/javascript" src="chrome://mousecontrol/content/prefs/selectbox.js"></script>
 		<!-- end temporary resources during transition from prefs.htm to prefs.xhtml angularized -->
 	</head>
 	<body>
@@ -21,9 +21,9 @@
 				<div class="msg-header">Share Function</div>
 				<div class="msg-body">
 					<small>Leave fields blank to share as anonymous user</small>
-					<div class="row"><span>User Name</span> <input type="text"></div>
-					<div class="row"><span>Password</span> <input type="text"></div>
-					<div class="row"><span>Avatar</span> <input type="text"></div>
+					<div class="row"><span>User Name</span> <input type="text"/></div>
+					<div class="row"><span>Password</span> <input type="text"/></div>
+					<div class="row"><span>Avatar</span> <input type="text"/></div>
 					<div class="row">
 						<button class="msg-ok"><span></span>Share</button>
 						<button class="msg-cancel" onclick="hideMsg('.msg-share')"><span></span>Cancel</button>
@@ -58,10 +58,10 @@
 							<option>Zoom</option>
 						</select>
 					</div>
-					<div class="row"><span>Name</span> <input type="text" class="msg-cust-name"></div>
-					<div class="row"><span>Description</span> <input type="text" class="msg-cust-desc"></div>
+					<div class="row"><span>Name</span> <input type="text" class="msg-cust-name"/></div>
+					<div class="row"><span>Description</span> <input type="text" class="msg-cust-desc"/></div>
 					<textarea rows="3" cols="100">code code code code code code code code code code code code</textarea>
-					<hr>
+					<hr/>
 					<small style="display:block; text-align:center; position:absolute; width:95%;">PLACE MOUSE HERE AND DO MOUSE COMBO</small>
 					<div class="combo-set-area">
 						<img src="mouse-left.png" /> + <img src="mouse-right.png"/>
@@ -88,10 +88,10 @@
 							<option>Zoom</option>
 						</select>
 					</div>
-					<div class="row"><span>Name</span> <input type="text" class="msg-cust-name"></div>
-					<div class="row"><span>Description</span> <input type="text" class="msg-cust-desc"></div>
+					<div class="row"><span>Name</span> <input type="text" class="msg-cust-name"/></div>
+					<div class="row"><span>Description</span> <input type="text" class="msg-cust-desc"/></div>
 					<textarea rows="3" cols="100">code code code code code code code code code code code code</textarea>
-					<hr>
+					<hr/>
 					<small style="display:block; text-align:center; position:absolute; width:95%;">PLACE MOUSE HERE AND DO MOUSE COMBO</small>
 					<div class="combo-set-area">
 						<img src="mouse-left.png" /> + <img src="mouse-right.png"/>
@@ -105,7 +105,7 @@
 		</div>
 		<div id="main-wrap">
 			<div id="header">
-				<img class="icon" src="icon-shadow.png">
+				<img class="icon" src="chrome://mousecontrol/content/resources/images/icon-shadow.png"/>
 				<span class="logo">MouseControl</span>
 				<span class="version">v2.0</span>
 				<span class="title">Preferences</span>
@@ -186,7 +186,7 @@
 					<span>Mouse Binding</span>
 				</div>
 				<div id="configWrap">
-					<div class="configSubhead">TABS<hr></div>
+					<div class="configSubhead">TABS<hr/></div>
 					<span class="opt" group="tabs">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>
@@ -195,7 +195,7 @@
 						</span>
 						<span><img src="mouse-left.png" /> + <img src="mouse-left.png"/></span>
 					</span>
-					<hr>
+					<hr/>
 					<span class="opt" group="tabs">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>
@@ -204,7 +204,7 @@
 						</span>
 						<span><img src="mouse-left.png" /> + <img src="mouse-right.png"/></span>
 					</span>
-					<hr>
+					<hr/>
 					<span class="opt" group="tabs">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>
@@ -213,56 +213,56 @@
 						</span>
 						<span><img src="mouse-left.png" /> + <img src="mouse-right.png" /> , <img src="mouse-right.png" /></span>
 					</span>
-					<hr>
+					<hr/>
 					<span class="opt" group="tabs">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>Close Tab</span>
 						<span><img src="mouse-right.png" /> + <img src="mouse-right.png"/></span>
 					</span>
-					<hr>
+					<hr/>
 					<span class="opt" group="tabs">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>Open Last Closed Tab</span>
 						<span><img src="mouse-right.png" /> + <img src="mouse-right.png"/> , <img src="mouse-right.png"/></span>
 					</span>
-					<hr>
+					<hr/>
 					<span class="opt" group="tabs">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>Close All Tabs of Current Domain</span>
 						<span><img src="mouse-right.png" /> + </span>
 					</span>
-					<hr>
+					<hr/>
 					<span class="opt" group="tabs">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>New Tab</span>
 						<span><img src="mouse-right.png" /> + </span>
 					</span>
-					<hr>
+					<hr/>
 					<span class="opt" group="tabs">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>Duplicate Tab</span>
 						<span><img src="mouse-right.png" /> + </span>
 					</span>
-					<hr>
-					<div class="configSubhead">ZOOM<hr></div>
+					<hr/>
+					<div class="configSubhead">ZOOM<hr/></div>
 					<span class="opt" group="zoom">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>Zoom In</span>
 						<span><img src="mouse-right.png" /> + </span>
 					</span>
-					<hr>
+					<hr/>
 					<span class="opt" group="zoom">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>Zoom Out</span>
 						<span><img src="mouse-right.png" /> + </span>
 					</span>
-					<hr>
+					<hr/>
 					<span class="opt" group="zoom">
 						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
 						<span>Reset Zoom</span>
 						<span><img src="mouse-right.png" /> + </span>
 					</span>
-					<hr>
+					<hr/>
 				</div>
 			</div>
 

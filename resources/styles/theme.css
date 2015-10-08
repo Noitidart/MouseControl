@@ -1,15 +1,15 @@
 @font-face {
 	font-family:meta-pro-bold;
-	src: url('MetaProBold.otf');
+	src: url('chrome://mousecontrol/content/resources/styles/fonts/MetaProBold.otf');
 }
 
 @font-face {
 	font-family:ttahoma;
-	src: url('tahoma.ttf');
+	src: url('chrome://mousecontrol/content/resources/styles/fonts/tahoma.ttf');
 }
 
 body {
-	font-family: tahoma;
+	font-family: ttahoma;
 	font-size: 12px;
 	color: #000000;
 	display: flex;
@@ -84,24 +84,24 @@ body {
 	display: block;
 	font-size: 13px;
 	font-weight: bold;
-	background: transparent url(general.png) no-repeat left 5px;
+	background: transparent url('chrome://mousecontrol/content/resources/images/general.png') no-repeat left 5px;
 	margin-bottom: 5px;
 }
 
 #timing > .subhead {
-	background-image: url(timing.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/timing.png');
 }
 
 #configuration > .subhead {
-	background-image: url(configuration.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/configuration.png');
 }
 
 #zoom > .subhead {
-	background-image: url(zoom.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/zoom.png');
 }
 
 #tabs > .subhead {
-	background-image: url(tabs.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/tabs.png');
 }
 
 .opt {
@@ -263,26 +263,26 @@ button.import:hover {
 }
 
 .msg-share .msg-header {
-	background-image: url(network-tri.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/network-tri.png');
 	padding: 0 0 5px 0;
 }	
 .msg-trash .msg-header {
-	background-image: url(trash.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/trash.png');
 	text-indent: 20px;
 	padding: 0 0 4px 0;
 }
 .msg-customize .msg-header {
-	background-image: url(wrench.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/wrench.png');
 	text-indent: 21px;
 	padding: 0 0 5px 0;
 }
 .msg-create .msg-header {
-	background-image: url(pencil.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/pencil.png');
 	text-indent: 21px;
 	padding: 0 0 5px 0;
 }
 .msg-header {
-	background: transparent url(x.png) no-repeat 2px 1px;
+	background: transparent url('chrome://mousecontrol/content/resources/images/x.png') no-repeat 2px 1px;
 	margin: 0 0 5px 0;
 	font-weight: bold;
 	padding: 0 0 4px 0;
@@ -337,7 +337,7 @@ button.import:hover {
 }
 
 .msg-wrap .msg-ok:before {
-	background-image: url(check-thin.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/check-thin.png');
 	margin-top: 1px;
 }
 
@@ -346,7 +346,7 @@ button.import:hover {
 }
 
 .msg-wrap .msg-cancel:before {
-	background-image: url(x.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/x.png');
 }
 
 .msg-wrap button:last-of-type {
