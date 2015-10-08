@@ -24,14 +24,27 @@ var OSStuff = {}; // global vars populated by init, based on OS
 importScripts(core.addon.path.content + 'modules/cutils.jsm');
 importScripts(core.addon.path.content + 'modules/ctypes_math.jsm');
 
-// Setup ChromeWorker
-
+// Setup SICWorker 092915
+// instructions on using SICWorker
+	// to call a function in the main thread function scope (which was determiend on SICWorker call from mainthread) from worker, so self.postMessage with array, with first element being the name of the function to call in mainthread, and the reamining being the arguments
+	// the return value of the functions here, will be sent to the callback, IF, worker did worker.postWithCallback
+const SIC_CB_PREFIX = '_a_gen_cb_';
 self.onmessage = function(aMsgEvent) {
 	// note:all msgs from bootstrap must be postMessage([nameOfFuncInWorker, arg1, ...])
 	var aMsgEventData = aMsgEvent.data;
+	
 	console.log('worker receiving msg:', aMsgEvent);
-	WORKER[aMsgEventData.shift()].apply(null, aMsgEventData);
-}
+	var callbackPendingId;
+	if (typeof aMsgEventData[aMsgEventData.length-1] == 'String' && aMsgEventData[aMsgEventData.length-1].indexOf(SIC_CB_PREFIX) == 0) {
+		callbackPendingId = aMsgEventData.pop();
+	}
+	
+	var rez_worker_call = WORKER[aMsgEventData.shift()].apply(null, aMsgEventData);
+	
+	if (callbackPendingId) {
+		self.postMessage([callbackPendingId, rez_worker_call]);
+	}
+};
 
 ////// end of imports and definitions
 

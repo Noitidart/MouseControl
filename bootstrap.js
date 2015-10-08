@@ -257,6 +257,8 @@ function Deferred() {
 	}
 }
 
+// pasted 092915 of SICWorker
+const SIC_CB_PREFIX = '_a_gen_cb_';
 function SICWorker(workerScopeName, aPath, aFuncExecScope=bootstrap, aCore=core) {
 	// creates a global variable in bootstrap named workerScopeName which will hold worker, do not set up a global for it like var Blah; as then this will think something exists there
 	// aScope is the scope in which the functions are to be executed
@@ -292,6 +294,18 @@ function SICWorker(workerScopeName, aPath, aFuncExecScope=bootstrap, aCore=core)
 					aFuncExecScope[aMsgEventData.shift()].apply(null, aMsgEventData);
 				}
 			}
+		};
+		
+		// var lastCallbackId = -1; // dont do this, in case multi SICWorker's are sharing the same aFuncExecScope so now using new Date().getTime() in its place // link8888881
+		bootstrap[workerScopeName].postMessageWithCallback = function(aPostMessageArr, aPostMessageTransferList, aCB) {
+			// lastCallbackId++; // link8888881
+			var thisCallbackId = SIC_CB_PREFIX + new Date().getTime(); // + lastCallbackId; // link8888881
+			aFuncExecScope[thisCallbackId] = function() {
+				delete aFuncExecScope[thisCallbackId];
+				aCB();
+			};
+			aPostMessageArr.push(thisCallbackId);
+			bootstrap[workerScopeName].postMessage(aPostMessageArr, aPostMessageTransferList);
 		};
 		
 		bootstrap[workerScopeName].addEventListener('message', beforeInitListener);
