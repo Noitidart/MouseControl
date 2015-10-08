@@ -1,3 +1,8 @@
 <div class="option-group">
-	<option-row ng-repeat="aOption in BC.options[aGroup]" />
+	{{aGroup.groupName}}
+	<div ng-switch="aOption.type"  ng-repeat="aOption in aGroup.items">
+		<option-row-button ng-switch-when="button" />
+		<option-row-text ng-switch-when="text" />
+		<option-row-select ng-switch-when="select" />
+	</div>
 </div>

@@ -30,6 +30,39 @@ var gCFMM;
 var myServices = {};
 XPCOMUtils.defineLazyGetter(myServices, 'sb', function () { return Services.strings.createBundle(core.addon.path.locale + 'prefs.properties?' + core.addon.cache_key); /* Randomize URI to work around bug 719376 */ });
 
+// Initial framescript setup
+var bootstrapMsgListener = {
+	receiveMessage: function(aMsgEvent) {
+		console.log('framescript getting aMsgEvent:', aMsgEvent);
+		// aMsgEvent.data should be an array, with first item being the unfction name in bootstrapCallbacks
+		bootstrapCallbacks[aMsgEvent.data.shift()].apply(null, aMsgEvent.data);
+	}
+};
+
+var bootstrapCallbacks = {
+	fetchConfig_response: function(aConfigJson) {
+		console.log('aConfigJson:', aConfigJson);
+	}
+};
+
+function doOnBeforeUnload() {
+
+	contentMMFromContentWindow_Method2(window).removeMessageListener(core.addon.id, bootstrapMsgListener);
+
+}
+
+function doOnLoad() {
+	var gAngBody = angular.element(document.body);
+	gAngScope = gAngBody.scope();
+	gAngInjector = gAngBody.injector();
+}
+
+contentMMFromContentWindow_Method2(window).addMessageListener(core.addon.id, bootstrapMsgListener);
+// contentMMFromContentWindow_Method2(window).sendAsyncMessage(core.addon.id, ['fetchConfig_request', 'fetchConfig_response'])
+document.addEventListener('DOMContentLoaded', doOnLoad, false);
+window.addEventListener('beforeunload', doOnBeforeUnload, false);
+
+// Angular
 var	ANG_APP = angular.module('mousecontrol_prefs', [])
 	.config(['$sceDelegateProvider', function($sceDelegateProvider) {
 		$sceDelegateProvider.resourceUrlWhitelist(['self', 'chrome://mousecontrol/**/*.htm']);
@@ -89,42 +122,55 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 		};
 	}])
 	.controller('BodyController', ['$scope', '$sce', '$q', '$timeout', function($scope, $sce, $q, $timeout) {
+		var BC = this;
+		BC.options = [
+			{
+				groupName: 'General',
+				items: [
+					{label:'Automatic Updates', type:'select', values:{0:'On', 1:'Off'}, desc: ''},
+					{label:'Restore Defaults', type:'button', values:['Restore'], desc: ''},
+					{label:'Export & Import', type:'button', values:['Export', 'Import'], desc: ''}
+				]
+			},
+			{
+				groupName: 'Timing',
+				items: [
+					{label:'Double Click Speed', type:'text', pref_name:'dbl-click-speed', desc: 'If you want to double click a mouse button, after the first release, you have to depress then release that button within this much time'},
+					{label:'Hold Duration', type:'text', pref_name:'hold-duration', desc: 'A mouse button must be depressed this long before it is counted as a hold'}
+				]
+			},
+			{
+				groupName: 'Tabs',
+				items: [
+					{label:'New Tab Position ', type:'select', pref_name:'new-tab-pos', values:{0:'End of Tab Bar', 1:'Next to Current Tab'}, desc: ''},
+					{label:'Duplicated Tab Position', type:'select', pref_name:'dup-tab-pos', values:{0:'End of Tab Bar', 1:'Next to Current Tab'}, desc: ''}
+				]
+			},
+			{
+				groupName: 'Zoom',
+				items: [
+					{label:'Zoom Level Indicator', type:'select', pref_name:'zoom-indicator', values:{0:'Hide', 1:'Show'}, desc: 'As you zoom it will show a panel with the percent of current zoom'},
+					{label:'Zoom Context', type:'select', pref_name:'zoom-context', values:{0:'All Content', 1:'Text Only'}, desc: ''},
+					{label:'Zoom Style', type:'select', pref_name:'zoom-style', values:{0:'Global', 1:'Site Specifc', 2:'Temporary'}, desc: ''}
+				]
+			}
+		];
+		
+		var init = function() {
+			bootstrapCallbacks['ng-fetchConfig_request'] = function(aConfigJson) {
+				delete bootstrapCallbacks['ng-fetchConfig_request'];
+				console.log('got aConfigJson into ng:', aConfigJson);
+				$scope.BC.configs = aConfigJson;
+				$scope.$digest();
+				console.log('digested');
+			};
+			contentMMFromContentWindow_Method2(window).sendAsyncMessage(core.addon.id, ['fetchConfig_request', 'ng-fetchConfig_request'])
+		};
 		
 		
-		
+		init();
 		
 	}]);
-
-var bootstrapMsgListener = {
-	receiveMessage: function(aMsgEvent) {
-		console.log('framescript getting aMsgEvent:', aMsgEvent);
-		// aMsgEvent.data should be an array, with first item being the unfction name in bootstrapCallbacks
-		bootstrapCallbacks[aMsgEvent.data.shift()].apply(null, aMsgEvent.data);
-	}
-};
-
-var bootstrapCallbacks = {
-	fetchConfig_response: function(aConfigJson) {
-		console.log('aConfigJson:', aConfigJson);
-	}
-};
-
-function doOnBeforeUnload() {
-
-	contentMMFromContentWindow_Method2(window).removeMessageListener(core.addon.id, bootstrapMsgListener);
-
-}
-
-function doOnLoad() {
-	var gAngBody = angular.element(document.body);
-	gAngScope = gAngBody.scope();
-	gAngInjector = gAngBody.injector();
-}
-
-contentMMFromContentWindow_Method2(window).addMessageListener(core.addon.id, bootstrapMsgListener);
-contentMMFromContentWindow_Method2(window).sendAsyncMessage(core.addon.id, ['fetchConfig_request', 'fetchConfig_response'])
-document.addEventListener('DOMContentLoaded', doOnLoad, false);
-window.addEventListener('beforeunload', doOnBeforeUnload, false);
 
 // start - common helper functions
 function contentMMFromContentWindow_Method2(aContentWindow) {

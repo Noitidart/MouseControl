@@ -1,10 +1,10 @@
 <div class="option-row">
 	<span>
-		Option Name
+		{{aOption.label}}
 	</span>
 	<span>
-		<button type="button">
-			Button Value
+		<button type="button" ng-repeat="aLabel in aOption.values">
+			{{aLabel}}
 		</button>
 	</span>
 </div>

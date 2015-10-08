@@ -1,10 +1,8 @@
 <div class="option-row">
 	<span>
-		Option Name
+		{{aOption.label}}
 	</span>
 	<span>
-		<select>
-			<option value="1>Opt 1</option>
-		</select>
+		<select ng-options="aOptVal as aOptLabel for (aOptVal, aOptLabel) in aOption.values" ng-model="aOption.selectedIndex"/>
 	</span>
 </div>

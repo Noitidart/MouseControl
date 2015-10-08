@@ -41,9 +41,9 @@ const OSPath_simpleStorage = OS.Path.join(OS.Constants.Path.profileDir, JETPACK_
 const myPrefBranch = 'extensions.' + core.addon.id + '.';
 
 var bootstrap = this; // needed for SIPWorker and SICWorker
-var gConfigJsonDefault = {
-	
-};
+var gConfigJsonDefault = [
+	{name:'Jump to Last Tab', group:'Tabs', desc:'Selects the previously focused tab across all windows', config:'0+2', func:''}
+];
 
 // Lazy Imports
 const myServices = {};
