@@ -231,6 +231,14 @@ var winTypes = function() {
 		{ time: this.DWORD },
 		{ dwExtraInfo: this.ULONG_PTR }
 	]);
+	this.MSG = ctypes.StructType('tagMSG', [
+		{ hwnd: this.HWND },
+		{ message: this.UINT },
+		{ wParam: this.WPARAM },
+		{ lParam: this.LPARAM },
+		{ time: this.DWORD },
+		{ pt: this.POINT }
+	]);
     this.PRECT = this.RECT.ptr;
     this.LPRECT = this.RECT.ptr;
     this.LPCRECT = this.RECT.ptr;
@@ -267,10 +275,12 @@ var winTypes = function() {
 		{ bV5Reserved:		this.DWORD }
 	]);
 	this.LPMONITORINFOEX = this.MONITORINFOEX.ptr;
-
+	this.PMSG = this.MSG.ptr;
+	
 	// FURTHER ADV STRUCTS
 	this.PBITMAPINFO = this.BITMAPINFO.ptr;
-
+	this.LPMSG = this.MSG.ptr;
+	
 	// FUNCTION TYPES
 	this.MONITORENUMPROC = ctypes.FunctionType(this.CALLBACK_ABI, this.BOOL, [this.HMONITOR, this.HDC, this.LPRECT, this.LPARAM]);
 	this.LowLevelMouseProc = ctypes.FunctionType(this.CALLBACK_ABI, this.LRESULT, [this.INT, this.WPARAM, this.LPARAM]);
@@ -309,6 +319,8 @@ var winInit = function() {
 		LOGPIXELSX: 88,
 		LOGPIXELSY: 90,
 		MONITOR_DEFAULTTONEAREST: 2,
+		PM_NOREMOVE: 0,
+		PM_REMOVE: 1,
 		S_OK: 0,
 		SRCCOPY: self.TYPE.DWORD('0x00CC0020'),
 		VERTRES: 10,
@@ -652,6 +664,23 @@ var winInit = function() {
 				self.TYPE.UINT.ptr			// *dpiY
 			);
 		},
+		GetMessage: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644936%28v=vs.85%29.aspx
+			 * BOOL WINAPI GetMessage(
+			 *   __out_    LPMSG lpMsg,
+			 *   __in_opt_ HWND  hWnd,
+			 *   __in_     UINT  wMsgFilterMin,
+			 *   __in_     UINT  wMsgFilterMax
+			 * );
+			 */
+			return lib('user32').declare(ifdef_UNICODE ? 'GetMessageW' : 'GetMessageA', self.TYPE.ABI,
+				self.TYPE.BOOL,		// return
+				self.TYPE.LPMSG,	// lpMsg
+				self.TYPE.HWND, 	// hWnd
+				self.TYPE.UINT, 	// wMsgFilterMin
+				self.TYPE.UINT		// wMsgFilterMax
+			);
+		},
 		GetMonitorInfo: function() {
 			/* https://msdn.microsoft.com/en-us/library/windows/desktop/dd144901%28v=vs.85%29.aspx
 			 * BOOL GetMonitorInfo(
@@ -760,6 +789,25 @@ var winInit = function() {
 				self.TYPE.HMONITOR,	// HMONITOR
 				self.TYPE.POINT,	// pt
 				self.TYPE.DWORD		// dwFlags
+			);
+		},
+		PeekMessage: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644943%28v=vs.85%29.aspx
+			 * BOOL WINAPI PeekMessage(
+			 *   __out_    LPMSG lpMsg,
+			 *   __in_opt_ HWND  hWnd,
+			 *   __in_     UINT  wMsgFilterMin,
+			 *   __in_     UINT  wMsgFilterMax,
+			 *   __in_     UINT  wRemoveMsg
+			 * );
+			 */
+			return lib('user32').declare(ifdef_UNICODE ? 'PeekMessageW' : 'PeekMessageA', self.TYPE.ABI,
+				self.TYPE.BOOL,		// return
+				self.TYPE.LPMSG,	// lpMsg
+				self.TYPE.HWND, 	// hWnd
+				self.TYPE.UINT, 	// wMsgFilterMin
+				self.TYPE.UINT,		// wMsgFilterMax
+				self.TYPE.UINT		// wRemoveMsg
 			);
 		},
 		ReleaseDC: function() {

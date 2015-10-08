@@ -160,10 +160,10 @@ var MMWorkerFuncs = {
 		console.log('ok calling init main thread callback');
 		MMWorker.postMessage(['syncMonitorMouse']);
 		
-		Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
-			console.log('stopping mouse monitor');
-			MMWorker.postMessage(['stopMonitor']);
-		}, 10000);
+		// Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
+			// console.log('stopping mouse monitor');
+			// MMWorker.postMessage(['stopMonitor']);
+		// }, 10000);
 	}
 };
 

@@ -94,6 +94,42 @@ self.onclose = function() {
 	stopMonitor();
 }
 
+function winStartMessageLoop(wMsgFilterMin, wMsgFilterMax) {
+	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
+	// based on http://stackoverflow.com/questions/6901063/how-to-create-a-pure-winapi-window
+	
+	// great thing about handling my own message loop is that i can make it not respond to mouse move by setting minFilter to one above WM_MOUSEMOVE, thankfully WM_MOUSEMOVE is the lowest at 0x200
+	
+	// this sets up the thread message loop
+	var LMessage = ostypes.TYPE.MSG();
+	var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_NOREMOVE);
+	console.info('rez_PeekMessage:', rez_PeekMessage);
+	
+	var nowTime = new Date().getTime();
+	// your main loop
+	// while (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
+		// look for messages in the threads message queue and process them in turn.
+		// You can use GetMessage here instead and it will block waiting for messages
+		// which is good if you don't have anything else to do in your thread.
+		var checkForMessage = function() {
+			var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_REMOVE);
+			if (rez_PeekMessage) {
+				console.log('message found:', LMessage);
+			} else {
+				console.log('no message found:', rez_PeekMessage);
+			}
+			if (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
+				setTimeout(checkForMessage, 1000);
+			} else {
+				console.log('message loop ended');
+			}
+		};
+		checkForMessage();
+	// }
+	
+	// console.log('message loop ended');
+}
+
 function syncMonitorMouse() {
 	// this will get events and can block them
 	
@@ -124,8 +160,9 @@ function syncMonitorMouse() {
 						WM_XBUTTONDBLCLK: 0x20D,
 						WM_MOUSEHWHEEL: 0x20E
 					};
-				}
+				};
 				
+				/*
 				OSStuff.myLLMouseHook_js = function(nCode, wParam, lParam) {
 
 					console.error('in hook callback!!');
@@ -150,6 +187,7 @@ function syncMonitorMouse() {
 				// OSStuff.myLLMouseHook_js = myLLMouseHook_js; // so it doesnt get gc'ed
 				// OSStuff.myLLMouseHook_c = myLLMouseHook_c; // so it doesnt get gc'ed
 				
+				
 				OSStuff.winHooked_aHhk = ostypes.API('SetWindowsHookEx')(ostypes.CONST.WH_MOUSE_LL, OSStuff.myLLMouseHook_c, null, 0);
 				console.info('OSStuff.winHooked_aHhk:', OSStuff.winHooked_aHhk, OSStuff.winHooked_aHhk.toString());
 				if (OSStuff.winHooked_aHhk.isNull()) {
@@ -159,6 +197,10 @@ function syncMonitorMouse() {
 					delete OSStuff.myLLMouseHook_c;
 					throw new Error('failed to set hook');
 				}
+				*/
+				
+				// winStartMessageLoop(ostypes.CONST.WM_LBUTTONDOWN, ostypes.CONST.WM_MOUSEHWHEEL);
+				winStartMessageLoop(0, 0);
 				
 			break
 		case 'gtk':
