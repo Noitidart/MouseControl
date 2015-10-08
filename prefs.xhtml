@@ -1,0 +1,271 @@
+<!DOCTYPE html SYSTEM "chrome://mousecontrol/locale/prefs.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>&mousecontrol.prefs.title;</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+		<meta name="description" content="&mousecontrol.prefs.desc;" />
+		<link rel="shortcut icon" href="chrome://mousecontrol/content/resources/images/icon16.png" type="image/png" />
+		<link rel="stylesheet" type="text/css" media="screen" href="chrome://mousecontrol/content/resources/styles/theme.css" />
+		<link rel="stylesheet" type="text/css" media="screen" href="chrome://mousecontrol/content/resources/styles/prefs.css" />
+		<script src="chrome://mousecontrol/content/resources/scripts/angular.min.js"></script>
+		<script src="chrome://mousecontrol/content/resources/scripts/prefs.js"></script>
+		<!-- start temporary resources during transition from prefs.htm to prefs.xhtml angularized -->
+		<link href="chrome://mousecontrol/content/selectbox.css" type="text/css" rel="stylesheet" />
+		<script type="text/javascript" src="chrome://mousecontrol/content/jquery.js"></script>
+		<script type="text/javascript" src="chrome://mousecontrol/content/selectbox.js"></script>
+		<!-- end temporary resources during transition from prefs.htm to prefs.xhtml angularized -->
+	</head>
+	<body>
+		<div class="msg-container msg-share"> <!-- right now i reuse msg-share for other messages, so keep this one first so when i do querySelector('.msg-share') it gets the right one-->
+			<div class="msg-wrap msg-share">
+				<div class="msg-header">Share Function</div>
+				<div class="msg-body">
+					<small>Leave fields blank to share as anonymous user</small>
+					<div class="row"><span>User Name</span> <input type="text"></div>
+					<div class="row"><span>Password</span> <input type="text"></div>
+					<div class="row"><span>Avatar</span> <input type="text"></div>
+					<div class="row">
+						<button class="msg-ok"><span></span>Share</button>
+						<button class="msg-cancel" onclick="hideMsg('.msg-share')"><span></span>Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="msg-container msg-share msg-trash">
+			<div class="msg-wrap">
+				<div class="msg-header">Trash Function</div>
+				<div class="msg-body">
+					<div class="row">Are you sure you want to remove this funciton? You will not be able to recover it.</div>
+					<div class="row">
+						<button class="msg-ok"><span></span>Confirm</button>
+						<button class="msg-cancel" onclick="hideMsg('.msg-trash')"><span></span>Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="msg-container msg-customize">
+			<div class="msg-wrap">
+				<div class="msg-header">Configure</div>
+				<div class="msg-body">
+					<div class="row">
+						<span>Group</span>
+						<select>
+							<option>Entertainment</option>
+							<option selected="true">Miscellaneous</option>
+							<option>Navigation</option>
+							<option>Social</option>
+							<option>Tabs</option>
+							<option>Zoom</option>
+						</select>
+					</div>
+					<div class="row"><span>Name</span> <input type="text" class="msg-cust-name"></div>
+					<div class="row"><span>Description</span> <input type="text" class="msg-cust-desc"></div>
+					<textarea rows="3" cols="100">code code code code code code code code code code code code</textarea>
+					<hr>
+					<small style="display:block; text-align:center; position:absolute; width:95%;">PLACE MOUSE HERE AND DO MOUSE COMBO</small>
+					<div class="combo-set-area">
+						<img src="mouse-left.png" /> + <img src="mouse-right.png"/>
+					</div>
+					<div class="row">
+						<button class="msg-ok"><span></span>Apply</button>
+						<button class="msg-cancel" onclick="hideMsg('.msg-customize')"><span></span>Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="msg-container msg-customize msg-create">
+			<div class="msg-wrap">
+				<div class="msg-header">Create Function</div>
+				<div class="msg-body">
+					<div class="row">
+						<span>Group</span>
+						<select>
+							<option>Entertainment</option>
+							<option selected="true">Miscellaneous</option>
+							<option>Navigation</option>
+							<option>Social</option>
+							<option>Tabs</option>
+							<option>Zoom</option>
+						</select>
+					</div>
+					<div class="row"><span>Name</span> <input type="text" class="msg-cust-name"></div>
+					<div class="row"><span>Description</span> <input type="text" class="msg-cust-desc"></div>
+					<textarea rows="3" cols="100">code code code code code code code code code code code code</textarea>
+					<hr>
+					<small style="display:block; text-align:center; position:absolute; width:95%;">PLACE MOUSE HERE AND DO MOUSE COMBO</small>
+					<div class="combo-set-area">
+						<img src="mouse-left.png" /> + <img src="mouse-right.png"/>
+					</div>
+					<div class="row">
+						<button class="msg-ok"><span></span>Create</button>
+						<button class="msg-cancel" onclick="hideMsg('.msg-create')"><span></span>Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="main-wrap">
+			<div id="header">
+				<img class="icon" src="icon-shadow.png">
+				<span class="logo">MouseControl</span>
+				<span class="version">v2.0</span>
+				<span class="title">Preferences</span>
+			</div>
+			<div id="general" class="group">
+				<span class="subhead">General</span>
+				<span class="opt">
+					Automatic Updates
+					<select id="automatic_updates" name="automatic_updates">
+						<option value="off">Off</option>
+						<option value="on">On</option>
+					</select>
+				</span>
+				<span class="opt">
+					Restore Defaults
+					<button>Restore</button>
+				</span>
+				<span class="opt">
+					Export/Import
+					<span><button class="export">Export</button><button class="import">Import</button></span>
+				</span>
+			</div>
+			<div id="timing" class="group">
+				<span class="subhead">Timing</span>
+				<span class="opt">Double Click Speed<input type="text" value="200"/></span>
+				<span class="opt">Hold Duration<input type="text" value="300"/></span>
+			</div>
+			<div id="tabs" class="group">
+				<span class="subhead">Tabs</span>
+				<span class="opt">
+					New Tab Position
+					<select id="new_tab_position" name="new_tab_position">
+						<option value="end">End of Tab Bar</option>
+						<option value="next">Next to Current Tab</option>
+					</select>
+				</span>
+				<span class="opt">
+					Duplicated Tab Position
+					<select id="duplicated_tab_position" name="duplicated_tab_position">
+						<option value="end">End of Tab Bar</option>
+						<option value="next">Next to Current Tab</option>
+					</select>
+				</span>
+			</div>
+			<div id="zoom" class="group">
+				<span class="subhead">Zoom</span>
+				<span class="opt">
+					Zoom Display
+					<select id="zoom_display" name="zoom_display">
+						<option value="hide">Hide</option>
+						<option value="show">Show</option>
+					</select>
+				</span>
+				<span class="opt">
+					Zoom Context
+					<select id="zoom_context" name="zoom_context">
+						<option value="all">All Content</option>
+						<option value="text">Text Only</option>
+					</select>
+				</span>
+				<span class="opt">
+					Zoom Style
+					<select id="zoom_style" name="zoom_style">
+						<option value="global">Global</option>
+						<option value="site_specific">Site Specific</option>
+						<option value="temporary">Temporary</option>
+					</select>
+				</span>
+			</div>
+			<div id="configuration" class="group" style="position:relative;">
+				<span class="subhead">Configuration</span>
+				<div id="configActions">
+					<button class="config-action-create" onclick="showMsg('.msg-create')"><span></span>Create Custom Function</button>
+					<button class="config-action-download"><span></span>Download Custom Functions</button>
+				</div>
+				<div id="configHead">
+					<span>Action</span>
+					<span>Mouse Binding</span>
+				</div>
+				<div id="configWrap">
+					<div class="configSubhead">TABS<hr></div>
+					<span class="opt" group="tabs">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>
+							Select Tab to Right
+							<small>Focuses tab to right of current tab</small>
+						</span>
+						<span><img src="mouse-left.png" /> + <img src="mouse-left.png"/></span>
+					</span>
+					<hr>
+					<span class="opt" group="tabs">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>
+							Select Tab to Left
+							<small>Focuses tab to left of current tab</small>
+						</span>
+						<span><img src="mouse-left.png" /> + <img src="mouse-right.png"/></span>
+					</span>
+					<hr>
+					<span class="opt" group="tabs">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>
+							Jump to Last Tab
+							<small>Selects previously used tab across windows. If executed during moving select right/left, will select initial tab </small>
+						</span>
+						<span><img src="mouse-left.png" /> + <img src="mouse-right.png" /> , <img src="mouse-right.png" /></span>
+					</span>
+					<hr>
+					<span class="opt" group="tabs">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>Close Tab</span>
+						<span><img src="mouse-right.png" /> + <img src="mouse-right.png"/></span>
+					</span>
+					<hr>
+					<span class="opt" group="tabs">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>Open Last Closed Tab</span>
+						<span><img src="mouse-right.png" /> + <img src="mouse-right.png"/> , <img src="mouse-right.png"/></span>
+					</span>
+					<hr>
+					<span class="opt" group="tabs">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>Close All Tabs of Current Domain</span>
+						<span><img src="mouse-right.png" /> + </span>
+					</span>
+					<hr>
+					<span class="opt" group="tabs">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>New Tab</span>
+						<span><img src="mouse-right.png" /> + </span>
+					</span>
+					<hr>
+					<span class="opt" group="tabs">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>Duplicate Tab</span>
+						<span><img src="mouse-right.png" /> + </span>
+					</span>
+					<hr>
+					<div class="configSubhead">ZOOM<hr></div>
+					<span class="opt" group="zoom">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>Zoom In</span>
+						<span><img src="mouse-right.png" /> + </span>
+					</span>
+					<hr>
+					<span class="opt" group="zoom">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>Zoom Out</span>
+						<span><img src="mouse-right.png" /> + </span>
+					</span>
+					<hr>
+					<span class="opt" group="zoom">
+						<div class="pseudo-config trash-function"></div><div class="pseudo-config configure-function"></div><div class="pseudo-config share-function"></div>
+						<span>Reset Zoom</span>
+						<span><img src="mouse-right.png" /> + </span>
+					</span>
+					<hr>
+				</div>
+			</div>
+
+		</div>
+	</body>
+</html>

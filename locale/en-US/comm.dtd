@@ -1,0 +1,5 @@
+<!ENTITY mousecontrol.comm.addon-name 'MouseControl'>
+<!ENTITY mousecontrol.comm.addon-description 'Enables user defined mouse action combinations to trigger customizable functions'>
+
+<!ENTITY mousecontrol.comm.title 'Community | MouseControl'>
+<!ENTITY mousecontrol.comm.desc 'Browse custom functions shared by users like you'>
