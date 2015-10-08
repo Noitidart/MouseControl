@@ -11,6 +11,7 @@
 		top: calc(50% - (13px / 2));
 		opacity: .2;
 		cursor: pointer;
+		transition: opacity 150ms;
 	}
 	
 	.pseudo-config:hover {
@@ -117,13 +118,13 @@
 					
 					domJson.push(
 						['span', {class:'opt', group:config.group},
-							['div', {class:'pseudo-config trash-function'}
+							['div', {class:'pseudo-config trash-function', onclick:'showMsg(".msg-trash")'}
 								
 							],
-							['div', {class:'pseudo-config configure-function'}
+							['div', {class:'pseudo-config configure-function', onclick:'showMsg(".msg-customize")'}
 								
 							],
-							['div', {class:'pseudo-config share-function'}
+							['div', {class:'pseudo-config share-function', onclick:'showMsg(".msg-share")'}
 								
 							],
 							['span', {},
@@ -273,7 +274,49 @@
 		</script>
 		<script>
 			/*start - non jquery dom stuff*/
-			
+			function showMsg(selector) {
+				var container = document.querySelector(selector);
+				/* i thought if i did this than scroll would not work while over this div but its not true
+				container.style.width = window.innerWidth + 'px';
+				container.style.height = window.innerHeight + 'px';
+				*/
+				var msgWrap = container.querySelector('.msg-wrap');
+				if (!msgWrap) {
+					alert('Error: Message wrap not found');
+					return;
+				}
+				
+				container.style.pointerEvents = 'auto';
+				container.style.opacity = 1;
+				msgWrap.style.opacity = 1;
+				msgWrap.style.marginTop = 0;
+				msgWrap.style.pointerEvents = 'auto';
+			}
+			function hideMsg(selector) {
+				var container = document.querySelector(selector);
+				
+				var msgWrap = container.querySelector('.msg-wrap');
+				if (!msgWrap) {
+					alert('Error: Message wrap not found');
+					return;
+				}
+				
+				container.style.transitionDelay = '25ms';
+				msgWrap.style.transitionDelay = '0';
+				container.style.opacity = ''; //:learned: setting to blank removes the inline style property
+				msgWrap.style.marginTop = '';
+				msgWrap.style.pointerEvents = '';
+				msgWrap.style.transition = 'opacity 100ms ease-in, margin-top 100ms ease-in';
+				msgWrap.style.opacity = '';
+				
+				container.addEventListener('transitionend', function() {
+					container.removeEventListener('transitionend', arguments.callee, false);
+					container.style.pointerEvents = '';
+					container.style.transitionDelay = '';
+					msgWrap.style.transitionDelay = '';
+					msgWrap.style.transition = '';
+				}, false);
+			}
 			/*end - non jquery dom stuff*/
 		</script>
 		<script type="text/javascript">
@@ -308,7 +351,6 @@ body {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	-moz-user-select: none;
 	cursor: default;
 }
 
@@ -513,13 +555,14 @@ button.import:hover {
 	.msg-wrap {
 		background-color: rgb(247, 247, 247);
 		border-radius: 2px;
-		box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.298);
+		box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
 		padding: 10px;
-		margin-top: -20px;
+		margin-top: -20px; /*for transition anim*/
 		opacity: 0;
-		display: none;
-		transition: opacity 300ms, margin-top 300ms;
-		transition-delay: 100ms;
+		pointer-events: none;
+		transition: margin-top 100ms ease-in;
+		transition-delay: 25ms;
+		display: inline-block;
 	}
 	
 	.msg-wrap .row {
@@ -559,13 +602,21 @@ button.import:hover {
 	}
 	
 	.msg-share .msg-header {
-		background-image: url(page.png);
+		background-image: url(network-tri.png);
+		padding: 0 0 5px 0;
 	}	
 	.msg-trash .msg-header {
 		background-image: url(trash.png);
+		text-indent: 20px;
+		padding: 0 0 4px 0;
 	}
 	.msg-customize .msg-header {
 		background-image: url(wrench.png);
+		text-indent: 21px;
+		padding: 0 0 5px 0;
+	}
+	.msg-create .msg-header {
+		background-image: url(pencil.png);
 		text-indent: 21px;
 		padding: 0 0 5px 0;
 	}
@@ -587,8 +638,8 @@ button.import:hover {
 		margin-top: 5px;
 	}
 	
-	.msg-trash {
-		width: 30%;
+	.msg-trash .msg-wrap {
+		width: 300px;
 	}
 	
 	.msg-trash .row {
@@ -650,20 +701,20 @@ button.import:hover {
 		margin-top: 4px;
 	}
 	
-	#msg-container {
-		background-color: rgba(255, 255, 255, .7);
+	.msg-container {
+		background-color: rgba(255, 255, 255, .85);
 		position: fixed;
 		width: 100%;
 		height: 100%;
 		z-index: 100;
 		top: 0;
 		left: 0;
-		display: flex;
 		align-items: center;
 		justify-content: center;
 		opacity: 0;
-		display: none;
-		transition: opacity 300ms;
+		display: flex;
+		pointer-events: none;
+		transition: opacity 100ms ease-in;
 	}
 	
 	.msg-customize .combo-set-area:before {
@@ -679,7 +730,7 @@ button.import:hover {
 </style>
 </head>
 <body>
-<div id="msg-container">
+<div class="msg-container msg-share"> <!-- right now i reuse msg-share for other messages, so keep this one first so when i do querySelector('.msg-share') it gets the right one-->
 	<div class="msg-wrap msg-share">
 		<div class="msg-header">Share Function</div>
 		<div class="msg-body">
@@ -689,22 +740,26 @@ button.import:hover {
 			<div class="row"><span>Avatar</span> <input type="text"></div>
 			<div class="row">
 				<button class="msg-ok"><span></span>Share</button>
-				<button class="msg-cancel"><span></span>Cancel</button>
+				<button class="msg-cancel" onclick="hideMsg('.msg-share')"><span></span>Cancel</button>
 			</div>
 		</div>
 	</div>
-	<div class="msg-wrap msg-share msg-trash">
+</div>
+<div class="msg-container msg-share msg-trash">
+	<div class="msg-wrap">
 		<div class="msg-header">Trash Function</div>
 		<div class="msg-body">
 			<div class="row">Are you sure you want to remove this funciton? You will not be able to recover it.</div>
 			<div class="row">
 				<button class="msg-ok"><span></span>Confirm</button>
-				<button class="msg-cancel"><span></span>Cancel</button>
+				<button class="msg-cancel" onclick="hideMsg('.msg-trash')"><span></span>Cancel</button>
 			</div>
 		</div>
 	</div>
-	<div class="msg-wrap msg-customize">
-		<div class="msg-header">Customize Function</div>
+</div>
+<div class="msg-container msg-customize">
+	<div class="msg-wrap">
+		<div class="msg-header">Configure</div>
 		<div class="msg-body">
 			<div class="row">
 				<span>Group</span>
@@ -727,7 +782,37 @@ button.import:hover {
 			</div>
 			<div class="row">
 				<button class="msg-ok"><span></span>Apply</button>
-				<button class="msg-cancel"><span></span>Cancel</button>
+				<button class="msg-cancel" onclick="hideMsg('.msg-customize')"><span></span>Cancel</button>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="msg-container msg-customize msg-create">
+	<div class="msg-wrap">
+		<div class="msg-header">Create Function</div>
+		<div class="msg-body">
+			<div class="row">
+				<span>Group</span>
+				<select>
+					<option>Entertainment</option>
+					<option selected="true">Miscellaneous</option>
+					<option>Navigation</option>
+					<option>Social</option>
+					<option>Tabs</option>
+					<option>Zoom</option>
+				</select>
+			</div>
+			<div class="row"><span>Name</span> <input type="text" class="msg-cust-name"></div>
+			<div class="row"><span>Description</span> <input type="text" class="msg-cust-desc"></div>
+			<textarea rows="3" cols="100">code code code code code code code code code code code code</textarea>
+			<hr>
+			<small style="display:block; text-align:center; position:absolute; width:95%;">PLACE MOUSE HERE AND DO MOUSE COMBO</small>
+			<div class="combo-set-area">
+				<img src="mouse-left.png" /> + <img src="mouse-right.png"/>
+			</div>
+			<div class="row">
+				<button class="msg-ok"><span></span>Create</button>
+				<button class="msg-cancel" onclick="hideMsg('.msg-create')"><span></span>Cancel</button>
 			</div>
 		</div>
 	</div>
@@ -842,7 +927,7 @@ button.import:hover {
 	<div id="configuration" class="group" style="position:relative;">
 		<span class="subhead">Configuration</span>
 		<div id="configActions">
-			<button class="config-action-create"><span></span>Create Custom Function</button>
+			<button class="config-action-create" onclick="showMsg('.msg-create')"><span></span>Create Custom Function</button>
 			<button class="config-action-download"><span></span>Download Custom Functions</button>
 		</div>
 		<div id="configHead">
