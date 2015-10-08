@@ -159,6 +159,12 @@ var winTypes = function() {
 		{ rgbRed:		this.BYTE },
 		{ rgbReserved:	this.BYTE }
 	]);
+	this.RAWINPUTDEVICE = ctypes.StructType('tagRAWINPUTDEVICE', [ // https://msdn.microsoft.com/en-us/library/windows/desktop/ms645565%28v=vs.85%29.aspx
+		{ usUsagePage: this.USHORT },
+		{ usUsage: this.USHORT },
+		{ dwFlags: this.DWORD },
+		{ hwndTarget: this.HWND }
+	]);
     this.RECT = ctypes.StructType('_RECT', [ // https://msdn.microsoft.com/en-us/library/windows/desktop/dd162897%28v=vs.85%29.aspx
         { left: this.LONG },
         { top: this.LONG },
@@ -218,13 +224,21 @@ var winTypes = function() {
 		{ dwFlags:		this.DWORD },
 		{ szDevice:		this.TCHAR.array(struct_const.CCHDEVICENAME) }
 	]);
+	this.MSLLHOOKSTRUCT = ctypes.StructType('tagMSLLHOOKSTRUCT', [
+		{ pt: this.POINT },
+		{ mouseData: this.DWORD },
+		{ flags: this.DWORD },
+		{ time: this.DWORD },
+		{ dwExtraInfo: this.ULONG_PTR }
+	]);
     this.PRECT = this.RECT.ptr;
     this.LPRECT = this.RECT.ptr;
     this.LPCRECT = this.RECT.ptr;
 	this.LPPOINT = this.POINT.ptr;
 	this.PBITMAPINFOHEADER = this.BITMAPINFOHEADER.ptr;
 	this.PDISPLAY_DEVICE = this.DISPLAY_DEVICE.ptr;
-
+	this.PCRAWINPUTDEVICE = this.RAWINPUTDEVICE.ptr;
+	
 	// FURTHER ADVANCED STRUCTS
 	this.BITMAPV5HEADER = ctypes.StructType('BITMAPV5HEADER', [
 		{ bV5Size:			this.DWORD },
@@ -259,7 +273,11 @@ var winTypes = function() {
 
 	// FUNCTION TYPES
 	this.MONITORENUMPROC = ctypes.FunctionType(this.CALLBACK_ABI, this.BOOL, [this.HMONITOR, this.HDC, this.LPRECT, this.LPARAM]);
-
+	this.LowLevelMouseProc = ctypes.FunctionType(this.CALLBACK_ABI, this.LRESULT, [this.INT, this.WPARAM, this.LPARAM]);
+	
+	// some more guess types
+	this.HOOKPROC = this.LowLevelMouseProc.ptr; // not a guess really, as this is the hook type i use, so yeah it has to be a pointer to it
+	
 	// STRUCTS USING FUNC TYPES
 
 }
@@ -303,7 +321,23 @@ var winInit = function() {
 		MDT_Raw_DPI: 2,
 		MDT_Default: 0, // MDT_Effective_DPI
 		WS_VISIBLE: 0x10000000,
-		GWL_STYLE: -16
+		GWL_STYLE: -16,
+		WM_MOUSEMOVE: 0x200,
+		WM_LBUTTONDOWN: 0x201,
+		WM_LBUTTONUP: 0x202,
+		WM_LBUTTONDBLCLK: 0x203,
+		WM_RBUTTONDOWN: 0x204,
+		WM_RBUTTONUP: 0x205,
+		WM_RBUTTONDBLCLK: 0x206,
+		WM_MBUTTONDOWN: 0x207,
+		WM_MBUTTONUP: 0x208,
+		WM_MBUTTONDBLCLK: 0x209,
+		WM_MOUSEWHEEL: 0x20A,
+		WM_XBUTTONDOWN: 0x20B,
+		WM_XBUTTONUP: 0x20C,
+		WM_XBUTTONDBLCLK: 0x20D,
+		WM_MOUSEHWHEEL: 0x20E,
+		WH_MOUSE_LL: 14
 	};
 
 	var _lib = {}; // cache for lib
@@ -775,6 +809,65 @@ var winInit = function() {
 				self.TYPE.INT,				// cx
 				self.TYPE.INT,				// cy
 				self.TYPE.UINT				// uFlags
+			);
+		},
+		////////////////// mousecontrol stuff
+		SetWindowsHookEx: function() {
+			/* HHOOK WINAPI SetWindowsHookEx(
+			 *   __in_ int       idHook,
+			 *   __in_ HOOKPROC  lpfn,
+			 *   __in_ HINSTANCE hMod,
+			 *   __in_ DWORD     dwThreadId
+			 * );
+			 */
+			return lib('user32').declare(ifdef_UNICODE ? 'SetWindowsHookExW' : 'SetWindowsHookExA', self.TYPE.ABI,
+				self.TYPE.HHOOK,
+				self.TYPE.INT,
+				self.TYPE.HOOKPROC,
+				self.TYPE.HINSTANCE,
+				self.TYPE.DWORD
+			);
+		},
+		UnhookWindowsHookEx: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644993%28v=vs.85%29.aspx
+			 * BOOL WINAPI UnhookWindowsHookEx(
+			 *   _in_ HHOOK hhk
+			 * );
+			 */
+			return lib('user32').declare('UnhookWindowsHookEx', self.TYPE.ABI,
+				self.TYPE.BOOL,
+				self.TYPE.HHOOK
+			);
+		},
+		CallNextHookEx: function() {
+			/* LRESULT WINAPI CallNextHookEx(
+			 *   __in_opt_ HHOOK  hhk,
+			 *   __in_     int    nCode,
+			 *   __in_     WPARAM wParam,
+			 *   __in_     LPARAM lParam
+			 * );			
+			 */
+			return lib('user32').declare('CallNextHookEx', self.TYPE.ABI,
+				self.TYPE.LRESULT,
+				self.TYPE.HHOOK,
+				self.TYPE.INT,
+				self.TYPE.WPARAM,
+				self.TYPE.LPARAM
+			);
+		},
+		RegisterRawInputDevices: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms645600%28v=vs.85%29.aspx
+			 * BOOL WINAPI RegisterRawInputDevices(
+			 *  __in_ PCRAWINPUTDEVICE pRawInputDevices,
+			 *  __in_ UINT             uiNumDevices,
+			 *  __in_ UINT             cbSize
+			 * );
+			 */
+			return lib('user32').declare('RegisterRawInputDevices', self.TYPE.ABI,
+				self.TYPE.BOOL,					// return
+				self.TYPE.PCRAWINPUTDEVICE,		// pRawInputDevices
+				self.TYPE.UINT,					// uiNumDevices
+				self.TYPE.UINT					// cbSize
 			);
 		}
 	};

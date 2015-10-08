@@ -78,6 +78,72 @@ function init(objCore) {
 
 function asyncMonitorMouse() {
 	// this will get copy eve mouse events and deliver it to main thread
+	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
+		case 'winnt':
+		case 'winmo':
+		case 'wince':
+				
+				var rid_js = new Array(1);
+				rid_js[0] = ostypes.TYPE.RAWINPUTDEVICE(1, 2, 0, null); // mouse
+				
+				/*
+				usUsagePage
+				1 for generic desktop controls
+				2 for simulation controls
+				3 for vr
+				4 for sport
+				5 for game
+				6 for generic device
+				7 for keyboard
+				8 for leds
+				9 button
+				*/
+				
+				/*
+				usUsage values when usUsagePage is 1
+				0 - undefined
+				1 - pointer
+				2 - mouse
+				3 - reserved
+				4 - joystick
+				5 - game pad
+				6 - keyboard
+				7 - keypad
+				8 - multi-axis controller
+				9 - Tablet PC controls
+				*/
+				
+				var rid_c = ostypes.TYPE.RAWINPUTDEVICE.array(rid_js.length)(rid_js);
+				var rez_registerDevices = ostypes.API('RegisterRawInputDevices')(rid_c, rid_js.length, ostypes.TYPE.RAWINPUTDEVICE.size);
+				console.info('rez_registerDevices:', rez_registerDevices.toString(), uneval(rez_registerDevices), cutils.jscGetDeepest(rez_registerDevices));
+				if (rez_registerDevices == false) {
+					console.error('Failed rez_registerDevices, winLastError:', ctypes.winLastError);
+					throw new Error({
+						name: 'os-api-error',
+						message: 'Failed rez_registerDevices, winLastError: "' + ctypes.winLastError + '" and rez_registerDevices: "' + rez_registerDevices.toString(),
+						winLastError: ctypes.winLastError
+					});
+				}
+				
+				
+				
+			break
+		case 'gtk':
+			
+				
+			
+			break;
+		case 'darwin':
+			
+				
+			
+			break;
+		default:
+			throw new Error({
+				name: 'addon-error',
+				message: 'Operating system, "' + OS.Constants.Sys.Name + '" is not supported'
+			});
+	}
 }
 // End - Addon Functionality
 

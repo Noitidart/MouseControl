@@ -155,12 +155,24 @@ function uninstall(aData, aReason) {
 	}
 }
 
+var MMWorkerFuncs = {
+	init: function() {
+		console.log('ok calling init main thread callback');
+		MMWorker.postMessage(['syncMonitorMouse']);
+		
+		Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
+			console.log('stopping mouse monitor');
+			MMWorker.postMessage(['stopMonitor']);
+		}, 10000);
+	}
+};
+
 function startup(aData, aReason) {
 	// core.addon.aData = aData;
 	extendCore();
 	
 	// startup worker
-	var promise_getMMWorker = SICWorker('MMWorker', core.addon.path.workers + 'MMAsyncWorker.js');
+	var promise_getMMWorker = SICWorker('MMWorker', core.addon.path.workers + 'MMSyncWorker.js', MMWorkerFuncs);
 	promise_getMMWorker.then(
 		function(aVal) {
 			console.log('Fullfilled - promise_getMMWorker - ', aVal);
@@ -191,6 +203,10 @@ function startup(aData, aReason) {
 
 function shutdown(aData, aReason) {
 	if (aReason == APP_SHUTDOWN) { return }
+	
+	if (MMWorker) {
+		MMWorker.terminate();
+	}
 	
 	// an issue with this unload is that framescripts are left over, i want to destory them eventually
 	aboutFactory_mousecontrol.unregister();
@@ -259,15 +275,26 @@ function SICWorker(workerScopeName, aPath, aFuncExecScope=bootstrap, aCore=core)
 			delete aCore.addon.aData; // we delete this because it has nsIFile and other crap it, but maybe in future if I need this I can try JSON.stringify'ing it
 		}
 		
-		bootstrap[workerScopeName].addEventListener('message', function(aMsgEvent) {
+		var afterInitListener = function(aMsgEvent) {
+			// note:all msgs from bootstrap must be postMessage([nameOfFuncInWorker, arg1, ...])
+			var aMsgEventData = aMsgEvent.data;
+			aFuncExecScope[aMsgEventData.shift()].apply(null, aMsgEventData);
+		};
+		
+		var beforeInitListener = function(aMsgEvent) {
 			// note:all msgs from bootstrap must be postMessage([nameOfFuncInWorker, arg1, ...])
 			var aMsgEventData = aMsgEvent.data;
 			if (aMsgEventData[0] == 'init') {
+				bootstrap[workerScopeName].removeEventListener('message', beforeInitListener);
+				bootstrap[workerScopeName].addEventListener('message', afterInitListener);
 				deferredMain_SICWorker.resolve(true);
-			} else {
-				aFuncExecScope[aMsgEventData.shift()].apply(null, aMsgEventData);
+				if ('init' in aFuncExecScope) {
+					aFuncExecScope[aMsgEventData.shift()].apply(null, aMsgEventData);
+				}
 			}
-		});
+		};
+		
+		bootstrap[workerScopeName].addEventListener('message', beforeInitListener);
 		bootstrap[workerScopeName].postMessage(['init', aCore]);
 		
 	} else {
