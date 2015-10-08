@@ -1,0 +1,28 @@
+<!DOCTYPE html SYSTEM "chrome://mousecontrol/locale/prefs.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" ng-app="mousecontrol_prefs">
+	<head>
+		<title>mousecontrol.prefs.title</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+		<meta name="description" content="mousecontrol.app.desc" />
+		<link rel="shortcut icon" href="chrome://mousecontrol/content/resources/images/icon16.png" type="image/png" />
+		
+		<link rel="stylesheet" type="text/css" media="screen" href="chrome://mousecontrol/content/resources/styles/style.css" />
+		
+		<script src="chrome://mousecontrol/content/resources/scripts/angular.min.js"></script>
+		<script src="chrome://mousecontrol/content/resources/scripts/ng-prefs.js"></script>
+		
+		<style>
+			/* styles that need localization */
+			
+		</style>
+	</head>
+	<body ng-controller="BodyController as BC">
+		<header/>
+		<div class="main_wrap">
+			<option-group ng-repeat="aGroup in BC.options" />
+			<config-wrap>
+				<config-row ng-repeat="aConfig in BC.configs" />
+			</config-wrap>
+		</div>
+	</body>
+</html>

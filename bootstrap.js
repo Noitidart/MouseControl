@@ -41,6 +41,9 @@ const OSPath_simpleStorage = OS.Path.join(OS.Constants.Path.profileDir, JETPACK_
 const myPrefBranch = 'extensions.' + core.addon.id + '.';
 
 var bootstrap = this; // needed for SIPWorker and SICWorker
+var gConfigJsonDefault = {
+	
+};
 
 // Lazy Imports
 const myServices = {};
@@ -199,6 +202,9 @@ function startup(aData, aReason) {
 	// register about page
 	aboutFactory_mousecontrol = new AboutFactory(AboutMouseControl);
 	
+	// register about pages listener
+	Services.mm.addMessageListener(core.addon.id, aboutPagesMsgListener);
+	
 }
 
 function shutdown(aData, aReason) {
@@ -210,7 +216,51 @@ function shutdown(aData, aReason) {
 	
 	// an issue with this unload is that framescripts are left over, i want to destory them eventually
 	aboutFactory_mousecontrol.unregister();
+	
+	// unregister about pages listener
+	Services.mm.removeMessageListener(core.addon.id, aboutPagesMsgListener);
 }
+
+var aboutPagesMsgListener = {
+	receiveMessage: function(aMsgEvent) {
+		console.log('bootstrap getting aMsgEvent:', aMsgEvent);
+		// aMsgEvent.data should be an array, with first item being the unfction name in bootstrapCallbacks
+		aMsgEvent.data.push(aMsgEvent);
+		aboutPagesCallbacks[aMsgEvent.data.shift()].apply(null, aMsgEvent.data);
+	}
+};
+
+var aboutPagesCallbacks = {
+	fetchConfig_request: function(bootstrapCallbacks_name, aMsgEvent) {
+		var promise_readConfig = OS.File.read(OS.Path.join(OSPath_simpleStorage, 'config.json'), {encoding:'utf-8'});
+		promise_readConfig.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_readConfig - ', aVal);
+				// start - do stuff here - promise_readConfig
+				var configJson = JSON.parse(aVal);
+				console.log('will send back default config json to this contentframe, get it from aMsgEvent:', aMsgEvent);
+				aMsgEvent.target.messageManager.sendAsyncMessage(core.addon.id, [bootstrapCallbacks_name, configJson]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
+				// end - do stuff here - promise_readConfig
+			},
+			function(aReason) {
+				if (aReasonMax(aReason).becauseNoSuchFile) {
+					console.log('will send back default config json to this contentframe, get it from aMsgEvent:', aMsgEvent);
+					aMsgEvent.target.messageManager.sendAsyncMessage(core.addon.id, [bootstrapCallbacks_name, gConfigJsonDefault]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
+					return;
+				}
+				var rejObj = {name:'promise_readConfig', aReason:aReason};
+				console.error('Rejected - promise_readConfig - ', rejObj);
+				// deferred_createProfile.reject(rejObj);
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {name:'promise_readConfig', aCaught:aCaught};
+				console.error('Caught - promise_readConfig - ', rejObj);
+				// deferred_createProfile.reject(rejObj);
+			}
+		);
+	}
+};
 
 // start - common helper functions
 function Deferred() {
@@ -364,4 +414,16 @@ function SIPWorker(workerScopeName, aPath, aCore=core) {
 	
 	return deferredMain_SIPWorker.promise;
 	
+}
+
+function aReasonMax(aReason) {
+	var deepestReason = aReason;
+	while (deepestReason.hasOwnProperty('aReason') || deepestReason.hasOwnProperty()) {
+		if (deepestReason.hasOwnProperty('aReason')) {
+			deepestReason = deepestReason.aReason;
+		} else if (deepestReason.hasOwnProperty('aCaught')) {
+			deepestReason = deepestReason.aCaught;
+		}
+	}
+	return deepestReason;
 }

@@ -159,7 +159,7 @@ function winStartMessageLoopOLD(wMsgFilterMin, wMsgFilterMax) {
 	
 	var nowTime = new Date().getTime();
 	// your main loop
-	while (new Date().getTime() - nowTime < 60000) { // run it for 10 sec
+	while (new Date().getTime() - nowTime < 1000) { // run it for 10 sec
 		var rez_GetMessage = ostypes.API('GetMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax);
 		console.log('rez_GetMessage:', rez_GetMessage);
 		
