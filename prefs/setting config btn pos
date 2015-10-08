@@ -1,0 +1,7 @@
+var offset = $('.subhead:last-of-type').offset();
+offset.top +=  + $('.subhead:last-of-type').height() + 20;
+offset.left = $('#main-wrap').offset().left + $('#main-wrap').width() + 5;
+
+var wrap = $('.configBtnWrap');
+wrap.css('left', offset.left + 'px');
+wrap.css('top', offset.top + 'px');

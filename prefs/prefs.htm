@@ -1,0 +1,472 @@
+<html>
+<head>
+<title></title>
+
+<link href="selectbox.css" type="text/css" rel="stylesheet" />
+		<script type="text/javascript" src="jquery.js"></script>
+		<script type="text/javascript" src="selectbox.js"></script>
+		<script type="text/javascript">
+			$(function () {
+				$("select").selectbox({
+					effect: 'fade'
+				});
+			});
+			
+			function addSubheads() {
+				//to the config div it adds a subhead over every group of opts
+				
+			}
+		</script>
+
+<style>
+@font-face {
+	font-family:meta-pro-bold;
+	src: url('MetaProBold.otf');
+}
+
+@font-face {
+	font-family:ttahoma;
+	src: url('tahoma.ttf');
+}
+
+body {
+	font-family: tahoma;
+	font-size: 12px;
+	color: #000000;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	-moz-user-select: none;
+	cursor: default;
+}
+
+#main-wrap {
+	width: 50%;
+	background-color: rgb(247, 247, 247);
+	border-radius: 2px;
+	box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.298);
+	padding: 10px 10px 0;
+	z-index: 1;
+}
+
+#header {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	line-height: 42px;
+	margin-bottom: 5px;
+}
+
+#header > span.logo {
+	font-family: meta-pro-bold;
+	font-size: 42px;
+	color: #696C71;
+	letter-spacing: -2px;
+}
+
+#header > img.icon {
+	margin-bottom: 3px;
+	margin-right: 5px;
+}
+
+#header > span.version {
+	/*
+	vertical-align: baseline;
+	margin-top: 12px;
+	*/
+	align-self: flex-end;
+	line-height: 13px;
+	font-size: 13px;
+	margin-bottom: 7px;;
+	margin-left: 7px;
+}
+
+#header > span.title {
+/*
+	vertical-align: top;
+	margin-left: 5px;
+	margin-top: -20px;
+	flex-shrink: 0;
+*/
+	font-size: 13px;
+	font-weight: bold;
+	align-self: flex-start;
+	flex-grow: 1;
+	text-align: right;
+	line-height: 14px;
+	margin-top: 4px;
+}
+
+.subhead {
+	padding:3px;
+	padding-left: 17px;
+	border-bottom: 1px solid #44474D;
+	/*color: #44474D;*/
+	display: block;
+	font-size: 13px;
+	font-weight: bold;
+	background: transparent url(general.png) no-repeat left 5px;
+	margin-bottom: 5px;
+}
+
+#timing > .subhead {
+	background-image: url(timing.png);
+}
+
+#configuration > .subhead {
+	background-image: url(configuration.png);
+}
+
+#zoom > .subhead {
+	background-image: url(zoom.png);
+}
+
+#tabs > .subhead {
+	background-image: url(tabs.png);
+}
+
+.opt {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0 3px 4px 3px;
+	line-height: 20px; /* must match height of select boxes otherwise opt spans are different heights */
+}
+
+.group > .opt:last-of-type {
+	padding-bottom: 0;
+}
+
+.opt > select {
+	text-align: left;
+}
+
+.group {
+	margin-bottom: 10px;
+}
+
+input[type=text]{
+	background-color: rgb(255, 255, 255);
+	border-width: 1px;
+	border-style: solid;
+	border-color: rgb(160, 160, 160) rgb(185, 185, 185) rgb(185, 185, 185);
+	border-radius: 2px;
+	height: 20px;
+	position: relative;
+	width: 5em;
+	color: rgb(68, 68, 68);
+	text-align: center;
+	font-size: 12px;
+	padding-bottom: 2px;
+}
+
+button:active {
+  -moz-box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
+  background-color: #eee;
+  background-image: -moz-linear-gradient(top,#eee,#e0e0e0);
+  background-image: linear-gradient(top,#eee,#e0e0e0);
+  border: 1px solid #ccc;
+  color: #333;
+  z-index: 2;
+}
+
+button:not(:active):hover {
+	-moz-box-shadow: 0 1px 1px rgba(0, 0, 0, .3);
+	box-shadow: 0 1px 1px rgba(0, 0, 0, .3);
+  border: 1px solid #999;
+
+}
+
+button {
+	background-color: rgb(248, 248, 248);
+	background-image: -moz-linear-gradient(center top,rgb(248, 248, 248),rgb(241, 241, 241));
+	background-image: linear-gradient(center top,rgb(248, 248, 248),rgb(241, 241, 241));
+	-moz-box-shadow: 0 1px 1px rgba(0, 0, 0, .1);
+	box-shadow: 0 1px 1px rgba(0, 0, 0, .1);
+	border: 1px solid rgb(198, 198, 198);
+	color: rgb(51, 51, 51);
+	padding-bottom:2px;
+	border-radius: 4px;
+	font-size: 12px;
+	line-height: 16px;
+	z-index: 0;
+	position: relative;
+}
+
+button.import {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+}
+
+button.export {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	left: 1px;
+}
+
+button.export:hover {
+	z-index:1;
+}
+
+button.import:hover {
+	z-index:1;
+}
+
+</style>
+
+</head>
+<body>
+<div id="main-wrap">
+	<div id="header">
+		<img class="icon" src="icon-shadow.png">
+		<span class="logo">MouseControl</span>
+		<span class="version">v2.0</span>
+		<span class="title">Preferences</span>
+	</div>
+	<div id="general" class="group">
+		<span class="subhead">General</span>
+		<span class="opt">
+			Automatic Updates
+			<select id="automatic_updates" name="automatic_updates">
+				<option value="off">Off</option>
+				<option value="on">On</option>
+			</select>
+		</span>
+		<span class="opt">
+			Restore Defaults
+			<button>Restore</button>
+		</span>
+		<span class="opt">
+			Export/Import
+			<span><button class="export">Export</button><button class="import">Import</button></span>
+		</span>
+	</div>
+	<div id="timing" class="group">
+		<span class="subhead">Timing</span>
+		<span class="opt">Double Click Speed<input type="text" value="200"/></span>
+		<span class="opt">Hold Duration<input type="text" value="300"/></span>
+	</div>
+	<div id="tabs" class="group">
+		<span class="subhead">Tabs</span>
+		<span class="opt">
+			New Tab Position
+			<select id="new_tab_position" name="new_tab_position">
+				<option value="end">End of Tab Bar</option>
+				<option value="next">Next to Current Tab</option>
+			</select>
+		</span>
+		<span class="opt">
+			Duplicated Tab Position
+			<select id="duplicated_tab_position" name="duplicated_tab_position">
+				<option value="end">End of Tab Bar</option>
+				<option value="next">Next to Current Tab</option>
+			</select>
+		</span>
+	</div>
+	<div id="zoom" class="group">
+		<span class="subhead">Zoom</span>
+		<span class="opt">
+			Zoom Display
+			<select id="zoom_display" name="zoom_display">
+				<option value="hide">Hide</option>
+				<option value="show">Show</option>
+			</select>
+		</span>
+		<span class="opt">
+			Zoom Context
+			<select id="zoom_context" name="zoom_context">
+				<option value="all">All Content</option>
+				<option value="text">Text Only</option>
+			</select>
+		</span>
+		<span class="opt">
+			Zoom Style
+			<select id="zoom_style" name="zoom_style">
+				<option value="global">Global</option>
+				<option value="site_specific">Site Specific</option>
+				<option value="temporary">Temporary</option>
+			</select>
+		</span>
+	</div>
+	<div id="configuration" class="group" style="position:relative;">
+		<span class="subhead">Configuration</span>
+		<div id="configHead">
+			<span>Action</span>
+			<span>Mouse Binding</span>
+		</div>
+		<div id="configWrap">
+			<div class="configSubhead">TABS<hr></div>
+			<span class="opt" group="tabs">
+				<span>
+					Select Tab to Right
+					<small>Focuses tab to right of current tab</small>
+				</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<span class="opt" group="tabs">
+				<span>
+					Select Tab to Left
+					<small>Focuses tab to left of current tab</small>
+				</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<span class="opt" group="tabs">
+				<span>
+					Jump to Last Tab
+					<small>Selects previously used tab across windows. If executed during moving select right/left, will select initial tab </small>
+				</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<span class="opt" group="tabs">
+				<span>Close Tab</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<span class="opt" group="tabs">
+				<span>Open Last Closed Tab</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<span class="opt" group="tabs">
+				<span>Close All Tabs of Current Domain</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<span class="opt" group="tabs">
+				<span>New Tab</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<span class="opt" group="tabs">
+				<span>Duplicate Tab</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<div class="configSubhead">ZOOM<hr></div>
+			<span class="opt" group="zoom">
+				<span>Zoom In</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<span class="opt" group="zoom">
+				<span>Zoom Out</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+			<span class="opt" group="zoom">
+				<span>Reset Zoom</span>
+				<span>blah blah blah</span>
+			</span>
+			<hr>
+		</div>
+	</div>
+
+</div>
+<div class="configBtnWrap">
+<span class="configBtn"><!--Sort--></span>
+<span class="configBtn"><!--Create Custom Action--></span>
+<span class="configBtn"><!--Download Shared Custom Actions--></span>
+</div>
+<style>
+	.configBtnWrap {
+		position: fixed;
+		background-color: rgb(247, 247, 247);
+		border-radius: 0px 8px 8px 0px;
+		box-shadow: 2px 0px 2px rgba(0, 0, 0, 0.5);
+		padding: 5px 5px 5px 20px;
+
+		z-index: 0;
+	}
+	.configBtn {
+		width: 32px;
+		height: 32px;
+		background-color: rgba(200, 200, 200, 0.5);
+		display: block;
+		border-radius: 5px;
+		margin-bottom: 5px;
+		box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.05) inset;
+	}
+	.configBtn:last-of-type {
+		margin-bottom:0px;
+	}
+	#configHead {
+		font-weight: bold;
+		font-size: 12px;
+		display: flex;
+		justify-content: space-around;
+		margin-bottom: 2px;
+		display: none;
+	}
+	#configHead span {
+		flex-grow: 1;
+		max-width: 50%;
+		min-width: 50%
+		width: 50%;
+	}
+	#configHead span:first-of-type {
+		padding-left: 5px;
+	}
+	#configWrap {
+		border: 0; /*1px solid #D9D9D9;*/
+		display: flex;
+		flex-direction: column;
+	}
+	#configWrap .opt {
+		flex-grow: 1;
+		line-height: normal;
+		padding: 2px 20px;
+		font-size: 11px;
+	}
+
+	#configWrap .opt span {
+		flex-grow: 1;
+		width: 50% !important;
+	}
+	
+		#configWrap .opt span:first-of-type {
+			display: flex;
+			flex-direction: column;
+		}
+		
+		#configWrap .opt span:first-of-type small {
+			color: #999;
+			padding-right: 5px;
+		}
+	
+	#configWrap > hr {
+		margin: 3px auto;
+		border: 0;
+		border-top: 1px solid #eee;
+		border-bottom: rgba(255, 255, 255, 0.3);
+		width: 85%;
+	}
+	
+	#configWrap .nohr + hr {
+		display: none;
+	}
+	
+	.configSubhead {
+		font-weight: bold;
+		padding: 5px 5px 0px;
+		color: #44474D;
+	}
+	
+	.configSubhead hr{
+		border-width: 1px 0px 0px;
+		border-style: solid none none;
+		border-color: rgba(68, 71, 77,.7);
+		-moz-border-top-colors: rgba(68, 71, 77,.7);
+		-moz-border-right-colors: none;
+		-moz-border-bottom-colors: none;
+		-moz-border-left-colors: none;
+		border-image: none;
+		margin: 5px 0px 0px;
+	}
+</style>
+</body>
+</html>

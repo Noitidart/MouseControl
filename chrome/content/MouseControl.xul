@@ -1,4 +1,0 @@
-<?xml version="1.0"?>
-<overlay id="MouseControl" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-	<script type="application/x-javascript" src="chrome://MouseControl/content/MouseControl.js"/>
-</overlay>

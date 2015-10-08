@@ -1,0 +1,148 @@
+@CHARSET "UTF-8";
+
+.sbHolder{
+	background-color: rgb(241, 241, 241);
+	background-image: -moz-linear-gradient(center top , rgb(245, 245, 245), rgb(241, 241, 241));
+	border: 1px solid gainsboro;
+	border-radius: 2px;
+	font-size: 12px;
+	font-weight: normal;
+	height: 20px;
+	position: relative;
+	width: 200px;
+	color: rgb(68, 68, 68);
+}
+
+.sbHolderOpen {
+  -moz-box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
+  background-color: #eee;
+  background-image: -moz-linear-gradient(top,#eee,#e0e0e0);
+  background-image: linear-gradient(top,#eee,#e0e0e0);
+  border: 1px solid #ccc;
+  color: #333;
+  z-index: 2;
+}
+
+.sbHolder:not(.sbHolderOpen):hover {
+	background-color: rgb(248, 248, 248);
+	background-image: -moz-linear-gradient(center top,rgb(248, 248, 248),rgb(241, 241, 241));
+	background-image: linear-gradient(center top,rgb(248, 248, 248),rgb(241, 241, 241));
+	-moz-box-shadow: 0 1px 1px rgba(0, 0, 0, .1);
+	box-shadow: 0 1px 1px rgba(0, 0, 0, .1);
+	border-color: rgb(198, 198, 198);
+	color: rgb(51, 51, 51);
+}
+
+.sbHolder:focus .sbSelector{
+	
+}
+.sbSelector{
+	display: block;
+	height: 20px;
+	left: 0;
+	line-height: 20px;
+	outline: none;
+	overflow: hidden;
+	position: absolute;
+	text-indent: 5px;
+	top: 0;
+	width: 170px;
+	cursor: default;
+}
+.sbSelector:link, .sbSelector:visited, .sbSelector:hover{
+	color: rgb(68, 68, 68);
+	outline: none;
+	text-decoration: none;
+}
+.sbToggle{
+	background: url(selectbox-up-down.png) center center no-repeat;
+	display: block;
+	height: 20px;
+	outline: none;
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 16px;
+	cursor: default;
+}
+.sbToggle:hover{
+	background: url(selectbox-up-down.png) center center no-repeat;
+}
+.sbToggleOpen{
+	background: url(selectbox-up-down.png) center center no-repeat;
+}
+.sbToggleOpen:hover{
+	background: url(selectbox-up-down.png) center center no-repeat;
+}
+.sbHolderDisabled{
+	background-color: #3C3C3C;
+	border: solid 1px #515151;
+}
+.sbHolderDisabled .sbHolder{
+	
+}
+.sbHolderDisabled .sbToggle{
+	
+}
+.sbOptions{
+	background-color: #ffffff;
+	border: 1px solid rgba(0, 0, 0, 0.2);
+	box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+	list-style: none;
+	left: -1px;
+	margin: 0;
+	padding: 0;
+	position: absolute;
+	top: 30px;
+	width: 200px;
+	z-index: 1;
+	overflow-y: auto;
+}
+.sbOptions li{
+	/*padding: 0 7px;*/
+	padding: 0;
+}
+.sbOptions a{
+	border-bottom: dotted 1px #515151;
+	display: block;
+	outline: none;
+	padding: 1px 0 1px 5px;
+	cursor: default;
+}
+
+/*
+.sbOptions li:last-of-type > a{
+	border-bottom: 0;
+}
+*/
+
+.sbOptions a:link, .sbOptions a:visited{
+	color: #999;
+	text-decoration: none;
+}
+.sbOptions a:hover,
+.sbOptions a:focus,
+.sbOptions a.sbFocus{
+	color: #000;
+	background-color: #EEEEEE;
+}
+.sbOptions li.last a{
+	border-bottom: none;
+}
+.sbOptions .sbDisabled{
+	border-bottom: dotted 1px #515151;
+	color: #999;
+	display: block;
+	padding: 7px 0 7px 3px;
+}
+.sbOptions .sbGroup{
+	border-bottom: dotted 1px #515151;
+	color: #EBB52D;
+	display: block;
+	font-weight: bold;
+	padding: 7px 0 7px 3px;
+}
+.sbOptions .sbSub{
+	padding-left: 17px;
+}
