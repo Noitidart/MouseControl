@@ -418,7 +418,7 @@ input[type=text]{
 	border-width: 1px;
 	border-style: solid;
 	border-color: rgb(160, 160, 160) rgb(185, 185, 185) rgb(185, 185, 185);
-	border-radius: 2px;
+	/*border-radius: 2px;*/
 	height: 20px;
 	position: relative;
 	width: 5em;
@@ -426,6 +426,25 @@ input[type=text]{
 	text-align: center;
 	font-size: 12px;
 	padding-bottom: 2px;
+	box-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.2) inset;
+}
+
+textarea {
+	background-color: rgb(255, 255, 255);
+	border-width: 1px;
+	border-style: solid;
+	border-color: rgb(160, 160, 160) rgb(185, 185, 185) rgb(185, 185, 185);
+	/*border-radius: 2px;*/
+	position: relative;
+	font-family: tahoma;
+	width: 100%;
+	color: rgb(68, 68, 68);
+	text-align: left;
+	font-size: 12px;
+	padding-bottom: 2px;
+	box-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.2) inset;
+	resize: none;
+	padding: 0 2px;
 }
 
 button:active {
@@ -483,8 +502,151 @@ button.import:hover {
 
 </style>
 
+<style>
+	/* message wrapper */
+
+	.msg-wrap {
+		background-color: rgb(247, 247, 247);
+		border-radius: 2px;
+		box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.298);
+		padding: 10px;
+		z-index: 10;
+		position: absolute;
+		width: 60%;
+	}
+	
+	.msg-wrap .row {
+		margin-bottom: 3px;
+		display: flex;
+		align-items: center;
+	}
+	
+	.msg-wrap span {
+		flex-grow: 1;
+	}
+	
+	.msg-wrap input {
+		width: 100px;
+		text-align: right;
+	}
+
+	.msg-body {
+		padding: 0 10px;
+		margin: 0;
+	}
+	
+	.msg-share .msg-header {
+		background-image: url(page.png);
+	}
+	.msg-customize .msg-header {
+		background-image: url(wrench.png);
+		text-indent: 20px;
+	}
+	.msg-header {
+		background: transparent url(x.png) no-repeat 2px 1px;
+		margin: 0 0 5px 0;
+		font-weight: bold;
+		padding: 0 0 3px 0;
+		text-indent: 18px;
+		border-bottom: 1px solid black;
+	}
+
+	.msg-wrap small {
+		padding: 6px; /* for some reason padidng-top-bottom and margin-top-bottom are not having affect on small */
+	}
+	
+	.msg-wrap small + .row {
+		margin-top: 5px;
+	}
+	
+	.msg-wrap .row:last-of-type {
+		padding-top: 6px;
+		justify-content: space-around;
+	}
+	
+	.msg-wrap button {
+		margin-right: 10px;
+		width: 50%;
+		position: relative;
+		text-indent: 16px;
+	}
+	
+	.msg-wrap .msg-ok:before, .msg-wrap .msg-cancel:before {
+		position:absolute;
+		background-repeat: no-repeat;
+		background-position: center center;
+		margin-left: -18px;
+		margin-top: 1px;
+		width: 16px;
+		height: 16px;
+		content: '';
+	}
+	
+	.msg-wrap .msg-ok:before {
+		background-image: url(check-thin.png);
+	}	
+	
+	.msg-wrap .msg-cancel:before {
+		background-image: url(x.png);
+	}
+	
+	.msg-wrap button:last-of-type {
+		margin-right: 0;
+	}
+	
+	.msg-wrap hr {
+		border-top: 1px solid #eee;
+		border-bottom: 1px solid #fff;
+	}
+	
+	.msg-wrap textarea {
+		margin-top: 4px;
+	}
+	
+	#msg-container {
+		background-color: rgba(255, 255, 255, .7);
+		position: fixed;
+		width: 100%;
+		height: 100%;
+		z-index: 10;
+		top: 0;
+		left: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+</style>
 </head>
 <body>
+<div id="msg-container">
+	<div class="msg-wrap msg-share">
+		<div class="msg-header">Share Function</div>
+		<div class="msg-body">
+			<small>Leave fields blank to share as anonymous user</small>
+			<div class="row"><span>User Name</span> <input type="text"></div>
+			<div class="row"><span>Password</span> <input type="text"></div>
+			<div class="row"><span>Avatar</span> <input type="text"></div>
+			<div class="row">
+				<button class="msg-ok"><span></span>Share</button>
+				<button class="msg-cancel"><span></span>Cancel</button>
+			</div>
+		</div>
+	</div>
+	<div class="msg-wrap msg-customize">
+		<div class="msg-header">Customize Function</div>
+		<div class="msg-body">
+			<textarea rows="3">code code code code code code code code code code code code</textarea>
+			<hr>
+			<div class="row"><span>User Name</span> <input type="text"></div>
+			<div class="row"><span>Password</span> <input type="text"></div>
+			<div class="row"><span>Avatar</span> <input type="text"></div>
+			<div class="row">
+				<button class="msg-ok"><span></span>Apply</button>
+				<button class="msg-cancel"><span></span>Cancel</button>
+			</div>
+		</div>
+	</div>
+</div>
 <div id="main-wrap">
 	<div id="header">
 		<img class="icon" src="icon-shadow.png">
