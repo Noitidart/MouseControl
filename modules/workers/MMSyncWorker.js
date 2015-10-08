@@ -159,7 +159,7 @@ function winStartMessageLoopOLD(wMsgFilterMin, wMsgFilterMax) {
 	
 	var nowTime = new Date().getTime();
 	// your main loop
-	while (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
+	while (new Date().getTime() - nowTime < 60000) { // run it for 10 sec
 		var rez_GetMessage = ostypes.API('GetMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax);
 		console.log('rez_GetMessage:', rez_GetMessage);
 		
@@ -167,8 +167,30 @@ function winStartMessageLoopOLD(wMsgFilterMin, wMsgFilterMax) {
 			// console.info('LMessage.lParam:', LMessage.lParam, LMessage.lParam.toString());
 			var hrawinput = ostypes.TYPE.HRAWINPUT(LMessage.lParam); // ctypes.cast(LMEssage.lParam, ostypes.TYPE.HRAWINPUT) doesnt work here as the Message.lParam is not really ostypes.TYPE.LPARAM it gets unwrapped so its primiated js type, its just a number. thats why i can just wrap it with a ostypes.TYPE.HRAWINPUT
 			var rez_getRawInputData = ostypes.API('GetRawInputData')(hrawinput, ostypes.CONST.RID_INPUT, OSStuff.getRawInputDataBuffer.address(), OSStuff.rawInputDataBufferSize.address(), ostypes.TYPE.RAWINPUTHEADER.size);
-			console.log('rez_getRawInputData:', rez_getRawInputData, rez_getRawInputData.toString());
-			console.info('OSStuff.getRawInputDataBuffer', OSStuff.getRawInputDataBuffer.mouse);
+			var usButtonFlags = parseInt(cutils.jscGetDeepest(OSStuff.getRawInputDataBuffer.mouse.usButtonFlags));
+			// console.log('rez_getRawInputData:', rez_getRawInputData, rez_getRawInputData.toString());
+			if (usButtonFlags != 0) {
+				var usButtonFlagStrs = {}; // key value. key is aRawMouseConstStr value is 0 unless its wheel, in which case it is either 1 up/right or -1 for for left/down
+				for (var aRawMouseConstStr in OSStuff.rawMouseConsts) {
+					if (usButtonFlags & OSStuff.rawMouseConsts[aRawMouseConstStr]) {
+						switch (aRawMouseConstStr) {
+							case 'RI_MOUSE_HORIZONTAL_WHEEL':
+							case 'RI_MOUSE_WHEEL':
+								usButtonFlagStrs[aRawMouseConstStr] = parseInt(cutils.jscGetDeepest(ctypes.cast(ostypes.TYPE.USHORT(OSStuff.getRawInputDataBuffer.mouse.usButtonData), ostypes.TYPE.SHORT))) > 0 ? 1 : -1;
+								break;
+							default:
+								usButtonFlagStrs[aRawMouseConstStr] = 0;
+						}
+					}
+				}
+				var pth = OS.Path.join(OS.Constants.Path.desktopDir, 'RawInputMouse.txt');
+				var valOpen = OS.File.open(pth, {write: true, append: true});
+				var txtToAppend = JSON.stringify(usButtonFlagStrs) + '\n';
+				var txtEncoded = TextEncoder().encode(txtToAppend);
+				valOpen.write(txtEncoded);
+				valOpen.close();
+				console.log('usButtonFlagStrs:', usButtonFlagStrs);
+			}
 		}
 	}
 	
@@ -301,6 +323,7 @@ function syncMonitorMouse() {
 				}
 				
 				if (!OSStuff.mouseConsts) {
+					/*
 					OSStuff.mouseConsts = {
 						WM_MOUSEMOVE: 0x200,
 						WM_LBUTTONDOWN: 0x201,
@@ -317,6 +340,27 @@ function syncMonitorMouse() {
 						WM_XBUTTONUP: 0x20C,
 						WM_XBUTTONDBLCLK: 0x20D,
 						WM_MOUSEHWHEEL: 0x20E
+					};
+					*/
+					OSStuff.rawMouseConsts = {
+						// RI_MOUSE_LEFT_BUTTON_DOWN: 0x0001,
+						// RI_MOUSE_LEFT_BUTTON_UP: 0x0002,
+						// RI_MOUSE_MIDDLE_BUTTON_DOWN: 0x0010,
+						// RI_MOUSE_MIDDLE_BUTTON_UP: 0x0020,
+						// RI_MOUSE_RIGHT_BUTTON_DOWN: 0x0004,
+						// RI_MOUSE_RIGHT_BUTTON_UP: 0x0008,
+						RI_MOUSE_BUTTON_1_DOWN: 0x0001,
+						RI_MOUSE_BUTTON_1_UP: 0x0002,
+						RI_MOUSE_BUTTON_2_DOWN: 0x0004,
+						RI_MOUSE_BUTTON_2_UP: 0x0008,
+						RI_MOUSE_BUTTON_3_DOWN: 0x0010,
+						RI_MOUSE_BUTTON_3_UP: 0x0020,
+						RI_MOUSE_BUTTON_4_DOWN: 0x0040,
+						RI_MOUSE_BUTTON_4_UP: 0x0080,
+						RI_MOUSE_BUTTON_5_DOWN: 0x100,
+						RI_MOUSE_BUTTON_5_UP: 0x0200,
+						RI_MOUSE_WHEEL: 0x0400,
+						RI_MOUSE_HORIZONTAL_WHEEL: 0x0800
 					};
 				};
 				
