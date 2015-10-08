@@ -11,7 +11,7 @@
 		top: calc(50% - (13px / 2));
 		opacity: .2;
 		cursor: pointer;
-		transition: opacity 150ms;
+		transition: opacity 170ms;
 	}
 	
 	.pseudo-config:hover {
@@ -301,12 +301,12 @@
 					return;
 				}
 				
-				container.style.transitionDelay = '25ms';
+				container.style.transitionDelay = '40ms';
 				msgWrap.style.transitionDelay = '0';
 				container.style.opacity = ''; //:learned: setting to blank removes the inline style property
 				msgWrap.style.marginTop = '';
 				msgWrap.style.pointerEvents = '';
-				msgWrap.style.transition = 'opacity 100ms ease-in, margin-top 100ms ease-in';
+				msgWrap.style.transition = 'opacity 150ms ease-in, margin-top 150ms ease-in';
 				msgWrap.style.opacity = '';
 				
 				container.addEventListener('transitionend', function() {
@@ -473,7 +473,7 @@ input[type=text]{
 	text-align: center;
 	font-size: 12px;
 	padding-bottom: 2px;
-	box-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.2) inset;
+	box-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.2) inset, 0px 1px 1px rgba(0, 0, 0, 0.05);
 }
 
 textarea {
@@ -560,8 +560,8 @@ button.import:hover {
 		margin-top: -20px; /*for transition anim*/
 		opacity: 0;
 		pointer-events: none;
-		transition: margin-top 100ms ease-in;
-		transition-delay: 25ms;
+		transition: margin-top 150ms ease-in;
+		transition-delay: 40ms;
 		display: inline-block;
 	}
 	
@@ -714,7 +714,7 @@ button.import:hover {
 		opacity: 0;
 		display: flex;
 		pointer-events: none;
-		transition: opacity 100ms ease-in;
+		transition: opacity 150ms ease-in;
 	}
 	
 	.msg-customize .combo-set-area:before {
