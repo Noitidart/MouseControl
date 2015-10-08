@@ -507,6 +507,39 @@ var winInit = function() {
 				self.TYPE.DWORD				// dwOffset
 			);
 		},
+		CreateWindowEx: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms632680%28v=vs.85%29.aspx
+			 * HWND WINAPI CreateWindowEx(
+			 *   __in_     DWORD     dwExStyle,
+			 *   __in_opt_ LPCTSTR   lpClassName,
+			 *   __in_opt_ LPCTSTR   lpWindowName,
+			 *   __in_     DWORD     dwStyle,
+			 *   __in_     int       x,
+			 *   __in_     int       y,
+			 *   __in_     int       nWidth,
+			 *   __in_     int       nHeight,
+			 *   __in_opt_ HWND      hWndParent,
+			 *   __in_opt_ HMENU     hMenu,
+			 *   __in_opt_ HINSTANCE hInstance,
+			 *   __in_opt_ LPVOID    lpParam
+			 * );
+			 */
+			return lib('user32').declare(ifdef_UNICODE ? 'CreateWindowExW' : 'CreateWindowExA', self.TYPE.ABI,
+				self.TYPE.HWND,			// return
+				self.TYPE.DWORD,		// dwExStyle
+				self.TYPE.LPCTSTR,		// lpClassName
+				self.TYPE.LPCTSTR,		// lpWindowName
+				self.TYPE.DWORD,		// dwStyle
+				self.TYPE.INT,			// x
+				self.TYPE.INT,			// y
+				self.TYPE.INT,			// nWidth
+				self.TYPE.INT,			// nHeight
+				self.TYPE.HWND,			// hWndParent
+				self.TYPE.HMENU,		// hMenu
+				self.TYPE.HINSTANCE,	// hInstance
+				self.TYPE.LPVOID		// lpParam
+			);
+		},
 		DeleteDC: function() {
 			/* http://msdn.microsoft.com/en-us/library/windows/desktop/dd183489%28v=vs.85%29.aspx
 			 * BOOL DeleteDC(

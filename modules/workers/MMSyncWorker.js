@@ -94,7 +94,7 @@ self.onclose = function() {
 	stopMonitor();
 }
 
-function winStartMessageLoop(wMsgFilterMin, wMsgFilterMax) {
+function winStartMessageLoopOLD(wMsgFilterMin, wMsgFilterMax) {
 	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
 	// based on http://stackoverflow.com/questions/6901063/how-to-create-a-pure-winapi-window
 	
@@ -103,7 +103,7 @@ function winStartMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 	// this sets up the thread message loop
 	var LMessage = ostypes.TYPE.MSG();
 	var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_NOREMOVE);
-	console.info('rez_PeekMessage:', rez_PeekMessage);
+	// console.info('rez_PeekMessage:', rez_PeekMessage);
 	
 	var nowTime = new Date().getTime();
 	// your main loop
@@ -128,6 +128,29 @@ function winStartMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 	// }
 	
 	// console.log('message loop ended');
+}
+
+function winStartMessageLoop(wMsgFilterMin, wMsgFilterMax) {
+	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
+	// based on http://stackoverflow.com/questions/6901063/how-to-create-a-pure-winapi-window
+	
+	// great thing about handling my own message loop is that i can make it not respond to mouse move by setting minFilter to one above WM_MOUSEMOVE, thankfully WM_MOUSEMOVE is the lowest at 0x200
+	
+	// this sets up the thread message loop
+	var LMessage = ostypes.TYPE.MSG();
+	var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_NOREMOVE);
+	console.info('rez_PeekMessage:', rez_PeekMessage);
+	
+	console.log('starting loop');
+	
+	var nowTime = new Date().getTime();
+	// your main loop
+	// while (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
+		var rez_GetMessage = ostypes.API('GetMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax);
+		console.log('rez_GetMessage:', rez_GetMessage);
+	// }
+	
+	console.log('message loop ended');
 }
 
 function syncMonitorMouse() {
