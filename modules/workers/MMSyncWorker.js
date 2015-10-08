@@ -107,7 +107,7 @@ function winStartMessageLoopOLDER(wMsgFilterMin, wMsgFilterMax) {
 	
 	// this sets up the thread message loop
 	var LMessage = ostypes.TYPE.MSG();
-	var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_NOREMOVE);
+	// var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_NOREMOVE);
 	// console.info('rez_PeekMessage:', rez_PeekMessage);
 	
 	var nowTime = new Date().getTime();
@@ -117,7 +117,7 @@ function winStartMessageLoopOLDER(wMsgFilterMin, wMsgFilterMax) {
 		// You can use GetMessage here instead and it will block waiting for messages
 		// which is good if you don't have anything else to do in your thread.
 		var checkForMessage = function() {
-			var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_REMOVE);
+			var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_REMOVE);
 			if (rez_PeekMessage) {
 				console.log('message found:', LMessage);
 			} else {
@@ -152,17 +152,25 @@ function winStartMessageLoopOLD(wMsgFilterMin, wMsgFilterMax) {
 	
 	// this sets up the thread message loop
 	var LMessage = ostypes.TYPE.MSG();
-	var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_NOREMOVE);
-	console.info('rez_PeekMessage:', rez_PeekMessage);
+	// var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_NOREMOVE);
+	// console.info('rez_PeekMessage:', rez_PeekMessage);
 	
 	console.log('starting loop');
 	
 	var nowTime = new Date().getTime();
 	// your main loop
-	// while (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
-		var rez_GetMessage = ostypes.API('GetMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax);
+	while (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
+		var rez_GetMessage = ostypes.API('GetMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax);
 		console.log('rez_GetMessage:', rez_GetMessage);
-	// }
+		
+		if (cutils.jscEqual(LMessage.message, ostypes.CONST.WM_INPUT)) {
+			// console.info('LMessage.lParam:', LMessage.lParam, LMessage.lParam.toString());
+			var hrawinput = ostypes.TYPE.HRAWINPUT(LMessage.lParam); // ctypes.cast(LMEssage.lParam, ostypes.TYPE.HRAWINPUT) doesnt work here as the Message.lParam is not really ostypes.TYPE.LPARAM it gets unwrapped so its primiated js type, its just a number. thats why i can just wrap it with a ostypes.TYPE.HRAWINPUT
+			var rez_getRawInputData = ostypes.API('GetRawInputData')(hrawinput, ostypes.CONST.RID_INPUT, OSStuff.getRawInputDataBuffer.address(), OSStuff.rawInputDataBufferSize.address(), ostypes.TYPE.RAWINPUTHEADER.size);
+			console.log('rez_getRawInputData:', rez_getRawInputData, rez_getRawInputData.toString());
+			console.info('OSStuff.getRawInputDataBuffer', OSStuff.getRawInputDataBuffer.mouse);
+		}
+	}
 	
 	console.log('message loop ended');
 }
@@ -314,8 +322,8 @@ function syncMonitorMouse() {
 				
 				winStartMessageLoop();
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_LBUTTONDOWN, ostypes.CONST.WM_MOUSEHWHEEL);
-				winStartMessageLoopOLDER(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT);
-				// winStartMessageLoopOLD(0, 0);
+				// winStartMessageLoopOLDER(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT);
+				winStartMessageLoopOLD(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT);
 				
 				/*
 				OSStuff.myLLMouseHook_js = function(nCode, wParam, lParam) {
