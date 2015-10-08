@@ -123,6 +123,15 @@ function winStartMessageLoopOLDER(wMsgFilterMin, wMsgFilterMax) {
 			} else {
 				console.log('no message found:', rez_PeekMessage);
 			}
+			
+			if (cutils.jscEqual(LMessage.message, ostypes.CONST.WM_INPUT)) {
+				// console.info('LMessage.lParam:', LMessage.lParam, LMessage.lParam.toString());
+				var hrawinput = ostypes.TYPE.HRAWINPUT(LMessage.lParam); // ctypes.cast(LMEssage.lParam, ostypes.TYPE.HRAWINPUT) doesnt work here as the Message.lParam is not really ostypes.TYPE.LPARAM it gets unwrapped so its primiated js type, its just a number. thats why i can just wrap it with a ostypes.TYPE.HRAWINPUT
+				var rez_getRawInputData = ostypes.API('GetRawInputData')(hrawinput, ostypes.CONST.RID_INPUT, OSStuff.getRawInputDataBuffer.address(), OSStuff.rawInputDataBufferSize.address(), ostypes.TYPE.RAWINPUTHEADER.size);
+				console.log('rez_getRawInputData:', rez_getRawInputData, rez_getRawInputData.toString());
+				console.info('OSStuff.getRawInputDataBuffer', OSStuff.getRawInputDataBuffer.mouse);
+			}
+			
 			if (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
 				setTimeout(checkForMessage, 10);
 			} else {
@@ -186,6 +195,7 @@ function winStartMessageLoop() {
 		
 		return rez_DefWindowProc;
 	};
+	OSStuff.windowProc = windowProc; // so it doesnt get gc'ed
 	
 	// Define a custom Window Class in order to bind our custom Window Proc
 	var wndclass = ostypes.TYPE.WNDCLASS();
@@ -207,7 +217,7 @@ function winStartMessageLoop() {
 		throw new Error('failed to create window');
 	}
 	
-	OSStuff.msgWinHwnd = msgWinHwnd;
+	OSStuff.msgWinHwnd = msgWinHwnd; // so it doesnt get gc'ed
 	
 	terminators.push(function() {
 		// var rez_destroyWindow = ostypes.API('DestroyWindow')(OSStuff.msgWinHwnd);
@@ -216,6 +226,8 @@ function winStartMessageLoop() {
 		// var rez_UnregisterClass = ostypes.API('UnregisterClass')(ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol'), null);
 		// console.log('rez_UnregisterClass:', rez_UnregisterClass);
 	});
+	
+	// rawinput stuff from tutorial: http://www.toymaker.info/Games/html/raw_input.html#tables
 	
 				var rid_js = new Array(1);
 				rid_js[0] = ostypes.TYPE.RAWINPUTDEVICE(1, 2, ostypes.CONST.RIDEV_INPUTSINK, msgWinHwnd); // mouse
@@ -247,6 +259,10 @@ function winStartMessageLoop() {
 				8 - multi-axis controller
 				9 - Tablet PC controls
 				*/
+				
+				// lets preallocate the buffer so we dont have to allocate everytime a wm_input message is found:
+				OSStuff.getRawInputDataBuffer = ostypes.TYPE.RAWINPUT();
+				OSStuff.rawInputDataBufferSize = ostypes.TYPE.UINT(ostypes.TYPE.RAWINPUT.size);
 				
 				var rid_c = ostypes.TYPE.RAWINPUTDEVICE.array(rid_js.length)(rid_js);
 				var rez_registerDevices = ostypes.API('RegisterRawInputDevices')(rid_c, rid_js.length, ostypes.TYPE.RAWINPUTDEVICE.size);
@@ -298,7 +314,8 @@ function syncMonitorMouse() {
 				
 				winStartMessageLoop();
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_LBUTTONDOWN, ostypes.CONST.WM_MOUSEHWHEEL);
-				// winStartMessageLoopOLDER(0, 0);
+				winStartMessageLoopOLDER(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT);
+				// winStartMessageLoopOLD(0, 0);
 				
 				/*
 				OSStuff.myLLMouseHook_js = function(nCode, wParam, lParam) {

@@ -74,6 +74,7 @@ var winTypes = function() {
 	this.PLONG = this.LONG.ptr;
 	this.PULONG = this.ULONG.ptr;
 	this.PULONG_PTR = this.ULONG.ptr;
+	this.PUINT = this.UINT.ptr;
 	this.PCWSTR = this.WCHAR.ptr;
 	this.SIZE_T = this.ULONG_PTR;
 	this.SYSTEM_INFORMATION_CLASS = this.INT; // i think due to this search: http://stackoverflow.com/questions/28858849/where-is-system-information-class-defined
@@ -92,6 +93,7 @@ var winTypes = function() {
 	this.HKEY = this.HANDLE;
 	this.HMENU = this.HANDLE;
 	this.HMONITOR = this.HANDLE;
+	this.HRAWINPUT = this.HANDLE;
 	this.HWND = this.HANDLE;
 	this.LPCOLESTR = this.OLECHAR.ptr; // typedef [string] const OLECHAR *LPCOLESTR; // https://github.com/wine-mirror/wine/blob/bdeb761357c87d41247e0960f71e20d3f05e40e6/include/wtypes.idl#L288
 	this.LPCTSTR = ifdef_UNICODE ? this.LPCWSTR : this.LPCSTR;
@@ -159,11 +161,26 @@ var winTypes = function() {
 		{ rgbRed:		this.BYTE },
 		{ rgbReserved:	this.BYTE }
 	]);
+	this.RAWINPUTHEADER = ctypes.StructType('tagRAWINPUTHEADER', [
+		{ dwType: this.DWORD },
+		{ dwSize: this.DWORD },
+		{ hDevice: this.HANDLE },
+		{ wParam: this.WPARAM }
+	]);
 	this.RAWINPUTDEVICE = ctypes.StructType('tagRAWINPUTDEVICE', [ // https://msdn.microsoft.com/en-us/library/windows/desktop/ms645565%28v=vs.85%29.aspx
 		{ usUsagePage: this.USHORT },
 		{ usUsage: this.USHORT },
 		{ dwFlags: this.DWORD },
 		{ hwndTarget: this.HWND }
+	]);
+	this.RAWMOUSE = ctypes.StructType('tagRAWMOUSE', [
+		{ usFlags: this.USHORT },
+		{ usButtonFlags: this.USHORT },
+		{ usButtonData: this.USHORT },
+		{ ulRawButtons: this.ULONG },
+		{ lLastX: this.LONG },
+		{ lLastY: this.LONG },
+		{ ulExtraInformation: this.ULONG }
 	]);
     this.RECT = ctypes.StructType('_RECT', [ // https://msdn.microsoft.com/en-us/library/windows/desktop/dd162897%28v=vs.85%29.aspx
         { left: this.LONG },
@@ -246,6 +263,10 @@ var winTypes = function() {
 	this.PBITMAPINFOHEADER = this.BITMAPINFOHEADER.ptr;
 	this.PDISPLAY_DEVICE = this.DISPLAY_DEVICE.ptr;
 	this.PCRAWINPUTDEVICE = this.RAWINPUTDEVICE.ptr;
+	this.RAWINPUT = ctypes.StructType('tagRAWINPUT', [
+		{ header: this.RAWINPUTHEADER },
+		{ mouse: this.RAWMOUSE } // use this.RAWMOUSE instead of RAWHID or RAWKEYBOARD as RAWMOUSE struct is the biggest, the tutorial linked below also says this
+	]);
 	
 	// FURTHER ADVANCED STRUCTS
 	this.BITMAPV5HEADER = ctypes.StructType('BITMAPV5HEADER', [
@@ -307,6 +328,7 @@ var winTypes = function() {
 		{ lpszMenuName: this.LPCTSTR },
 		{ lpszClassName: this.LPCTSTR }
 	]);
+
 }
 
 var winInit = function() {
@@ -369,7 +391,9 @@ var winInit = function() {
 		WM_MOUSEHWHEEL: 0x20E,
 		WH_MOUSE_LL: 14,
 		RIDEV_INPUTSINK: 0x00000100,
-		WM_CREATE: 0x0001
+		RID_INPUT: 0x10000003,
+		WM_CREATE: 0x0001,
+		WM_INPUT: 0x00FF
 	};
 
 	var _lib = {}; // cache for lib
@@ -788,6 +812,25 @@ var winInit = function() {
 				self.TYPE.HDC, // hWnd
 				self.TYPE.INT, // nXPos
 				self.TYPE.INT // nYPos
+			);
+		},
+		GetRawInputData: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms645596%28v=vs.85%29.aspx
+			 *  UINT WINAPI GetRawInputData(
+			 *    __in_      HRAWINPUT hRawInput,
+			 *    __in_      UINT      uiCommand,
+			 *    __out_opt_ LPVOID    pData,
+			 *    __inout_   PUINT     pcbSize,
+			 *    __in_      UINT      cbSizeHeader
+			 *  );
+			 */
+			return lib('user32').declare('GetRawInputData', self.TYPE.ABI,
+				self.TYPE.UINT,			// return
+				self.TYPE.HRAWINPUT,	// hRawInput
+				self.TYPE.UINT,			// uiCommand
+				self.TYPE.LPVOID,		// pData
+				self.TYPE.PUINT,		// pcbSize
+				self.TYPE.UINT			// cbSizeHeader
 			);
 		},
 		GetWindowLongPtr: function() {
