@@ -271,6 +271,11 @@
 			}
 			/*end - dom insertion library function from MDN*/
 		</script>
+		<script>
+			/*start - non jquery dom stuff*/
+			
+			/*end - non jquery dom stuff*/
+		</script>
 		<script type="text/javascript">
 			/*start - jquery stuff*/
 			$(function () {
@@ -436,7 +441,7 @@ textarea {
 	border-color: rgb(160, 160, 160) rgb(185, 185, 185) rgb(185, 185, 185);
 	/*border-radius: 2px;*/
 	position: relative;
-	font-family: tahoma;
+	/*font-family: tahoma;*/
 	width: 100%;
 	color: rgb(68, 68, 68);
 	text-align: left;
@@ -510,9 +515,11 @@ button.import:hover {
 		border-radius: 2px;
 		box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.298);
 		padding: 10px;
-		z-index: 10;
-		position: absolute;
-		width: 60%;
+		margin-top: -20px;
+		opacity: 0;
+		display: none;
+		transition: opacity 300ms, margin-top 300ms;
+		transition-delay: 100ms;
 	}
 	
 	.msg-wrap .row {
@@ -521,42 +528,72 @@ button.import:hover {
 		align-items: center;
 	}
 	
-	.msg-wrap span {
+	.msg-share span {
+		width: 8em;
+	}
+	.msg-share input[type=text] {
 		flex-grow: 1;
+		text-align: right;
 	}
 	
-	.msg-wrap input {
-		width: 100px;
-		text-align: right;
+	.msg-customize span {
+		width: 6em;
+	}
+	
+	.msg-customize input[type=text] {
+		text-align: left;
+	}
+
+	.msg-customize .msg-cust-name {
+		width: 200px; /* match the width of the select box */
+	}
+	
+	.msg-customize .msg-cust-desc {
+		flex-grow: 1;
 	}
 
 	.msg-body {
 		padding: 0 10px;
 		margin: 0;
+		position: relative;
 	}
 	
 	.msg-share .msg-header {
 		background-image: url(page.png);
+	}	
+	.msg-trash .msg-header {
+		background-image: url(trash.png);
 	}
 	.msg-customize .msg-header {
 		background-image: url(wrench.png);
-		text-indent: 20px;
+		text-indent: 21px;
+		padding: 0 0 5px 0;
 	}
 	.msg-header {
 		background: transparent url(x.png) no-repeat 2px 1px;
 		margin: 0 0 5px 0;
 		font-weight: bold;
-		padding: 0 0 3px 0;
+		padding: 0 0 4px 0;
 		text-indent: 18px;
 		border-bottom: 1px solid black;
 	}
 
 	.msg-wrap small {
 		padding: 6px; /* for some reason padidng-top-bottom and margin-top-bottom are not having affect on small */
+		white-space: nowrap;
 	}
 	
 	.msg-wrap small + .row {
 		margin-top: 5px;
+	}
+	
+	.msg-trash {
+		width: 30%;
+	}
+	
+	.msg-trash .row {
+		text-align: center;
+		margin-top: 15px;
 	}
 	
 	.msg-wrap .row:last-of-type {
@@ -569,6 +606,11 @@ button.import:hover {
 		width: 50%;
 		position: relative;
 		text-indent: 16px;
+	}
+	
+	.msg-customize button {
+		width: 30%;
+		margin-right: -30%;
 	}
 	
 	.msg-wrap .msg-ok:before, .msg-wrap .msg-cancel:before {
@@ -584,7 +626,12 @@ button.import:hover {
 	
 	.msg-wrap .msg-ok:before {
 		background-image: url(check-thin.png);
-	}	
+		margin-top: 1px;
+	}
+	
+	.msg-customize .msg-ok:before {
+		margin-top: 2px;
+	}
 	
 	.msg-wrap .msg-cancel:before {
 		background-image: url(x.png);
@@ -608,12 +655,26 @@ button.import:hover {
 		position: fixed;
 		width: 100%;
 		height: 100%;
-		z-index: 10;
+		z-index: 100;
 		top: 0;
 		left: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		opacity: 0;
+		display: none;
+		transition: opacity 300ms;
+	}
+	
+	.msg-customize .combo-set-area:before {
+		content: '';
+	}
+	.msg-customize .combo-set-area {
+		display:flex;
+		align-items: center;
+		justify-content: center;
+		padding: 30px 0;
+		border: 1px dashed #eee;
 	}
 </style>
 </head>
@@ -632,14 +693,38 @@ button.import:hover {
 			</div>
 		</div>
 	</div>
+	<div class="msg-wrap msg-share msg-trash">
+		<div class="msg-header">Trash Function</div>
+		<div class="msg-body">
+			<div class="row">Are you sure you want to remove this funciton? You will not be able to recover it.</div>
+			<div class="row">
+				<button class="msg-ok"><span></span>Confirm</button>
+				<button class="msg-cancel"><span></span>Cancel</button>
+			</div>
+		</div>
+	</div>
 	<div class="msg-wrap msg-customize">
 		<div class="msg-header">Customize Function</div>
 		<div class="msg-body">
-			<textarea rows="3">code code code code code code code code code code code code</textarea>
+			<div class="row">
+				<span>Group</span>
+				<select>
+					<option>Entertainment</option>
+					<option selected="true">Miscellaneous</option>
+					<option>Navigation</option>
+					<option>Social</option>
+					<option>Tabs</option>
+					<option>Zoom</option>
+				</select>
+			</div>
+			<div class="row"><span>Name</span> <input type="text" class="msg-cust-name"></div>
+			<div class="row"><span>Description</span> <input type="text" class="msg-cust-desc"></div>
+			<textarea rows="3" cols="100">code code code code code code code code code code code code</textarea>
 			<hr>
-			<div class="row"><span>User Name</span> <input type="text"></div>
-			<div class="row"><span>Password</span> <input type="text"></div>
-			<div class="row"><span>Avatar</span> <input type="text"></div>
+			<small style="display:block; text-align:center; position:absolute; width:95%;">PLACE MOUSE HERE AND DO MOUSE COMBO</small>
+			<div class="combo-set-area">
+				<img src="mouse-left.png" /> + <img src="mouse-right.png"/>
+			</div>
 			<div class="row">
 				<button class="msg-ok"><span></span>Apply</button>
 				<button class="msg-cancel"><span></span>Cancel</button>
