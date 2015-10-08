@@ -36,6 +36,7 @@ const core = {
 };
 
 const JETPACK_DIR_BASENAME = 'jetpack';
+const OSPath_simpleStorage = OS.Path.join(OS.Constants.Path.profileDir, JETPACK_DIR_BASENAME, core.addon.id, 'simple-storage');
 const myPrefBranch = 'extensions.' + core.addon.id + '.';
 
 // Lazy Imports

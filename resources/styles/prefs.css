@@ -10,21 +10,21 @@
 }
 
 .pseudo-config:hover {
-	opacity: .6;
+	opacity: 1;
 }
 
 .trash-function {
-	background: transparent url(trash.png) no-repeat center center;
+	background: transparent url('chrome://mousecontrol/content/resources/images/trash.png') no-repeat center center;
 	left: 0;
 }
 
 .configure-function {
-	background: transparent url(wrench.png) no-repeat center center;
+	background: transparent url('chrome://mousecontrol/content/resources/images/wrench.png') no-repeat center center;
 	left: calc(100% - 23px);
 }
 
 .share-function {
-	background: transparent url(network-tri.png) no-repeat center center;
+	background: transparent url('chrome://mousecontrol/content/resources/images/network-tri.png') no-repeat center center;
 	left: calc(100% - 6px);
 }
 
@@ -53,10 +53,10 @@
 	margin-right: 0;
 }
 .config-action-create span {
-	background-image: url(pencil.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/pencil.png');
 }
 .config-action-download span {
-	background-image: url(download_fat.png);
+	background-image: url('chrome://mousecontrol/content/resources/images/download_fat.png');
 }
 
 #configWrap .opt span:last-of-type img {
@@ -102,15 +102,15 @@
 	width: 45% !important;
 }
 
-	#configWrap .opt span:first-of-type {
-		display: flex;
-		flex-direction: column;
-	}
-	
-	#configWrap .opt span:first-of-type small {
-		color: #999;
-		padding-right: 5px;
-	}
+#configWrap .opt span:first-of-type {
+	display: flex;
+	flex-direction: column;
+}
+
+#configWrap .opt span:first-of-type small {
+	color: #999;
+	padding-right: 5px;
+}
 
 #configWrap > hr {
 	margin: 5px auto;

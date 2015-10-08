@@ -5,11 +5,130 @@ Cu.import('resource://gre/modules/Services.jsm');
 Cu.import('resource://gre/modules/addons/XPIProvider.jsm');
 Cu.import('resource://gre/modules/Promise.jsm');
 
+const core = {
+	addon: {
+		name: 'MouseControl',
+		id: 'MouseControl@jetpack',
+		path: {
+			name: 'mousecontrol',
+			content: 'chrome://mousecontrol/content/',
+			images: 'chrome://mousecontrol/content/resources/images/',
+			locale: 'chrome://mousecontrol/locale/',
+			modules: 'chrome://mousecontrol/content/modules/',
+			resources: 'chrome://mousecontrol/content/resources/',
+			scripts: 'chrome://mousecontrol/content/resources/scripts/',
+			styles: 'chrome://mousecontrol/content/resources/styles/',
+			workers: 'chrome://mousecontrol/content/modules/workers/'
+		},
+		cache_key: Math.random() // set to version on release
+	},
+	os: {
+		name: OS.Constants.Sys.Name.toLowerCase(),
+		toolkit: Services.appinfo.widgetToolkit.toLowerCase(),
+		xpcomabi: Services.appinfo.XPCOMABI
+	},
+	firefox: {
+		pid: Services.appinfo.processID,
+		version: Services.appinfo.version
+	}
+};
+
+const JETPACK_DIR_BASENAME = 'jetpack';
+const OSPath_simpleStorage = OS.Path.join(OS.Constants.Path.profileDir, JETPACK_DIR_BASENAME, core.addon.id, 'simple-storage');
+const myPrefBranch = 'extensions.' + core.addon.id + '.';
+
 var MouseControl = XPIProvider.bootstrapScopes['MouseControl@jetpack'];
-const installPath = MouseControl.self.aData.installPath.path; //platform specific so no need to normalize
+const installPath = OSPath_simpleStorage; //platform specific so no need to normalize
 const funcsFilePath = OS.Path.join(installPath, 'funcs.json');
 const TDecoder = new TextDecoder();
 
+
+var funcsFileObjDefault = [
+	{
+		name: 'Jump to Last Tab',
+		desc: 'Selects the previously focused tab across all windows',
+		group: 'tabs',
+		script: '',
+		combo: ''		
+	},
+	{
+		name: 'Select Tab to Right',
+		desc: 'Moves tab focus to the right of the currently selected tab',
+		group: 'tabs',
+		script: '',
+		combo: ''
+	},
+	{
+		name: 'Select Tab to Left',
+		desc: 'Moves tab focus to the left of the currently selected tab',
+		group: 'tabs',
+		script: '',
+		combo: ''	
+	},
+	{
+		name: 'Jump to Back to Original Tab',
+		desc: 'If moved tab focus, and have not released trigger, this will jump back to the tab that was initally selected (Trigger: `Select Tab to Right` OR `Select Tab to Left`)',
+		group: 'tabs',
+		script: '',
+		combo: ''		
+	},
+	{
+		name: 'Close Tab',
+		desc: 'Closes the current tab and if this was the only tab in the window, the window will be closed',
+		group: 'tabs',
+		script: '',
+		combo: ''		
+	},
+	{
+		name: 'Undo Close Tab',
+		desc: 'Re-opens tab that was last closed',
+		group: 'tabs',
+		script: '',
+		combo: ''		
+	},
+	{
+		name: 'Close All Tabs of Current Site',
+		desc: 'Finds adn closes all tabs (within the current window) that have the same domain as the current tab',
+		group: 'tabs',
+		script: '',
+		combo: ''		
+	},
+	{
+		name: 'New Tab',
+		desc: 'Opens a new tab with respect to option of `New Tab Position`',
+		group: 'tabs',
+		script: '',
+		combo: ''		
+	},
+	{
+		name: 'Duplicate Tab',
+		desc: 'Clones the current tab and positions it with respect to option of `Duplicated Tab Position`',
+		group: 'tabs',
+		script: '',
+		combo: ''		
+	},
+	{
+		name: 'Zoom In',
+		desc: 'Decreases the zoom of the document in the tab',
+		group: 'zoom',
+		script: '',
+		combo: ''		
+	},
+	{
+		name: 'Zoom Out',
+		desc: 'Decreases the zoom of the document in the tab',
+		group: 'zoom',
+		script: '',
+		combo: ''		
+	},
+	{
+		name: 'Reset Zoom',
+		desc: 'Reset the zoom of the document in the tab to one-hundred percent',
+		group: 'zoom',
+		script: '',
+		combo: ''		
+	}
+];
 var funcsFileContents; //holds contents after reading funcsFilePath, should unprased json
 var funcsFileObj; //parsed json
 
@@ -141,8 +260,9 @@ function readFuncs() {
 			if (aReasonStr.indexOf('becauseNoSuchFile') > -1) {
 				console.warn('Promise Rejected: `OS.File.read(funcsFilePath)`', 'aReasonStr:', aReasonStr.join(','), 'aReason:', aReason, 'will now write new file with default functions');
 				//create file with default json
-				funcsFileContents = JSON.stringify(MouseControl.funcsFileObjDefault);
+				funcsFileContents = JSON.stringify(funcsFileObjDefault);
 				funcsFileObj = JSON.parse(funcsFileContents);
+				/*
 				var promise2 = OS.File.writeAtomic(funcsFilePath, funcsFileContents, {tmpPath: funcsFilePath + '.tmp', encoding:'utf-8'});
 				return promise2.then(
 					function(aVal) {
@@ -153,6 +273,7 @@ function readFuncs() {
 						return Promise.reject(aReason);
 					}
 				);
+				*/
 			} else {
 				console.error('Promise Rejected: `OS.File.read(funcsFilePath)`', 'aReasonStr:', aReasonStr.join(','), 'aReason:', aReason, 'dont know how to handle this so return this rejection to main promise of `readFuncs()`');
 				return Promise.reject(aReason);
