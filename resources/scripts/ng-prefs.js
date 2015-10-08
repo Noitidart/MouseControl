@@ -128,17 +128,20 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 		};
 	}])
 	.filter('groupBy', function() {
-		// purely ng-gui function
-		return function(arr,property) {
-			if (typeof property !=='string') {
-				throw new Error('need a property to check for')
+		// this just filters out duplicates based on a property that is a string
+		return function(arr, property) {
+			if (arr === undefined) {
+				// the variable has not yet been initialized
+				return;
 			}
-			return Object.keys(arr.reduce(isUn,{}));
-
-			function isUn(obj,item) {
+			if (typeof property !== 'string') {
+				throw new Error('need a property to check for');
+			}
+			// console.info('arr:', arr, 'property:', property);
+			return Object.keys(arr.reduce(function(obj,item) {
 				obj[item[property]] = true;
 				return obj;
-			}
+			}, {}));
 		}
 	})
 	.controller('BodyController', ['$scope', '$sce', '$q', '$timeout', function($scope, $sce, $q, $timeout) {
