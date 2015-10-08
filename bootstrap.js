@@ -3,6 +3,7 @@ const {classes: Cc, interfaces: Ci, manager: Cm, results: Cr, utils: Cu, Constru
 Cm.QueryInterface(Ci.nsIComponentRegistrar);
 Cu.import('resource://gre/modules/devtools/Console.jsm');
 const {TextDecoder, TextEncoder, OS} = Cu.import('resource://gre/modules/osfile.jsm', {});
+Cu.import('resource://gre/modules/Promise.jsm');
 Cu.import('resource://gre/modules/Services.jsm');
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
 
@@ -38,6 +39,8 @@ const core = {
 const JETPACK_DIR_BASENAME = 'jetpack';
 const OSPath_simpleStorage = OS.Path.join(OS.Constants.Path.profileDir, JETPACK_DIR_BASENAME, core.addon.id, 'simple-storage');
 const myPrefBranch = 'extensions.' + core.addon.id + '.';
+
+var bootstrap = this; // needed for SIPWorker and SICWorker
 
 // Lazy Imports
 const myServices = {};
@@ -141,6 +144,7 @@ function AboutFactory(component) {
 	this.register();
 }
 // end - about module
+
 // END - Addon Functionalities
 
 function install() {}
@@ -155,6 +159,32 @@ function startup(aData, aReason) {
 	// core.addon.aData = aData;
 	extendCore();
 	
+	// startup worker
+	var promise_getMMWorker = SICWorker('MMWorker', core.addon.path.workers + 'MMAsyncWorker.js');
+	promise_getMMWorker.then(
+		function(aVal) {
+			console.log('Fullfilled - promise_getMMWorker - ', aVal);
+			// start - do stuff here - promise_getMMWorker
+			// end - do stuff here - promise_getMMWorker
+		},
+		function(aReason) {
+			var rejObj = {
+				name: 'promise_getMMWorker',
+				aReason: aReason
+			};
+			console.warn('Rejected - promise_getMMWorker - ', rejObj);
+		}
+	).catch(
+		function(aCaught) {
+			var rejObj = {
+				name: 'promise_getMMWorker',
+				aCaught: aCaught
+			};
+			console.error('Caught - promise_getMMWorker - ', rejObj);
+		}
+	);
+	
+	// register about page
 	aboutFactory_mousecontrol = new AboutFactory(AboutMouseControl);
 	
 }
@@ -164,4 +194,133 @@ function shutdown(aData, aReason) {
 	
 	// an issue with this unload is that framescripts are left over, i want to destory them eventually
 	aboutFactory_mousecontrol.unregister();
+}
+
+// start - common helper functions
+function Deferred() {
+	if (Promise && Promise.defer) {
+		//need import of Promise.jsm for example: Cu.import('resource:/gree/modules/Promise.jsm');
+		return Promise.defer();
+	} else if (PromiseUtils && PromiseUtils.defer) {
+		//need import of PromiseUtils.jsm for example: Cu.import('resource:/gree/modules/PromiseUtils.jsm');
+		return PromiseUtils.defer();
+	} else if (Promise) {
+		try {
+			/* A method to resolve the associated Promise with the value passed.
+			 * If the promise is already settled it does nothing.
+			 *
+			 * @param {anything} value : This value is used to resolve the promise
+			 * If the value is a Promise then the associated promise assumes the state
+			 * of Promise passed as value.
+			 */
+			this.resolve = null;
+
+			/* A method to reject the assocaited Promise with the value passed.
+			 * If the promise is already settled it does nothing.
+			 *
+			 * @param {anything} reason: The reason for the rejection of the Promise.
+			 * Generally its an Error object. If however a Promise is passed, then the Promise
+			 * itself will be the reason for rejection no matter the state of the Promise.
+			 */
+			this.reject = null;
+
+			/* A newly created Pomise object.
+			 * Initially in pending state.
+			 */
+			this.promise = new Promise(function(resolve, reject) {
+				this.resolve = resolve;
+				this.reject = reject;
+			}.bind(this));
+			Object.freeze(this);
+		} catch (ex) {
+			console.error('Promise not available!', ex);
+			throw new Error('Promise not available!');
+		}
+	} else {
+		throw new Error('Promise not available!');
+	}
+}
+
+function SICWorker(workerScopeName, aPath, aFuncExecScope=bootstrap, aCore=core) {
+	// creates a global variable in bootstrap named workerScopeName which will hold worker, do not set up a global for it like var Blah; as then this will think something exists there
+	// aScope is the scope in which the functions are to be executed
+	// ChromeWorker must listen to a message of 'init' and on success of it, it should sendMessage back saying aMsgEvent.data == {aTopic:'init', aReturn:true}
+	// "Start and Initialize ChromeWorker" // based on SIPWorker
+	// returns promise
+		// resolve value: jsBool true
+	// aCore is what you want aCore to be populated with
+	// aPath is something like `core.addon.path.content + 'modules/workers/blah-blah.js'`	
+	var deferredMain_SICWorker = new Deferred();
+
+	if (!(workerScopeName in bootstrap)) {
+		bootstrap[workerScopeName] = new ChromeWorker(aPath);
+		
+		if ('addon' in aCore && 'aData' in aCore.addon) {
+			delete aCore.addon.aData; // we delete this because it has nsIFile and other crap it, but maybe in future if I need this I can try JSON.stringify'ing it
+		}
+		
+		bootstrap[workerScopeName].addEventListener('message', function(aMsgEvent) {
+			// note:all msgs from bootstrap must be postMessage([nameOfFuncInWorker, arg1, ...])
+			var aMsgEventData = aMsgEvent.data;
+			if (aMsgEventData[0] == 'init') {
+				deferredMain_SICWorker.resolve(true);
+			} else {
+				aFuncExecScope[aMsgEventData.shift()].apply(null, aMsgEventData);
+			}
+		});
+		bootstrap[workerScopeName].postMessage(['init', aCore]);
+		
+	} else {
+		deferredMain_SICWorker.reject('Something is loaded into bootstrap[workerScopeName] already');
+	}
+	
+	return deferredMain_SICWorker.promise;
+	
+}
+
+function SIPWorker(workerScopeName, aPath, aCore=core) {
+	// "Start and Initialize PromiseWorker"
+	// returns promise
+		// resolve value: jsBool true
+	// aCore is what you want aCore to be populated with
+	// aPath is something like `core.addon.path.content + 'modules/workers/blah-blah.js'`
+	
+	// :todo: add support and detection for regular ChromeWorker // maybe? cuz if i do then ill need to do ChromeWorker with callback
+	
+	var deferredMain_SIPWorker = new Deferred();
+
+	if (!(workerScopeName in bootstrap)) {
+		bootstrap[workerScopeName] = new PromiseWorker(aPath);
+		
+		if ('addon' in aCore && 'aData' in aCore.addon) {
+			delete aCore.addon.aData; // we delete this because it has nsIFile and other crap it, but maybe in future if I need this I can try JSON.stringify'ing it
+		}
+		
+		var promise_initWorker = bootstrap[workerScopeName].post('init', [aCore]);
+		promise_initWorker.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_initWorker - ', aVal);
+				// start - do stuff here - promise_initWorker
+				deferredMain_SIPWorker.resolve(true);
+				// end - do stuff here - promise_initWorker
+			},
+			function(aReason) {
+				var rejObj = {name:'promise_initWorker', aReason:aReason};
+				console.warn('Rejected - promise_initWorker - ', rejObj);
+				deferredMain_SIPWorker.reject(rejObj);
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {name:'promise_initWorker', aCaught:aCaught};
+				console.error('Caught - promise_initWorker - ', rejObj);
+				deferredMain_SIPWorker.reject(rejObj);
+			}
+		);
+		
+	} else {
+		deferredMain_SIPWorker.reject('Something is loaded into bootstrap[workerScopeName] already');
+	}
+	
+	return deferredMain_SIPWorker.promise;
+	
 }
