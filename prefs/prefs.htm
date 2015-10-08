@@ -1,7 +1,24 @@
 <html>
 <head>
 <title></title>
-
+<style>
+	.config-pseduo {
+		position: absolute !important;
+		top: 0;
+		left: -13px;
+		display: block;
+		height: 13px;
+		width: 13px;
+		background-color: steelblue;
+	}
+	
+	.configure-function {
+		background: transparent url(wrench.png) no-repeat center center;
+	}	
+	.trash-function {
+		background: transparent url(trash.png) no-repeat center center;
+	}
+</style>
 <link href="selectbox.css" type="text/css" rel="stylesheet" />
 		<script type="text/javascript" src="jquery.js"></script>
 		<script type="text/javascript" src="selectbox.js"></script>
@@ -10,8 +27,69 @@
 				$("select").selectbox({
 					effect: 'fade'
 				});
+				
+				//$('#configWrap .opt').live('click', checkIfOverPseduo);
+				$('#configWrap .opt').live('mouseenter', optsEntered);
+				$('#configWrap .opt').live('mouseleave', optsLeft);
 			});
 			
+			function optsEntered(e) {
+				$(e.target).prepend('<div class="config-pseudo configure-function">1</div>');
+				$(e.target).prepend('<div class="config-pseudo trash-function">1</div>');
+			}
+			
+			function optsLeft(e) {
+				$(e.target).find('.config-pseudo').remove();
+			}
+			
+			function checkIfOverPseduo(e) {
+				var target = $(e.target).offsetParent();
+				console.log('target=', target);
+				
+				 var elemWidth = $(target).width();
+				 var elemHeight = $(target).height();
+				 var elemPosition = $(target).offset();
+				 var minLeft = elemPosition.left + 13; //as width of :before el is 13
+				 var maxLeft = elemPosition.left + elemWidth - 13; //as width of :after el is 13
+
+				
+				console.log('e.pageX=', e.pageX);
+				console.log('minLeft=', minLeft);
+				console.log('maxLeft=', maxLeft);
+				 
+				 if (e.pageX < minLeft) {
+					console.log('over :before');
+				 } else if (e.pageX > maxLeft) {
+					console.log('over :after');
+				 } else {
+					console.log('within');
+				 }
+				
+				
+			}
+			
+			$.fn.toEm = function(settings){
+				settings = jQuery.extend({
+					scope: 'body'
+				}, settings);
+				var that = parseInt(this[0],10),
+					scopeTest = jQuery('<div style="display: none; font-size: 1em; margin: 0; padding:0; height: auto; line-height: 1; border:0;">&nbsp;</div>').appendTo(settings.scope),
+					scopeVal = scopeTest.height();
+				scopeTest.remove();
+				return (that / scopeVal).toFixed(8) + 'em';
+			};
+
+
+			$.fn.toPx = function(settings){
+				settings = jQuery.extend({
+					scope: 'body'
+				}, settings);
+				var that = parseFloat(this[0]),
+					scopeTest = jQuery('<div style="display: none; font-size: 1em; margin: 0; padding:0; height: auto; line-height: 1; border:0;">&nbsp;</div>').appendTo(settings.scope),
+					scopeVal = scopeTest.height();
+				scopeTest.remove();
+				return Math.round(that * scopeVal) + 'px';
+			};
 			function addSubheads() {
 				//to the config div it adds a subhead over every group of opts
 				
@@ -290,8 +368,43 @@ button.import:hover {
 			</select>
 		</span>
 	</div>
+	<style>
+		#configActions {
+			display: flex;
+			justify-content: center;
+		}
+		#configActions button {
+			flex-grow: 0;
+			margin-right: 10px;
+		}
+		#configActions button span {
+			width: 13px;
+			display: inline-block;
+			height: 13px;
+			background-repeat: no-repeat;
+			background-position: left center;
+			margin-right: 1px; /*for icon*/
+			vertical-align: middle;
+			position: relative;
+			top: -1px;
+			left: -3px;
+		}
+		#configActions button:last-of-type {
+			margin-right: 0;
+		}
+		.config-action-create span {
+			background-image: url(pencil.png);
+		}
+		.config-action-download span {
+			background-image: url(download_fat.png);
+		}
+	</style>
 	<div id="configuration" class="group" style="position:relative;">
 		<span class="subhead">Configuration</span>
+		<div id="configActions">
+			<button class="config-action-create"><span></span>Create Custom Function</button>
+			<button class="config-action-download"><span></span>Download Custom Functions</button>
+		</div>
 		<div id="configHead">
 			<span>Action</span>
 			<span>Mouse Binding</span>
@@ -303,7 +416,7 @@ button.import:hover {
 					Select Tab to Right
 					<small>Focuses tab to right of current tab</small>
 				</span>
-				<span>blah blah blah</span>
+				<span>blah blah blah some more more more more aaaand mooooooooore</span>
 			</span>
 			<hr>
 			<span class="opt" group="tabs">
@@ -367,33 +480,7 @@ button.import:hover {
 	</div>
 
 </div>
-<div class="configBtnWrap">
-<span class="configBtn"><!--Sort--></span>
-<span class="configBtn"><!--Create Custom Action--></span>
-<span class="configBtn"><!--Download Shared Custom Actions--></span>
-</div>
 <style>
-	.configBtnWrap {
-		position: fixed;
-		background-color: rgb(247, 247, 247);
-		border-radius: 0px 8px 8px 0px;
-		box-shadow: 2px 0px 2px rgba(0, 0, 0, 0.5);
-		padding: 5px 5px 5px 20px;
-
-		z-index: 0;
-	}
-	.configBtn {
-		width: 32px;
-		height: 32px;
-		background-color: rgba(200, 200, 200, 0.5);
-		display: block;
-		border-radius: 5px;
-		margin-bottom: 5px;
-		box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.05) inset;
-	}
-	.configBtn:last-of-type {
-		margin-bottom:0px;
-	}
 	#configHead {
 		font-weight: bold;
 		font-size: 12px;
@@ -405,7 +492,7 @@ button.import:hover {
 	#configHead span {
 		flex-grow: 1;
 		max-width: 50%;
-		min-width: 50%
+		min-width: 50%;
 		width: 50%;
 	}
 	#configHead span:first-of-type {
@@ -421,6 +508,29 @@ button.import:hover {
 		line-height: normal;
 		padding: 2px 20px;
 		font-size: 11px;
+		position: relative;
+	}
+	
+	#configWrap .opt:hover:after {
+		content: '';
+		width: 13px;
+		height: 13px;
+		position: absolute;
+		margin-top: -.55em;
+		background: transparent url(wrench.png) no-repeat center center;
+		opacity: .2;
+		cursor: pointer;
+	}	
+	#configWrap .opt:hover:before {
+		content: '';
+		width: 13px;
+		height: 13px;
+		position: absolute;
+		margin-left: -2em;
+		margin-top: -.55em;
+		background: transparent url(trash.png) no-repeat center center;
+		opacity: .3;
+		cursor: pointer;
 	}
 
 	#configWrap .opt span {
@@ -439,10 +549,10 @@ button.import:hover {
 		}
 	
 	#configWrap > hr {
-		margin: 3px auto;
+		margin: 5px auto;
 		border: 0;
 		border-top: 1px solid #eee;
-		border-bottom: rgba(255, 255, 255, 0.3);
+		border-bottom: 1px solid #fff;
 		width: 85%;
 	}
 	
@@ -452,8 +562,13 @@ button.import:hover {
 	
 	.configSubhead {
 		font-weight: bold;
-		padding: 5px 5px 0px;
+		padding: 5px 10px 0px;
+		padding-bottom: 5px;
 		color: #44474D;
+	}
+	
+	.configSubhead:first-of-type {
+		padding-top: 0;
 	}
 	
 	.configSubhead hr{
