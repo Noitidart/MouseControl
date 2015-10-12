@@ -75,3 +75,195 @@ header .page-name {
 	line-height: 14px;
 	margin-top: 4px;
 }
+
+/* start - modal dialog */
+/* message wrapper */
+/* on made visibile */
+modal.modal-show {
+	pointer-events: auto;
+	opacity: 1;
+}
+
+modal.modal-show .modal-dialog{
+	opacity: 1;
+	margin-top: 0;
+	pointer-events: auto;
+}
+/* */
+modal {
+	background-color: rgba(255, 255, 255, .85);
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	z-index: 100;
+	top: 0;
+	left: 0;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	display: flex;
+	pointer-events: none;
+	transition: opacity 150ms ease-in;
+}
+
+.modal-dialog {
+	background-color: rgb(247, 247, 247);
+	border-radius: 2px;
+	box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+	padding: 10px;
+	margin-top: -20px; /*for transition anim*/
+	opacity: 0;
+	pointer-events: none;
+	transition: margin-top 150ms ease-in, opacity 150ms ease-in;
+	display: inline-block;
+}
+
+.modal-dialog .modal-row {
+	margin-bottom: 3px;
+	display: flex;
+	align-items: center;
+}
+
+.msg-share span {
+	width: 8em;
+}
+.msg-share input[type=text] {
+	flex-grow: 1;
+	text-align: right;
+}
+
+.msg-customize span {
+	width: 6em;
+}
+
+.msg-customize input[type=text] {
+	text-align: left;
+}
+
+.msg-customize .msg-cust-name {
+	width: 200px; /* match the width of the select box */
+}
+
+.msg-customize .msg-cust-desc {
+	flex-grow: 1;
+}
+
+.msg-body {
+	padding: 0 10px;
+	margin: 0;
+	position: relative;
+}
+
+.msg-share .msg-header {
+	background-image: url('chrome://mousecontrol/content/resources/images/network-tri.png');
+	padding: 0 0 5px 0;
+}	
+.msg-trash .msg-header {
+	background-image: url('chrome://mousecontrol/content/resources/images/trash.png');
+	text-indent: 20px;
+	padding: 0 0 4px 0;
+}
+.msg-customize .msg-header {
+	background-image: url('chrome://mousecontrol/content/resources/images/wrench.png');
+	text-indent: 21px;
+	padding: 0 0 5px 0;
+}
+.msg-create .msg-header {
+	background-image: url('chrome://mousecontrol/content/resources/images/pencil.png');
+	text-indent: 21px;
+	padding: 0 0 5px 0;
+}
+.msg-header {
+	background: transparent url('chrome://mousecontrol/content/resources/images/x.png') no-repeat 2px 1px;
+	margin: 0 0 5px 0;
+	font-weight: bold;
+	padding: 0 0 4px 0;
+	text-indent: 18px;
+	border-bottom: 1px solid black;
+}
+
+.msg-wrap small {
+	padding: 6px; /* for some reason padidng-top-bottom and margin-top-bottom are not having affect on small */
+	white-space: nowrap;
+}
+
+.msg-wrap small + .row {
+	margin-top: 5px;
+}
+
+.msg-trash .msg-wrap {
+	width: 300px;
+}
+
+.msg-trash .row {
+	text-align: center;
+	margin-top: 15px;
+}
+
+.msg-wrap .row:last-of-type {
+	padding-top: 6px;
+	justify-content: space-around;
+}
+
+.msg-wrap button {
+	margin-right: 10px;
+	width: 50%;
+	position: relative;
+	text-indent: 16px;
+}
+
+.msg-customize button {
+	width: 30%;
+	margin-right: -30%;
+}
+
+.msg-wrap .msg-ok:before, .msg-wrap .msg-cancel:before {
+	position:absolute;
+	background-repeat: no-repeat;
+	background-position: center center;
+	margin-left: -18px;
+	margin-top: 1px;
+	width: 16px;
+	height: 16px;
+	content: '';
+}
+
+.msg-wrap .msg-ok:before {
+	background-image: url('chrome://mousecontrol/content/resources/images/check-thin.png');
+	margin-top: 1px;
+}
+
+.msg-customize .msg-ok:before {
+	margin-top: 2px;
+}
+
+.msg-wrap .msg-cancel:before {
+	background-image: url('chrome://mousecontrol/content/resources/images/x.png');
+}
+
+.msg-wrap button:last-of-type {
+	margin-right: 0;
+}
+
+.msg-wrap hr {
+	border-top: 1px solid #eee;
+	border-bottom: 1px solid #fff;
+}
+
+.msg-wrap textarea {
+	margin-top: 4px;
+}
+
+
+
+.msg-customize .combo-set-area:before {
+	content: '';
+}
+.msg-customize .combo-set-area {
+	display:flex;
+	align-items: center;
+	justify-content: center;
+	padding: 30px 0;
+	border: 1px dashed #eee;
+}
+/* end - modal dialog */

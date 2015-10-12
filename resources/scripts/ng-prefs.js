@@ -87,16 +87,10 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			templateUrl: 'chrome://mousecontrol/content/resources/directives/configRow.htm'
 		};
 	}])
-	.directive('modalEdit', [function() {
+	.directive('modal', [function() {
 		return {
 			restrict: 'E',
-			templateUrl: 'chrome://mousecontrol/content/resources/directives/configRow.htm'
-		};
-	}])
-	.directive('modalConfirm', [function() {
-		return {
-			restrict: 'E',
-			templateUrl: 'chrome://mousecontrol/content/resources/directives/configRow.htm'
+			templateUrl: 'chrome://mousecontrol/content/resources/directives/modal.htm'
 		};
 	}])
 	.filter('groupBy', function() {
@@ -119,6 +113,11 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 	.controller('BodyController', ['$scope', '$sce', '$q', '$timeout', function($scope, $sce, $q, $timeout) {
 		var BC = this;
 		BC.l10n = {};
+		BC.modal = {
+			type: 'trash', // trash/share/config
+			config_type: 'add', // add/edit // if type==config
+			show: false
+		};
 		BC.options = [ // order here is the order it is displayed in, in the dom
 			{
 				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
@@ -250,6 +249,36 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 		// set version for dom
 		BC.l10n['mousecontrol.prefs.addon_version'] = core.addon.cache_key;
 		
+		BC.hideModalIfEsc = function(aEvent) {
+			if (aEvent.keyCode == 27) {
+				BC.modal.show = false;
+			}
+		};
+		BC.hideModal = function() {
+			BC.modal.show = false;
+		};
+		BC.showModal = function(type, aObjKeys={}) {
+			// update the keys that are in modal and also aObjKeys, to value of aObjKeys
+			// and delete what is not found in aObjkeys
+			BC.modal.type = type;
+			for (var p in BC.modal) {
+				if (p == 'show') { continue }
+				if (p == 'type') { continue }
+				if (p in aObjKeys) {
+					BC.modal[p] = aObjKeys[p];
+				} else {
+					delete BC.modal[p];
+				}
+			}
+			
+			// add from aObjKeys to BC.modal, the keys that are not in BC.modal
+			for (var p in aObjKeys) {
+				BC.modal[p] = aObjKeys[p];
+			}
+			
+			// show it
+			BC.modal.show = true;
+		};
 	}]);
 
 // start - server/framescript comm layer

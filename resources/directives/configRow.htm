@@ -1,6 +1,6 @@
-<div class="pseudo-config trash-function" />
-<div class="pseudo-config configure-function" />
-<div class="pseudo-config share-function" />
+<div class="pseudo-config trash-function" ng-click="BC.showModal('trash')"/>
+<div class="pseudo-config configure-function" ng-click="BC.showModal('config', {config_type:'edit'})"/>
+<div class="pseudo-config share-function" ng-click="BC.showModal('share')"/>
 <span>
 	{{aConfig.name}}
 	<small>

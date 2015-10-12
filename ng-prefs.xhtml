@@ -17,7 +17,8 @@
 			
 		</style>
 	</head>
-	<body ng-controller="BodyController as BC">
+	<body ng-controller="BodyController as BC" ng-keypress="BC.hideModalIfEsc($event)">
+		<modal ng-class="{'modal-show':BC.modal.show}" />
 		<div id="main_wrap">
 			<header/>
 			<option-group ng-repeat="aGroupName in BC.options | groupBy:'groupName'" />

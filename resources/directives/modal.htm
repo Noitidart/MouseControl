@@ -1,0 +1,51 @@
+<div class="modal-dialog">
+	<span ng-show="BC.modal.type == 'share'">
+		<div class="msg-header">Share Function</div>
+		<div class="msg-body">
+			<small>Leave fields blank to share as anonymously</small>
+			<div class="modal-row"><span>Your Name</span> <input type="text"/></div>
+			<div class="modal-row">
+				<button class="msg-ok"><span></span>Share</button>
+				<button class="msg-cancel" ng-click="BC.hideModal()"><span></span>Cancel</button>
+			</div>
+		</div>
+	</span>
+	<span ng-show="BC.modal.type == 'trash'">
+		<div class="msg-header">Trash Function</div>
+		<div class="msg-body">
+			<div class="modal-row">Are you sure you want to remove this funciton? You will not be able to recover it.</div>
+			<div class="modal-row">
+				<button class="msg-ok"><span></span>Confirm</button>
+				<button class="msg-cancel" ng-click="BC.hideModal()"><span></span>Cancel</button>
+			</div>
+		</div>
+	</span>
+	<span ng-show="BC.modal.type == 'config'">
+		<div class="msg-header">{{BC.modal.config_type == 'edit' ? 'Configure Existing' : 'Create New'}}</div>
+		<div class="msg-body">
+			<div class="modal-row">
+				<span>Group</span>
+				<select>
+					<option>Entertainment</option>
+					<option selected="true">Miscellaneous</option>
+					<option>Navigation</option>
+					<option>Social</option>
+					<option>Tabs</option>
+					<option>Zoom</option>
+				</select>
+			</div>
+			<div class="modal-row"><span>Name</span> <input type="text" class="msg-cust-name"/></div>
+			<div class="modal-row"><span>Description</span> <input type="text" class="msg-cust-desc"/></div>
+			<textarea rows="3" cols="100">code code code code code code code code code code code code</textarea>
+			<hr/>
+			<small style="display:block; text-align:center; position:absolute; width:95%;">PLACE MOUSE HERE AND DO MOUSE COMBO</small>
+			<div class="combo-set-area">
+				<img src="mouse-left.png" /> + <img src="mouse-right.png"/>
+			</div>
+			<div class="modal-row">
+				<button class="msg-ok"><span></span>{{BC.modal.config_type == 'edit' ? 'Apply' : 'Add'}}</button>
+				<button class="msg-cancel" ng-click="BC.hideModal()"><span></span>Cancel</button>
+			</div>
+		</div>
+	</span>
+</div>
