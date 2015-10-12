@@ -29,6 +29,7 @@ var gCFMM;
 // Lazy imports
 var myServices = {};
 XPCOMUtils.defineLazyGetter(myServices, 'sb', function () { return Services.strings.createBundle(core.addon.path.locale + 'prefs.properties?' + core.addon.cache_key); /* Randomize URI to work around bug 719376 */ });
+XPCOMUtils.defineLazyGetter(myServices, 'sb_dom', function () { return Services.strings.createBundle(core.addon.path.locale + 'prefs_dom.properties?' + core.addon.cache_key); /* Randomize URI to work around bug 719376 */ });
 
 function doOnBeforeUnload() {
 
@@ -129,17 +130,107 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 	})
 	.controller('BodyController', ['$scope', '$sce', '$q', '$timeout', function($scope, $sce, $q, $timeout) {
 		var BC = this;
+		BC.l10n = {};
 		BC.options = [
-			{groupName: 'General', label:'Automatic Updates', type:'select', values:{0:'On', 1:'Off'}, desc: ''},
-			{groupName: 'General', label:'Restore Defaults', type:'button', values:['Restore'], desc: ''},
-			{groupName: 'General',label:'Export & Import', type:'button', values:['Export', 'Import'], desc: ''},
-			{groupName: 'Timing', label:'Double Click Speed', type:'text', pref_name:'dbl-click-speed', desc: 'If you want to double click a mouse button, after the first release, you have to depress then release that button within this much time'},
-			{groupName: 'Timing', label:'Hold Duration', type:'text', pref_name:'hold-duration', desc: 'A mouse button must be depressed this long before it is counted as a hold'},
-			{groupName: 'Tabs', label:'New Tab Position ', type:'select', pref_name:'new-tab-pos', values:{0:'End of Tab Bar', 1:'Next to Current Tab'}, desc: ''},
-			{groupName: 'Tabs', label:'Duplicated Tab Position', type:'select', pref_name:'dup-tab-pos', values:{0:'End of Tab Bar', 1:'Next to Current Tab'}, desc: ''},
-			{groupName: 'Zoom', label:'Zoom Level Indicator', type:'select', pref_name:'zoom-indicator', values:{0:'Hide', 1:'Show'}, desc: 'As you zoom it will show a panel with the percent of current zoom'},
-			{groupName: 'Zoom', label:'Zoom Context', type:'select', pref_name:'zoom-context', values:{0:'All Content', 1:'Text Only'}, desc: ''},
-			{groupName: 'Zoom', label:'Zoom Style', type:'select', pref_name:'zoom-style', values:{0:'Global', 1:'Site Specifc', 2:'Temporary'}, desc: ''}
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-restore'),
+				type: 'button',
+				values: [
+					myServices.sb.GetStringFromName('mousecontrol.prefs.restore')
+				],
+				desc: ''
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-autoup'),
+				type: 'select',
+				values: {
+					0: myServices.sb.GetStringFromName('mousecontrol.prefs.on'),
+					1: myServices.sb.GetStringFromName('mousecontrol.prefs.off')
+				},
+				desc: ''
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
+				abel: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-port'),
+				type: 'button',
+				values: [
+					myServices.sb.GetStringFromName('mousecontrol.prefs.export'),
+					myServices.sb.GetStringFromName('mousecontrol.prefs.import')
+				],
+				desc: ''
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-time'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-dblspeed'),
+				type: 'text',
+				pref_name: 'dbl-click-speed',
+				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-dblspeed')
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-time'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-holdspeed'),
+				type: 'text',
+				pref_name: 'hold-duration',
+				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-holdspeed')
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-tabs'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-newtabpos'),
+				type: 'select',
+				pref_name: 'new-tab-pos',
+				values: {
+					0: myServices.sb.GetStringFromName('mousecontrol.prefs.endofbar'),
+					1: myServices.sb.GetStringFromName('mousecontrol.prefs.nexttocur')
+				},
+				desc: ''
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-tabs'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-duptabpos'),
+				type: 'select',
+				pref_name: 'dup-tab-pos',
+				values: {
+					0: myServices.sb.GetStringFromName('mousecontrol.prefs.endofbar'),
+					1: myServices.sb.GetStringFromName('mousecontrol.prefs.nexttocur')
+				},
+				desc: ''
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-zoom'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-zoomlabel'),
+				type: 'select',
+				pref_name: 'zoom-indicator',
+				values: {
+					0: myServices.sb.GetStringFromName('mousecontrol.prefs.hide'),
+					1: myServices.sb.GetStringFromName('mousecontrol.prefs.show')
+				},
+				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-zoomlabel')
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-zoom'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-zoomcontext'),
+				type: 'select',
+				pref_name: 'zoom-context',
+				values: {
+					0: myServices.sb.GetStringFromName('mousecontrol.prefs.allcont'),
+					1: myServices.sb.GetStringFromName('mousecontrol.prefs.txtonly')
+				},
+				desc: ''
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-zoom'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-zoomstyle'),
+				type: 'select',
+				pref_name: 'zoom-style',
+				values: {
+					0: myServices.sb.GetStringFromName('mousecontrol.prefs.global'),
+					1: myServices.sb.GetStringFromName('mousecontrol.prefs.sitespec'),
+					2: myServices.sb.GetStringFromName('mousecontrol.prefs.temp')
+				},
+				desc: ''
+			}
 		];
 		
 		// get json config from bootstrap
@@ -154,6 +245,19 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			console.log('got aCore:', aCore);
 			core = aCore;
 		});
+		
+		// get all the localized strings into ng
+		var l10ns = myServices.sb_dom.getSimpleEnumeration();
+		while (l10ns.hasMoreElements()) {
+			var l10nProp = l10ns.getNext();
+			var l10nPropEl = l10nProp.QueryInterface(Ci.nsIPropertyElement);
+			// doing console.log(propEl) shows the object has some fields that interest us
+
+			var l10nPropKey = l10nPropEl.key;
+			var l10nPropStr = l10nPropEl.value;
+
+			BC.l10n[l10nPropKey] = l10nPropStr;
+		}
 		
 	}]);
 

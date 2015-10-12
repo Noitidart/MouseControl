@@ -2,4 +2,5 @@
 <!ENTITY mousecontrol.app.addon-description 'Enables user defined mouse action combinations to trigger customizable functions'>
 
 <!ENTITY mousecontrol.prefs.title 'Preferences | MouseControl'>
-<!ENTITY mousecontrol.prefs.desc 'Define mouse actions and functions'>
+<!ENTITY mousecontrol.prefs.desc 'Mange mouse actions and functions'>
+<!ENTITY mousecontrol.prefs.page-name 'Preferences'>

@@ -40,11 +40,101 @@ const JETPACK_DIR_BASENAME = 'jetpack';
 const OSPath_simpleStorage = OS.Path.join(OS.Constants.Path.profileDir, JETPACK_DIR_BASENAME, core.addon.id, 'simple-storage');
 const myPrefBranch = 'extensions.' + core.addon.id + '.';
 
-var gConfigJsonDefault = [
-	{name:'Jump to Last Tab', group:'Tabs', desc:'Selects the previously focused tab across all windows', config:'0+2', func:''},
-	{name:'Close Tab', group:'Tabs', desc:'Closes the current tab and if this was the only tab in the window, the window will be closed', config:'0+2', func:''},
-	{name:'Reset Zoom', group:'Zoom', desc:'Reset the zoom of the document in the tab to one-hundred percent', config:'2+1', func:''}
-];
+var gConfigJsonDefault = function() {
+	return [
+		{
+			name: myServices.sb.GetStringFromName('config_name-jumptab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-duptab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-newtab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-nexttab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-prevtab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-closetab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-resetzoom'),
+			group: myServices.sb.GetStringFromName('config_group-zoom'),
+			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
+			config:'2+1',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-zoomin'),
+			group: myServices.sb.GetStringFromName('config_group-zoom'),
+			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
+			config:'2+1',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-zoomout'),
+			group: myServices.sb.GetStringFromName('config_group-zoom'),
+			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
+			config:'2+1',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-removeel'),
+			group: myServices.sb.GetStringFromName('config_group-dom'),
+			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
+			config:'2+1',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-memscrolltop'),
+			group: myServices.sb.GetStringFromName('config_group-dom'),
+			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
+			config:'2+1',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-memscrollbot'),
+			group: myServices.sb.GetStringFromName('config_group-dom'),
+			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
+			config:'2+1',
+			func:''
+		},
+		{
+			name: myServices.sb.GetStringFromName('config_name-memscrollmemy'),
+			group: myServices.sb.GetStringFromName('config_group-dom'),
+			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
+			config:'2+1',
+			func:''
+		}
+	];
+};
 
 // Lazy Imports
 const myServices = {};
@@ -240,7 +330,7 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 			function(aReason) {
 				if (aReasonMax(aReason).becauseNoSuchFile) {
 					console.log('will send back default config json to this contentframe, get it from aMsgEvent:', aMsgEvent);
-					mainDeferred_fetchConfig.resolve([gConfigJsonDefault]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
+					mainDeferred_fetchConfig.resolve([gConfigJsonDefault()]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
 					return;
 				}
 				var rejObj = {name:'promise_readConfig', aReason:aReason};
