@@ -1,4 +1,13 @@
-<div id="config_wrap">
-	this is the config wrap
-	<config-group ng-repeat="aGroupName in BC.configs | groupBy:'group'" />
-</div>
+<span class="option-group-head">
+	<span style="float:right;">
+		Add
+	</span>
+	<span style="float:right;">
+		Sort
+	</span>
+	<span style="float:right;">
+		Discover
+	</span>
+	{{BC.l10n['mousecontrol.prefs.group-config']}}
+</span>
+<config-group ng-repeat="aGroupName in BC.configs | groupBy:'group'" />

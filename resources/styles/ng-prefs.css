@@ -1,0 +1,139 @@
+option-group,
+config-wrap {
+	margin-bottom: 10px;
+	display: block;
+}
+
+option-group option-row:last-of-type {
+	margin-bottom: 0;
+}
+
+option-row,
+config-row  {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0 3px 4px 3px;
+	line-height: 20px; /* must match height of select boxes otherwise opt spans are different heights */
+}
+
+.option-group-head {
+	padding:3px;
+	padding-left: 17px;
+	border-bottom: 1px solid #44474D;
+	/*color: #44474D;*/
+	display: block;
+	font-size: 13px;
+	font-weight: bold;
+	background: transparent url('chrome://mousecontrol/content/resources/images/general.png') no-repeat left 5px;
+	margin-bottom: 5px;
+}
+
+option-group:nth-of-type(1) .option-group-head {
+	/* general */
+	background-image: url('chrome://mousecontrol/content/resources/images/general.png');
+}
+
+option-group:nth-of-type(2) .option-group-head {
+	/* timing */
+	background-image: url('chrome://mousecontrol/content/resources/images/timing.png');
+}
+
+option-group:nth-of-type(3) .option-group-head {
+	/* tabs */
+	background-image: url('chrome://mousecontrol/content/resources/images/tabs.png');
+}
+
+option-group:nth-of-type(4) .option-group-head {
+	/* zoom */
+	background-image: url('chrome://mousecontrol/content/resources/images/zoom.png');
+}
+
+config-wrap .option-group-head {
+	background-image: url('chrome://mousecontrol/content/resources/images/configuration.png');
+}
+
+/* start config group stuff */
+.config-group-head {
+	font-weight: bold;
+	margin: 5px 10px;
+	padding-bottom: 5px;
+	color: #44474D;
+	text-transform: uppercase;
+	border-bottom: 1px solid rgba(68, 71, 77, 0.7);
+	display: block;
+}
+
+config-row {
+	flex-grow: 1;
+	line-height: normal;
+	padding: 2px 20px 8px;
+	font-size: 11px;
+	position: relative;
+}
+
+config-row:not(:last-of-type)::after {
+	border-top: 1px solid #eee;
+	border-bottom: 1px solid #fff;
+	content: '';
+	position: absolute;
+	width: 85%;
+	margin: auto;
+	bottom: 0;
+	left:0;
+	right:0;
+	margin-bottom: 2px;
+}
+
+config-row span:first-of-type {
+	display: flex;
+	flex-direction: column;
+}
+
+config-row small {
+	color: #888;
+	padding-right: 7px;
+}
+
+config-row span {
+	flex-grow: 1;
+	width: 45% !important;
+}
+/* start - config row hover buttons*/
+config-row:hover .pseudo-config {
+	display: block;
+}
+
+.pseudo-config {
+	display: none;
+	position: absolute;
+	width: 13px;
+	height: 13px;
+	top: -5px; /* the height of the image divided by 2. then multiplied by -1. Math.floored*/
+	bottom: 0;
+	margin: auto 0;
+	opacity: .2;
+	cursor: pointer;
+	transition: opacity 170ms;
+}
+
+.pseudo-config:hover {
+	opacity: 1;
+}
+
+.trash-function {
+	background: transparent url('chrome://mousecontrol/content/resources/images/trash.png') no-repeat center center;
+	left: 0;
+}
+
+.configure-function {
+	background: transparent url('chrome://mousecontrol/content/resources/images/wrench.png') no-repeat center center;
+	left: calc(100% - 23px);
+}
+
+.share-function {
+	background: transparent url('chrome://mousecontrol/content/resources/images/network-tri.png') no-repeat center center;
+	left: calc(100% - 6px);
+}
+/* end - config row hover buttons */
+/* end config group stuff */

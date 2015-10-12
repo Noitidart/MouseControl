@@ -63,22 +63,10 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			templateUrl: 'chrome://mousecontrol/content/resources/directives/optionGroup.htm'
 		};
 	}])
-	.directive('optionRowText', [function() {
+	.directive('optionRow', [function() {
 		return {
 			restrict: 'E',
-			templateUrl: 'chrome://mousecontrol/content/resources/directives/optionRowText.htm'
-		};
-	}])
-	.directive('optionRowSelect', [function() {
-		return {
-			restrict: 'E',
-			templateUrl: 'chrome://mousecontrol/content/resources/directives/optionRowSelect.htm'
-		};
-	}])
-	.directive('optionRowButton', [function() {
-		return {
-			restrict: 'E',
-			templateUrl: 'chrome://mousecontrol/content/resources/directives/optionRowButton.htm'
+			templateUrl: 'chrome://mousecontrol/content/resources/directives/optionRow.htm'
 		};
 	}])
 	.directive('configWrap', [function() {
@@ -131,16 +119,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 	.controller('BodyController', ['$scope', '$sce', '$q', '$timeout', function($scope, $sce, $q, $timeout) {
 		var BC = this;
 		BC.l10n = {};
-		BC.options = [
-			{
-				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
-				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-restore'),
-				type: 'button',
-				values: [
-					myServices.sb.GetStringFromName('mousecontrol.prefs.restore')
-				],
-				desc: ''
-			},
+		BC.options = [ // order here is the order it is displayed in, in the dom
 			{
 				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-autoup'),
@@ -153,7 +132,16 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			},
 			{
 				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
-				abel: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-port'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-restore'),
+				type: 'button',
+				values: [
+					myServices.sb.GetStringFromName('mousecontrol.prefs.restore')
+				],
+				desc: ''
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-port'),
 				type: 'button',
 				values: [
 					myServices.sb.GetStringFromName('mousecontrol.prefs.export'),
@@ -258,6 +246,9 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 
 			BC.l10n[l10nPropKey] = l10nPropStr;
 		}
+		
+		// set version for dom
+		BC.l10n['mousecontrol.prefs.addon_version'] = core.addon.cache_key;
 		
 	}]);
 
