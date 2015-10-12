@@ -4,7 +4,7 @@ Cu.import('resource://gre/modules/Services.jsm');
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
 
 // Globals
-const core = {
+var core = {
 	addon: {
 		name: 'MouseControl',
 		id: 'MouseControl@jetpack',
@@ -20,7 +20,7 @@ const core = {
 			workers: 'chrome://mousecontrol/content/modules/workers/'
 		},
 		cache_key: Math.random() // set to version on release
-	},
+	}
 };
 var gAngScope;
 var gAngInjector;
@@ -29,21 +29,6 @@ var gCFMM;
 // Lazy imports
 var myServices = {};
 XPCOMUtils.defineLazyGetter(myServices, 'sb', function () { return Services.strings.createBundle(core.addon.path.locale + 'prefs.properties?' + core.addon.cache_key); /* Randomize URI to work around bug 719376 */ });
-
-// Initial framescript setup
-var bootstrapMsgListener = {
-	receiveMessage: function(aMsgEvent) {
-		console.log('framescript getting aMsgEvent:', aMsgEvent);
-		// aMsgEvent.data should be an array, with first item being the unfction name in bootstrapCallbacks
-		bootstrapCallbacks[aMsgEvent.data.shift()].apply(null, aMsgEvent.data);
-	}
-};
-
-var bootstrapCallbacks = {
-	fetchConfig_response: function(aConfigJson) {
-		console.log('aConfigJson:', aConfigJson);
-	}
-};
 
 function doOnBeforeUnload() {
 
@@ -57,8 +42,6 @@ function doOnLoad() {
 	gAngInjector = gAngBody.injector();
 }
 
-contentMMFromContentWindow_Method2(window).addMessageListener(core.addon.id, bootstrapMsgListener);
-// contentMMFromContentWindow_Method2(window).sendAsyncMessage(core.addon.id, ['fetchConfig_request', 'fetchConfig_response'])
 document.addEventListener('DOMContentLoaded', doOnLoad, false);
 window.addEventListener('beforeunload', doOnBeforeUnload, false);
 
@@ -158,20 +141,86 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			{groupName: 'Zoom', label:'Zoom Context', type:'select', pref_name:'zoom-context', values:{0:'All Content', 1:'Text Only'}, desc: ''},
 			{groupName: 'Zoom', label:'Zoom Style', type:'select', pref_name:'zoom-style', values:{0:'Global', 1:'Site Specifc', 2:'Temporary'}, desc: ''}
 		];
-		var init = function() {
-			bootstrapCallbacks['ng-fetchConfig_request'] = function(aConfigJson) {
-				delete bootstrapCallbacks['ng-fetchConfig_request'];
-				console.log('got aConfigJson into ng:', aConfigJson);
-				$scope.BC.configs = aConfigJson;
-				$scope.$digest();
-				console.log('digested');
-			};
-			contentMMFromContentWindow_Method2(window).sendAsyncMessage(core.addon.id, ['fetchConfig_request', 'ng-fetchConfig_request'])
-		};
 		
-		init();
+		// get json config from bootstrap
+		sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['fetchConfig'], bootstrapMsgListener.funcScope, function(aConfigJson) {
+			console.log('got aConfigJson into ng:', aConfigJson);
+			$scope.BC.configs = aConfigJson;
+			$scope.$digest();
+			console.log('digested');
+		});
+		
+		sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['fetchCore'], bootstrapMsgListener.funcScope, function(aCore) {
+			console.log('got aCore:', aCore);
+			core = aCore;
+		});
 		
 	}]);
+
+// start - server/framescript comm layer
+// sendAsyncMessageWithCallback - rev3
+var bootstrapCallbacks = { // can use whatever, but by default it uses this
+	// put functions you want called by bootstrap/server here
+};
+const SAM_CB_PREFIX = '_sam_gen_cb_';
+var sam_last_cb_id = -1;
+function sendAsyncMessageWithCallback(aMessageManager, aGroupId, aMessageArr, aCallbackScope, aCallback) {
+	sam_last_cb_id++;
+	var thisCallbackId = SAM_CB_PREFIX + sam_last_cb_id;
+	aCallbackScope = aCallbackScope ? aCallbackScope : bootstrap; // :todo: figure out how to get global scope here, as bootstrap is undefined
+	aCallbackScope[thisCallbackId] = function(aMessageArr) {
+		delete aCallbackScope[thisCallbackId];
+		aCallback.apply(null, aMessageArr);
+	}
+	aMessageArr.push(thisCallbackId);
+	aMessageManager.sendAsyncMessage(aGroupId, aMessageArr);
+}
+var bootstrapMsgListener = {
+	funcScope: bootstrapCallbacks,
+	receiveMessage: function(aMsgEvent) {
+		var aMsgEventData = aMsgEvent.data;
+		console.log('framescript getting aMsgEvent, unevaled:', uneval(aMsgEventData));
+		// aMsgEvent.data should be an array, with first item being the unfction name in this.funcScope
+		
+		var callbackPendingId;
+		if (typeof aMsgEventData[aMsgEventData.length-1] == 'string' && aMsgEventData[aMsgEventData.length-1].indexOf(SAM_CB_PREFIX) == 0) {
+			callbackPendingId = aMsgEventData.pop();
+		}
+		
+		var funcName = aMsgEventData.shift();
+		if (funcName in this.funcScope) {
+			var rez_fs_call = this.funcScope[funcName].apply(null, aMsgEventData);
+			
+			if (callbackPendingId) {
+				// rez_fs_call must be an array or promise that resolves with an array
+				if (rez_fs_call.constructor.name == 'Promise') {
+					rez_fs_call.then(
+						function(aVal) {
+							// aVal must be an array
+							contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, [callbackPendingId, aVal]);
+						},
+						function(aReason) {
+							console.error('aReject:', aReason);
+							contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, [callbackPendingId, ['promise_rejected', aReason]]);
+						}
+					).catch(
+						function(aCatch) {
+							console.error('aCatch:', aCatch);
+							contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, [callbackPendingId, ['promise_rejected', aCatch]]);
+						}
+					);
+				} else {
+					// assume array
+					contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, [callbackPendingId, rez_fs_call]);
+				}
+			}
+		}
+		else { console.warn('funcName', funcName, 'not in scope of this.funcScope') } // else is intentionally on same line with console. so on finde replace all console. lines on release it will take this out
+		
+	}
+};
+contentMMFromContentWindow_Method2(content).addMessageListener(core.addon.id, bootstrapMsgListener);
+// end - server/framescript comm layer
 // start - common helper functions
 function contentMMFromContentWindow_Method2(aContentWindow) {
 	if (!gCFMM) {
@@ -182,5 +231,38 @@ function contentMMFromContentWindow_Method2(aContentWindow) {
 	}
 	return gCFMM;
 
+}
+function Deferred() {
+	try {
+		/* A method to resolve the associated Promise with the value passed.
+		 * If the promise is already settled it does nothing.
+		 *
+		 * @param {anything} value : This value is used to resolve the promise
+		 * If the value is a Promise then the associated promise assumes the state
+		 * of Promise passed as value.
+		 */
+		this.resolve = null;
+
+		/* A method to reject the assocaited Promise with the value passed.
+		 * If the promise is already settled it does nothing.
+		 *
+		 * @param {anything} reason: The reason for the rejection of the Promise.
+		 * Generally its an Error object. If however a Promise is passed, then the Promise
+		 * itself will be the reason for rejection no matter the state of the Promise.
+		 */
+		this.reject = null;
+
+		/* A newly created Pomise object.
+		 * Initially in pending state.
+		 */
+		this.promise = new Promise(function(resolve, reject) {
+			this.resolve = resolve;
+			this.reject = reject;
+		}.bind(this));
+		Object.freeze(this);
+	} catch (ex) {
+		console.log('Promise not available!', ex);
+		throw new Error('Promise not available!');
+	}
 }
 // end - common helper functions
