@@ -279,6 +279,9 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			// show it
 			BC.modal.show = true;
 		};
+		
+		// the add new functionality
+		BC.building = {};
 	}]);
 
 // start - server/framescript comm layer

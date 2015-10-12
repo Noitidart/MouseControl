@@ -1,4 +1,4 @@
-<div class="modal-dialog">
+<div class="modal-dialog msg-{{BC.modal.type}}">
 	<span ng-show="BC.modal.type == 'share'">
 		<div class="msg-header">Share Function</div>
 		<div class="msg-body">
@@ -34,9 +34,9 @@
 					<option>Zoom</option>
 				</select>
 			</div>
-			<div class="modal-row"><span>Name</span> <input type="text" class="msg-cust-name"/></div>
-			<div class="modal-row"><span>Description</span> <input type="text" class="msg-cust-desc"/></div>
-			<textarea rows="3" cols="100">code code code code code code code code code code code code</textarea>
+			<div class="modal-row"><span>Name</span> <input type="text" class="msg-cust-name" ng-model="BC.modal.config_type == 'edit' ? BC.modal.aConfig.name : BC.building.name" /></div>
+			<div class="modal-row"><span>Description</span> <input type="text" class="msg-cust-desc" ng-model="BC.modal.config_type == 'edit' ? BC.modal.aConfig.desc : BC.building.desc" /></div>
+			<textarea rows="3" cols="100" ng-model="BC.modal.config_type == 'edit' ? BC.modal.aConfig.fn : BC.building.fn" />
 			<hr/>
 			<small style="display:block; text-align:center; position:absolute; width:95%;">PLACE MOUSE HERE AND DO MOUSE COMBO</small>
 			<div class="combo-set-area">
