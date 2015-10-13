@@ -120,7 +120,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-autoup'),
 				type: 'select',
 				pref_name: 'autoup',
-				// pref_type is custom, so the setter handles
+				pref_type: 'bool', // pref_type is custom, so the setter handles
 				values: {
 					'true': myServices.sb.GetStringFromName('mousecontrol.prefs.on'),
 					'false': myServices.sb.GetStringFromName('mousecontrol.prefs.off')
@@ -226,6 +226,10 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 		];
 		
 		var processValAndSetPref = function(iInBcOptions) {
+			if (suppressPrefSetterWatcher) {
+				console.warn('pref setter watcher is currently suppressed so will not act on:', ['setPref', BC.options[iInBcOptions].pref_name, BC.options[iInBcOptions].value]);
+				return;
+			}
 			// have to process val, because like for selects, the option vlaue is a text. same with text boxes for type int prefs
 			console.log('bc calling set pref with:', ['setPref', BC.options[iInBcOptions].pref_name, BC.options[iInBcOptions].value])
 			var aNewVal = BC.options[iInBcOptions].value;
@@ -243,7 +247,8 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			
 			contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['setPref', BC.options[iInBcOptions].pref_name, aNewVal]);
 		};
-		
+
+		var suppressPrefSetterWatcher = true; // after first digest, can set this to false, otherwise it will send messages to set to "" or the value it just got. so set this to true also on focus page		
 		BC.updatePrefsFromServer = function(doDigest, addWatcher) {
 			// doDigest
 				// if false, then this function returns a promise
@@ -251,6 +256,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			// addWatcher should only be set to true by the init function
 				// it handles updating the server with value as user changes it in the form
 			
+			suppressPrefSetterWatcher = true;
 			if (!doDigest) {
 				var deferredMain_updatePrefsFromServer = new Deferred();
 			}
@@ -300,6 +306,10 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 					// start - do stuff here - promiseAll_singlePrefUpdated					
 					if (!doDigest) {
 						deferredMain_updatePrefsFromServer.resolve(); // finished updating all the objects
+						console.error('WARN: make sure devusuer manually set suppressPrefSetterWatcher = false after your digest then');
+					} else {
+						$scope.$digest();
+						suppressPrefSetterWatcher = false;
 					}
 					// end - do stuff here - promiseAll_singlePrefUpdated
 				},
@@ -429,6 +439,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 					// start - do stuff here - promiseAll_digest
 					$scope.$digest();
 					console.log('ok digested');
+					suppressPrefSetterWatcher = false;
 					// end - do stuff here - promiseAll_digest
 				},
 				function(aReason) {
