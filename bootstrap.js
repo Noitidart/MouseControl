@@ -114,8 +114,32 @@ var prefs = {
 				// addon.applyBackgroundUpdates = '0'; // off
 				// addon.applyBackgroundUpdates = '1'; // default
 				// addon.applyBackgroundUpdates = '2'; // on
-				
-				ADDON_MANAGER_ENTRY.applyBackgroundUpdates = aApplyBackgroundUpdates;
+				console.error('doing set on applyBackgroundUpdates, aApplyBackgroundUpdates is:', aApplyBackgroundUpdates);
+				if ([0, 1, 2, '0', '1', '2', 'true', 'false', false, true].indexOf(aApplyBackgroundUpdates) == -1) {
+					console.error('WARN will not set pref, prefName:', 'autoup', 'to val:', aApplyBackgroundUpdates, 'because it has a list of accepted values, and the aNewVal is not among them, the accepted values are:', [0, 1, 2, '0', '1', '2']);
+				} else {
+					aApplyBackgroundUpdates = ensureBool(aApplyBackgroundUpdates); // ok to use ensureBool here, as the if in the top did the === check
+					if (aApplyBackgroundUpdates) {
+						// user set to on
+						if (AddonManager.autoUpdateDefault) {
+							// meaning default setting is ON, so set it to DEFAULT
+							aApplyBackgroundUpdates = 1;
+						} else {
+							// meaning default setting is OFF, so set it to ON
+							aApplyBackgroundUpdates = 2;
+						}
+					} else {
+						// user set to off
+						if (AddonManager.autoUpdateDefault) {
+							// meaning default setting is ON, so set it to OFF
+							aApplyBackgroundUpdates = 0;
+						} else {
+							// meaning default setting is OFF, so set it to DEFAULT
+							aApplyBackgroundUpdates = 1;
+						}
+					}
+					ADDON_MANAGER_ENTRY.applyBackgroundUpdates = aApplyBackgroundUpdates;
+				}
 		}
 	},
 	'zoom-context': {
@@ -173,19 +197,37 @@ function prefGetter(aPrefName) {
 	var typeAsStr = prefTypeAsStr(prefs[aPrefName].type);
 	
 	try {
-		return Services.prefs['get' + typeAsStr + 'Pref'](myPrefBranch + aPrefName);
+		var rez_pref_val = Services.prefs['get' + typeAsStr + 'Pref'](myPrefBranch + aPrefName);
 	} catch (ex) {
+		// probably the pref doesnt exist
 		return prefs[aPrefName].default;
+	}
+	
+	if (prefs[aPrefName].values && prefs[aPrefName].values.indexOf(rez_pref_val) === -1) {
+		console.error('WARN will not return gotten pref from pref system, will return default. BECAUSE gotten pref from pref system is:', rez_pref_val, 'and this prefName has a list of accepted values, and the aNewVal is not among them, the accepted values are:', prefs[aPrefName].values);
+		return prefs[aPrefName].default;
+	} else {
+		return rez_pref_val;
 	}
 }
 
-function prefSetter(aPrefName) {
+function prefSetter(aPrefName, aNewVal) {
+	if (prefs[aPrefName].values && prefs[aPrefName].values.indexOf(aNewVal) == -1) {
+		console.error('WARN will not set pref, prefName:', aPrefName, 'to val:', aNewVal, 'because it has a list of accepted values, and the aNewVal is not among them, the accepted values are:', prefs[aPrefName].values);
+		return false;
+	} else if (prefs[aPrefName].type == Ci.nsIPrefBranch.PREF_INT && (isNaN(aNewVal) || aNewVal === '')) {
+		console.error('WARN will not set pref, prefName:', aPrefName, 'to val:', aNewVal, 'because its type is PREF_INT and aNewVal isNaN or blank string');
+		return false;
+	}
+
 	var typeAsStr = prefTypeAsStr(prefs[aPrefName].type);
-	
+
 	try {
-		return Services.prefs['get' + typeAsStr + 'Pref'](myPrefBranch + aPrefName);
+		Services.prefs['set' + typeAsStr + 'Pref'](myPrefBranch + aPrefName, aNewVal);
+		console.error('ok set aPrefName:', aPrefName, 'to aNewVal:', aNewVal);
+		return true;
 	} catch (ex) {
-		return prefs[aPrefName].default;
+		console.error('error when setting pref, prefName:', aPrefName, 'to val:', aNewVal, 'ex:', ex);
 	}
 }
 for (var aPrefName in prefs) {
@@ -193,7 +235,7 @@ for (var aPrefName in prefs) {
 		
 		// set the values arr on bool type
 		if (prefs[aPrefName].type == Ci.nsIPrefBranch.PREF_BOOL) {
-			prefs[aPrefName].values = [false, true];
+			prefs[aPrefName].values = [0, 1, false, true]; // it seems firefox pref system stores them as 0 or 1, not as false or true
 		}
 		
 		// set the setter and getter
@@ -907,6 +949,13 @@ function prefTypeAsStr(aTypeAsInt) {
 		default:
 			console.error('got invalid aTypeAsInt:', aTypeAsInt);
 			throw new Error('got invalid aTypeAsInt');
+	}
+}
+function ensureBool(aVal) {
+	if (aVal === 'false' || aVal === false || !aVal) { // !aVal covers blank string '', null, undefined
+		return false;
+	} else {
+		return true;
 	}
 }
 // end - common helper functions

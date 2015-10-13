@@ -120,6 +120,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-autoup'),
 				type: 'select',
 				pref_name: 'autoup',
+				// pref_type is custom, so the setter handles
 				values: {
 					'true': myServices.sb.GetStringFromName('mousecontrol.prefs.on'),
 					'false': myServices.sb.GetStringFromName('mousecontrol.prefs.off')
@@ -150,6 +151,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-dblspeed'),
 				type: 'text',
 				pref_name: 'dbl-click-speed',
+				pref_type: 'int',
 				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-dblspeed')
 			},
 			{
@@ -157,6 +159,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-holdspeed'),
 				type: 'text',
 				pref_name: 'hold-duration',
+				pref_type: 'int',
 				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-holdspeed')
 			},
 			{
@@ -164,9 +167,10 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-newtabpos'),
 				type: 'select',
 				pref_name: 'new-tab-pos',
+				pref_type: 'int',
 				values: {
-					0: myServices.sb.GetStringFromName('mousecontrol.prefs.endofbar'),
-					1: myServices.sb.GetStringFromName('mousecontrol.prefs.nexttocur')
+					'0': myServices.sb.GetStringFromName('mousecontrol.prefs.endofbar'),
+					'1': myServices.sb.GetStringFromName('mousecontrol.prefs.nexttocur')
 				},
 				desc: ''
 			},
@@ -175,9 +179,10 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-duptabpos'),
 				type: 'select',
 				pref_name: 'dup-tab-pos',
+				pref_type: 'int',
 				values: {
-					0: myServices.sb.GetStringFromName('mousecontrol.prefs.endofbar'),
-					1: myServices.sb.GetStringFromName('mousecontrol.prefs.nexttocur')
+					'0': myServices.sb.GetStringFromName('mousecontrol.prefs.endofbar'),
+					'1': myServices.sb.GetStringFromName('mousecontrol.prefs.nexttocur')
 				},
 				desc: ''
 			},
@@ -186,6 +191,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-zoomlabel'),
 				type: 'select',
 				pref_name: 'zoom-indicator',
+				pref_type: 'bool',
 				values: {
 					'false': myServices.sb.GetStringFromName('mousecontrol.prefs.hide'),
 					'true': myServices.sb.GetStringFromName('mousecontrol.prefs.show')
@@ -197,9 +203,10 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-zoomcontext'),
 				type: 'select',
 				pref_name: 'zoom-context',
+				pref_type: 'int',
 				values: {
-					0: myServices.sb.GetStringFromName('mousecontrol.prefs.allcont'),
-					1: myServices.sb.GetStringFromName('mousecontrol.prefs.txtonly')
+					'0': myServices.sb.GetStringFromName('mousecontrol.prefs.allcont'),
+					'1': myServices.sb.GetStringFromName('mousecontrol.prefs.txtonly')
 				},
 				desc: ''
 			},
@@ -208,14 +215,34 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-zoomstyle'),
 				type: 'select',
 				pref_name: 'zoom-style',
+				pref_type: 'int',
 				values: {
-					0: myServices.sb.GetStringFromName('mousecontrol.prefs.global'),
-					1: myServices.sb.GetStringFromName('mousecontrol.prefs.sitespec'),
-					2: myServices.sb.GetStringFromName('mousecontrol.prefs.temp')
+					'0': myServices.sb.GetStringFromName('mousecontrol.prefs.global'),
+					'1': myServices.sb.GetStringFromName('mousecontrol.prefs.sitespec'),
+					'2': myServices.sb.GetStringFromName('mousecontrol.prefs.temp')
 				},
 				desc: ''
 			}
 		];
+		
+		var processValAndSetPref = function(iInBcOptions) {
+			// have to process val, because like for selects, the option vlaue is a text. same with text boxes for type int prefs
+			console.log('bc calling set pref with:', ['setPref', BC.options[iInBcOptions].pref_name, BC.options[iInBcOptions].value])
+			var aNewVal = BC.options[iInBcOptions].value;
+			if (BC.options[iInBcOptions].pref_type == 'int') {
+				// parseInt the submitted val
+				aNewVal = parseInt(aNewVal);
+			} else if (BC.options[iInBcOptions].pref_type == 'bool') {
+				// turn to bool
+				if (aNewVal == 'true') {
+					aNewVal = true;
+				} else if (aNewVal == 'false') {
+					aNewVal = false;
+				} // else its an invalid, like blank string etc
+			}
+			
+			contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['setPref', BC.options[iInBcOptions].pref_name, aNewVal]);
+		};
 		
 		BC.updatePrefsFromServer = function(doDigest, addWatcher) {
 			// doDigest
@@ -237,6 +264,11 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 					
 					sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['getPref', BC.options[i].pref_name], bootstrapMsgListener.funcScope, function(iInBcOptions, aDeferred, aPrefValue) {
 						console.log('got value of pref', BC.options[iInBcOptions].pref_name, ':', aPrefValue);
+						
+						if (BC.options[iInBcOptions].pref_type == 'bool') {
+							aPrefValue = aPrefValue ? true : false;
+						}
+						
 						switch ($scope.BC.options[iInBcOptions].type) {
 							case 'select':
 									
@@ -253,6 +285,11 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 						}
 						aDeferred.resolve();
 					}.bind(null, i, deferred_singlePrefUpdated));
+					
+					if (addWatcher) {
+						console.log('adding watcher to:', BC.options[i]);
+						$scope.$watch('BC.options[' + i + '].value', processValAndSetPref.bind(null, i));
+					}
 				}
 			}
 			
@@ -284,7 +321,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			);
 			
 			if (!doDigest) {
-				console.error('returning promise');
+				console.log('returning promise');
 				return deferredMain_updatePrefsFromServer.promise;
 			}
 		}
@@ -315,7 +352,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 		BC.modal = {
 			type: 'trash', // trash/share/config
 			config_type: 'add', // add/edit // if type==config
-			show: false
+			show: false,
 		};
 		
 		BC.hideModalIfEsc = function(aEvent) {
