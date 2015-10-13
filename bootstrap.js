@@ -1,6 +1,7 @@
 // Imports
 const {classes: Cc, interfaces: Ci, manager: Cm, results: Cr, utils: Cu, Constructor: CC} = Components;
 Cm.QueryInterface(Ci.nsIComponentRegistrar);
+Cu.import('resource://gre/modules/AddonManager.jsm');
 Cu.import('resource://gre/modules/devtools/Console.jsm');
 const {TextDecoder, TextEncoder, OS} = Cu.import('resource://gre/modules/osfile.jsm', {});
 Cu.import('resource://gre/modules/Promise.jsm');
@@ -40,6 +41,204 @@ const core = {
 const JETPACK_DIR_BASENAME = 'jetpack';
 const OSPath_simpleStorage = OS.Path.join(OS.Constants.Path.profileDir, JETPACK_DIR_BASENAME, core.addon.id, 'simple-storage');
 const myPrefBranch = 'extensions.' + core.addon.id + '.';
+
+var ADDON_MANAGER_ENTRY;
+
+// Preferences
+// custom - -1, must specify an getter and setter on value
+// Ci.nsIPrefBranch.PREF_INVALID 0
+// Ci.nsIPrefBranch.PREF_STRING 32
+// Ci.nsIPrefBranch.PREF_INT 64
+// Ci.nsIPrefBranch.PREF_BOOL 128
+var prefs = {
+	autoup: {
+		default: true,
+		type: -1, // -1 means custom
+		values: [false, true],
+		get value () { // false - disabled, true - enabled - uses the autoUpdateDefault value to convert default value
+
+			var deferredMain_autoup = new Deferred();
+			
+			if (ADDON_MANAGER_ENTRY) {
+				// block link16515151
+				var autoupRaw = parseInt(ADDON_MANAGER_ENTRY.applyBackgroundUpdates); // have to parseInt because its string
+				// addon.applyBackgroundUpdates = '0'; // off
+				// addon.applyBackgroundUpdates = '1'; // default
+				// addon.applyBackgroundUpdates = '2'; // on
+				
+				if (autoupRaw === 1) {
+					AddonManager.autoUpdateDefault ? deferredMain_autoup.resolve(true) : deferredMain_autoup.resolve(false);
+					// return AddonManager.autoUpdateDefault ? true : false;
+				} else if (autoupRaw === 0) {
+					deferredMain_autoup.resolve(false);
+					// return false;
+				} else if (autoupRaw === 2) {
+					deferredMain_autoup.resolve(true);
+					// return true;
+				} else {
+					console.error('should never ever get here');
+				}
+				// end block link16515151
+			} else {
+				AddonManager.getAddonByID(core.addon.id, function(addon_manager_entry) {
+					// addon.applyBackgroundUpdates = '0'; //off
+					// addon.applyBackgroundUpdates = '1'; //default
+					// addon.applyBackgroundUpdates = '2'; //on
+					ADDON_MANAGER_ENTRY = addon_manager_entry;
+					
+					// copy of block link16515151
+					var autoupRaw = parseInt(ADDON_MANAGER_ENTRY.applyBackgroundUpdates); // have to parseInt because its string
+					// addon.applyBackgroundUpdates = '0'; // off
+					// addon.applyBackgroundUpdates = '1'; // default
+					// addon.applyBackgroundUpdates = '2'; // on
+					
+					if (autoupRaw === 1) {
+						AddonManager.autoUpdateDefault ? deferredMain_autoup.resolve(true) : deferredMain_autoup.resolve(false);
+						// return AddonManager.autoUpdateDefault ? true : false;
+					} else if (autoupRaw === 0) {
+						deferredMain_autoup.resolve(false);
+						// return false;
+					} else if (autoupRaw === 2) {
+						deferredMain_autoup.resolve(true);
+						// return true;
+					} else {
+						console.error('should never ever get here');
+					}
+					// end copy of block link16515151
+				});
+			}
+			
+			return deferredMain_autoup.promise;
+		},
+		set value (aApplyBackgroundUpdates) {
+				// addon.applyBackgroundUpdates = '0'; // off
+				// addon.applyBackgroundUpdates = '1'; // default
+				// addon.applyBackgroundUpdates = '2'; // on
+				
+				ADDON_MANAGER_ENTRY.applyBackgroundUpdates = aApplyBackgroundUpdates;
+		}
+	},
+	'zoom-context': {
+		default: 0,
+		type: Ci.nsIPrefBranch.PREF_INT,
+		values: [0, 1]
+		// values
+			// 0 - all content
+			// 1 - text only
+	},
+	'zoom-indicator': {
+		default: false,
+		type: Ci.nsIPrefBranch.PREF_BOOL
+		// values
+			// true - show
+			// false - hide
+	},
+	'zoom-style': {
+		default: 1,
+		type: Ci.nsIPrefBranch.PREF_INT,
+		values: [0, 1, 2]
+		// values
+			// 0 - all content
+			// 1 - site specific
+			// 2 - text only
+	},
+	'dbl-click-speed': {
+		default: 200,
+		type: Ci.nsIPrefBranch.PREF_INT
+	},
+	'hold-duration': {
+		default: 200,
+		type: Ci.nsIPrefBranch.PREF_INT
+	},
+	'new-tab-pos': {
+		default: 1,
+		values: [0, 1],
+		type: Ci.nsIPrefBranch.PREF_INT
+		// values
+			// 0 - end of tab bar
+			// 1 - next to current tab
+	},
+	'dup-tab-pos': {
+		default: 1,
+		values: [0, 1],
+		type: Ci.nsIPrefBranch.PREF_INT
+		// values
+			// 0 - end of tab bar
+			// 1 - next to current tab
+	}
+};
+
+// set up getters and setters on .value
+function prefGetter(aPrefName) {
+	var typeAsStr = prefTypeAsStr(prefs[aPrefName].type);
+	
+	try {
+		return Services.prefs['get' + typeAsStr + 'Pref'](myPrefBranch + aPrefName);
+	} catch (ex) {
+		return prefs[aPrefName].default;
+	}
+}
+
+function prefSetter(aPrefName) {
+	var typeAsStr = prefTypeAsStr(prefs[aPrefName].type);
+	
+	try {
+		return Services.prefs['get' + typeAsStr + 'Pref'](myPrefBranch + aPrefName);
+	} catch (ex) {
+		return prefs[aPrefName].default;
+	}
+}
+for (var aPrefName in prefs) {
+	if (prefs[aPrefName].type != -1) {
+		
+		// set the values arr on bool type
+		if (prefs[aPrefName].type == Ci.nsIPrefBranch.PREF_BOOL) {
+			prefs[aPrefName].values = [false, true];
+		}
+		
+		// set the setter and getter
+		Object.defineProperty(prefs[aPrefName], 'value', {
+			get: prefGetter.bind(null, aPrefName),
+			set: prefSetter.bind(null, aPrefName)
+		});
+	}
+}
+
+var watchBranches = {};
+watchBranches[myPrefBranch] = { //have to do it this way because in the watchBranches obj i can't do { myPrefBranch: {...} }
+	ownType: 0, //0-full, 1-none, 2-partial
+	prefNames: {
+		'autoup': {
+			owned: true,
+			default: true,
+			value: undefined,
+			type: Ci.nsIPrefBranch.PREF_BOOL,
+			// on_PrefOnObj_Change: writePrefToIni
+		},
+		'dev': {
+			owned: true,
+			default: false,
+			value: undefined,
+			type: Ci.nsIPrefBranch.PREF_BOOL,
+			// on_PrefOnObj_Change: writePrefToIni
+		},
+		'dev-builds': {
+			owned: true,
+			default: '[]',
+			value: undefined,
+			type: Ci.nsIPrefBranch.PREF_STRING,
+			// on_PrefOnObj_Change: writePrefToIni
+		},
+		'launch_on_create': {
+			owned: true,
+			default: true,
+			value: undefined,
+			type: Ci.nsIPrefBranch.PREF_BOOL,
+			// on_PrefOnObj_Change: writePrefToIni
+		}
+	}
+	// on_UnknownPrefNameOnObj_Change: function(oldVal, newVal, rejObj) {}
+};
 
 var gConfigJsonDefault = function() {
 	return [
@@ -155,58 +354,6 @@ const myServices = {};
 XPCOMUtils.defineLazyGetter(myServices, 'hph', function () { return Cc['@mozilla.org/network/protocol;1?name=http'].getService(Ci.nsIHttpProtocolHandler); });
 XPCOMUtils.defineLazyGetter(myServices, 'sb', function () { return Services.strings.createBundle(core.addon.path.locale + 'bootstrap.properties?' + core.addon.cache_key); /* Randomize URI to work around bug 719376 */ });
 
-function extendCore() {
-	// adds some properties i use to core based on the current operating system, it needs a switch, thats why i couldnt put it into the core obj at top
-	switch (core.os.name) {
-		case 'winnt':
-		case 'winmo':
-		case 'wince':
-			core.os.version = parseFloat(Services.sysinfo.getProperty('version'));
-			// http://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions
-			if (core.os.version == 6.0) {
-				core.os.version_name = 'vista';
-			}
-			if (core.os.version >= 6.1) {
-				core.os.version_name = '7+';
-			}
-			if (core.os.version == 5.1 || core.os.version == 5.2) { // 5.2 is 64bit xp
-				core.os.version_name = 'xp';
-			}
-			break;
-			
-		case 'darwin':
-			var userAgent = myServices.hph.userAgent;
-
-			var version_osx = userAgent.match(/Mac OS X 10\.([\d\.]+)/);
-
-			
-			if (!version_osx) {
-				throw new Error('Could not identify Mac OS X version.');
-			} else {
-				var version_osx_str = version_osx[1];
-				var ints_split = version_osx[1].split('.');
-				if (ints_split.length == 1) {
-					core.os.version = parseInt(ints_split[0]);
-				} else if (ints_split.length >= 2) {
-					core.os.version = ints_split[0] + '.' + ints_split[1];
-					if (ints_split.length > 2) {
-						core.os.version += ints_split.slice(2).join('');
-					}
-					core.os.version = parseFloat(core.os.version);
-				}
-				// this makes it so that 10.10.0 becomes 10.100
-				// 10.10.1 => 10.101
-				// so can compare numerically, as 10.100 is less then 10.101
-				
-				//core.os.version = 6.9; // note: debug: temporarily forcing mac to be 10.6 so we can test kqueue
-			}
-			break;
-		default:
-			// nothing special
-	}
-	
-
-}
 
 // START - Addon Functionalities					
 // start - about module
@@ -363,6 +510,40 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 	},
 	fetchCore: function() {
 		return [core];
+	},
+	getPref: function(aPrefName) {
+		
+		var rezPrefVal = prefs[aPrefName].value;
+		if (rezPrefVal.constructor.name == 'Promise') {
+			var deferredMain_fsGetPref = new Deferred();
+			
+			rezPrefVal.then(
+				function(aVal) {
+					console.log('Fullfilled - rezPrefVal - ', aVal);
+					// start - do stuff here - rezPrefVal
+					deferredMain_fsGetPref.resolve([aVal]);
+					// end - do stuff here - rezPrefVal
+				},
+				function(aReason) {
+					var rejObj = {name:'rezPrefVal', aReason:aReason};
+					console.warn('Rejected - rezPrefVal - ', rejObj);
+					deferredMain_fsGetPref.reject(rejObj);
+				}
+			).catch(
+				function(aCaught) {
+					var rejObj = {name:'rezPrefVal', aCaught:aCaught};
+					console.error('Caught - rezPrefVal - ', rejObj);
+					deferredMain_fsGetPref.reject(rejObj);
+				}
+			);
+			return deferredMain_fsGetPref.promise;
+			
+		} else {
+			return [rezPrefVal];
+		}
+	},
+	setPref: function(aPrefName, aNewVal) {
+		prefs[aPrefName].value = aNewVal;
 	}
 };
 var fsMsgListener = {
@@ -648,4 +829,84 @@ function sendAsyncMessageWithCallback(aMessageManager, aGroupId, aMessageArr, aC
 	aMessageManager.sendAsyncMessage(aGroupId, aMessageArr);
 }
 
+
+function extendCore() {
+	// adds some properties i use to core based on the current operating system, it needs a switch, thats why i couldnt put it into the core obj at top
+	switch (core.os.name) {
+		case 'winnt':
+		case 'winmo':
+		case 'wince':
+			core.os.version = parseFloat(Services.sysinfo.getProperty('version'));
+			// http://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions
+			if (core.os.version == 6.0) {
+				core.os.version_name = 'vista';
+			}
+			if (core.os.version >= 6.1) {
+				core.os.version_name = '7+';
+			}
+			if (core.os.version == 5.1 || core.os.version == 5.2) { // 5.2 is 64bit xp
+				core.os.version_name = 'xp';
+			}
+			break;
+			
+		case 'darwin':
+			var userAgent = myServices.hph.userAgent;
+
+			var version_osx = userAgent.match(/Mac OS X 10\.([\d\.]+)/);
+
+			
+			if (!version_osx) {
+				throw new Error('Could not identify Mac OS X version.');
+			} else {
+				var version_osx_str = version_osx[1];
+				var ints_split = version_osx[1].split('.');
+				if (ints_split.length == 1) {
+					core.os.version = parseInt(ints_split[0]);
+				} else if (ints_split.length >= 2) {
+					core.os.version = ints_split[0] + '.' + ints_split[1];
+					if (ints_split.length > 2) {
+						core.os.version += ints_split.slice(2).join('');
+					}
+					core.os.version = parseFloat(core.os.version);
+				}
+				// this makes it so that 10.10.0 becomes 10.100
+				// 10.10.1 => 10.101
+				// so can compare numerically, as 10.100 is less then 10.101
+				
+				//core.os.version = 6.9; // note: debug: temporarily forcing mac to be 10.6 so we can test kqueue
+			}
+			break;
+		default:
+			// nothing special
+	}
+	
+
+}
+
+function prefTypeAsStr(aTypeAsInt) {
+	// Ci.nsIPrefBranch.PREF_INVALID 0
+	// Ci.nsIPrefBranch.PREF_STRING 32
+	// Ci.nsIPrefBranch.PREF_INT 64
+	// Ci.nsIPrefBranch.PREF_BOOL 128
+	switch (prefs[aPrefName].type) {
+		case Ci.nsIPrefBranch.PREF_BOOL:
+				
+				return 'Bool';
+				
+			break;
+		case Ci.nsIPrefBranch.PREF_INT:
+				
+				return 'Int';
+				
+			break;
+		case Ci.nsIPrefBranch.PREF_STRING:
+				
+				return 'Char';
+				
+			break;
+		default:
+			console.error('got invalid aTypeAsInt:', aTypeAsInt);
+			throw new Error('got invalid aTypeAsInt');
+	}
+}
 // end - common helper functions

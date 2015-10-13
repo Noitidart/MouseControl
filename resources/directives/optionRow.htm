@@ -2,7 +2,7 @@
 	{{aOption.label}}
 </span>
 <span ng-switch-when="select">
-	<select ng-options="aOptVal as aOptLabel for (aOptVal, aOptLabel) in aOption.values" ng-model="aOption.selectedIndex" />
+	<select ng-options="aOptVal as aOptLabel for (aOptVal, aOptLabel) in aOption.values" ng-model="aOption.value" />
 </span>
 <span ng-switch-when="button">
 	<button type="button" ng-repeat="aBtnLabel in aOption.values">

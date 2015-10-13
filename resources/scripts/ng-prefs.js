@@ -112,20 +112,17 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 	})
 	.controller('BodyController', ['$scope', '$sce', '$q', '$timeout', function($scope, $sce, $q, $timeout) {
 		var BC = this;
-		BC.l10n = {};
-		BC.modal = {
-			type: 'trash', // trash/share/config
-			config_type: 'add', // add/edit // if type==config
-			show: false
-		};
+
+		// start - pref to dom modeling
 		BC.options = [ // order here is the order it is displayed in, in the dom
 			{
 				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-autoup'),
 				type: 'select',
+				pref_name: 'autoup',
 				values: {
-					0: myServices.sb.GetStringFromName('mousecontrol.prefs.on'),
-					1: myServices.sb.GetStringFromName('mousecontrol.prefs.off')
+					'true': myServices.sb.GetStringFromName('mousecontrol.prefs.on'),
+					'false': myServices.sb.GetStringFromName('mousecontrol.prefs.off')
 				},
 				desc: ''
 			},
@@ -190,8 +187,8 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				type: 'select',
 				pref_name: 'zoom-indicator',
 				values: {
-					0: myServices.sb.GetStringFromName('mousecontrol.prefs.hide'),
-					1: myServices.sb.GetStringFromName('mousecontrol.prefs.show')
+					'false': myServices.sb.GetStringFromName('mousecontrol.prefs.hide'),
+					'true': myServices.sb.GetStringFromName('mousecontrol.prefs.show')
 				},
 				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-zoomlabel')
 			},
@@ -220,19 +217,83 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			}
 		];
 		
-		// get json config from bootstrap
-		sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['fetchConfig'], bootstrapMsgListener.funcScope, function(aConfigJson) {
-			console.log('got aConfigJson into ng:', aConfigJson);
-			$scope.BC.configs = aConfigJson;
-			$scope.$digest();
-			console.log('digested');
-		});
+		BC.updatePrefsFromServer = function(doDigest, addWatcher) {
+			// doDigest
+				// if false, then this function returns a promise
+				// else this digests and doesnt return anything
+			// addWatcher should only be set to true by the init function
+				// it handles updating the server with value as user changes it in the form
+			
+			if (!doDigest) {
+				var deferredMain_updatePrefsFromServer = new Deferred();
+			}
+			
+			var promiseAllArr_singlePrefUpdated = [];
+			
+			for (var i=0; i<BC.options.length; i++) {
+				if (BC.options[i].pref_name) {
+					var deferred_singlePrefUpdated = new Deferred();
+					promiseAllArr_singlePrefUpdated.push(deferred_singlePrefUpdated.promise);
+					
+					sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['getPref', BC.options[i].pref_name], bootstrapMsgListener.funcScope, function(iInBcOptions, aDeferred, aPrefValue) {
+						console.log('got value of pref', BC.options[iInBcOptions].pref_name, ':', aPrefValue);
+						switch ($scope.BC.options[iInBcOptions].type) {
+							case 'select':
+									
+									$scope.BC.options[iInBcOptions].value = aPrefValue + '';
+									
+								break;
+							case 'text':
+									
+									$scope.BC.options[iInBcOptions].value = aPrefValue;
+									
+								break;
+							default:
+								console.error('should never ever get here');
+						}
+						aDeferred.resolve();
+					}.bind(null, i, deferred_singlePrefUpdated));
+				}
+			}
+			
+			var promiseAll_singlePrefUpdated = Promise.all(promiseAllArr_singlePrefUpdated);
+			promiseAll_singlePrefUpdated.then(
+				function(aVal) {
+					console.log('Fullfilled - promiseAll_singlePrefUpdated - ', aVal);
+					// start - do stuff here - promiseAll_singlePrefUpdated					
+					if (!doDigest) {
+						deferredMain_updatePrefsFromServer.resolve(); // finished updating all the objects
+					}
+					// end - do stuff here - promiseAll_singlePrefUpdated
+				},
+				function(aReason) {
+					var rejObj = {name:'promiseAll_singlePrefUpdated', aReason:aReason};
+					console.warn('Rejected - promiseAll_singlePrefUpdated - ', rejObj);
+					if (!doDigest) {
+						deferredMain_updatePrefsFromServer.reject(rejObj);
+					}
+				}
+			).catch(
+				function(aCaught) {
+					var rejObj = {name:'promiseAll_singlePrefUpdated', aCaught:aCaught};
+					console.error('Caught - promiseAll_singlePrefUpdated - ', rejObj);
+					if (!doDigest) {
+						deferredMain_updatePrefsFromServer.reject(rejObj);
+					}
+				}
+			);
+			
+			if (!doDigest) {
+				console.error('returning promise');
+				return deferredMain_updatePrefsFromServer.promise;
+			}
+		}
 		
-		sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['fetchCore'], bootstrapMsgListener.funcScope, function(aCore) {
-			console.log('got aCore:', aCore);
-			core = aCore;
-		});
+		// end - pref to dom modeling
 		
+		// start - l10n injection into ng
+		
+		BC.l10n = {};
 		// get all the localized strings into ng
 		var l10ns = myServices.sb_dom.getSimpleEnumeration();
 		while (l10ns.hasMoreElements()) {
@@ -248,6 +309,14 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 		
 		// set version for dom
 		BC.l10n['mousecontrol.prefs.addon_version'] = core.addon.cache_key;
+		// end - l10n injection into ng
+		
+		// start - modal stuff
+		BC.modal = {
+			type: 'trash', // trash/share/config
+			config_type: 'add', // add/edit // if type==config
+			show: false
+		};
 		
 		BC.hideModalIfEsc = function(aEvent) {
 			if (aEvent.keyCode == 27) {
@@ -279,9 +348,67 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			// show it
 			BC.modal.show = true;
 		};
+		// end - modal stuff
 		
-		// the add new functionality
+		// start - create/add new function
 		BC.building = {};
+		
+		// end - create/add new function
+		
+		
+		// start - init
+		var init = function() {
+			
+			var promiseAllArr_digest = [];
+			
+			// get core obj
+			var deferred_getCore = new Deferred();
+			promiseAllArr_digest.push(deferred_getCore.promise);
+			sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['fetchCore'], bootstrapMsgListener.funcScope, function(aCore) {
+				console.log('got aCore:', aCore);
+				core = aCore;
+				$scope.BC.core = core;
+				deferred_getCore.resolve();
+			});
+			
+			// update prefs object
+			var promise_updatePrefs = BC.updatePrefsFromServer(false, true);
+			promiseAllArr_digest.push(promise_updatePrefs);
+			
+			// get json config from bootstrap
+			var deferred_getUserConfig = new Deferred();
+			promiseAllArr_digest.push(deferred_getUserConfig.promise);
+			sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['fetchConfig'], bootstrapMsgListener.funcScope, function(aConfigJson) {
+				console.log('got aConfigJson into ng:', aConfigJson);
+				$scope.BC.configs = aConfigJson;
+				deferred_getUserConfig.resolve();
+			});
+			
+			// wait for all to finish then digest
+			var promiseAll_digest = Promise.all(promiseAllArr_digest);
+			promiseAll_digest.then(
+				function(aVal) {
+					console.log('Fullfilled - promiseAll_digest - ', aVal);
+					// start - do stuff here - promiseAll_digest
+					$scope.$digest();
+					console.log('ok digested');
+					// end - do stuff here - promiseAll_digest
+				},
+				function(aReason) {
+					var rejObj = {name:'promiseAll_digest', aReason:aReason};
+					console.warn('Rejected - promiseAll_digest - ', rejObj);
+					// deferred_createProfile.reject(rejObj);
+				}
+			).catch(
+				function(aCaught) {
+					var rejObj = {name:'promiseAll_digest', aCaught:aCaught};
+					console.error('Caught - promiseAll_digest - ', rejObj);
+					// deferred_createProfile.reject(rejObj);
+				}
+			);
+		};
+		init();
+		// end - init
 	}]);
 
 // start - server/framescript comm layer
