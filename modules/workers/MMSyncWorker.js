@@ -225,38 +225,6 @@ function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 		
 		var rez_DispatchMessage = ostypes.API('DispatchMessage')(LMessage.address());
 		console.log('rez_DispatchMessage:', rez_DispatchMessage);
-		
-		/* cheating - i do this here so i dont have to DispatchMessage and handle in wndproc, not sure if this is safe i have to ask on stackoverflow
-		if (cutils.jscEqual(LMessage.message, ostypes.CONST.WM_INPUT)) {
-			// console.info('LMessage.lParam:', LMessage.lParam, LMessage.lParam.toString());
-			var hrawinput = ostypes.TYPE.HRAWINPUT(LMessage.lParam); // ctypes.cast(LMEssage.lParam, ostypes.TYPE.HRAWINPUT) doesnt work here as the Message.lParam is not really ostypes.TYPE.LPARAM it gets unwrapped so its primiated js type, its just a number. thats why i can just wrap it with a ostypes.TYPE.HRAWINPUT
-			var rez_getRawInputData = ostypes.API('GetRawInputData')(hrawinput, ostypes.CONST.RID_INPUT, OSStuff.getRawInputDataBuffer.address(), OSStuff.rawInputDataBufferSize.address(), ostypes.TYPE.RAWINPUTHEADER.size);
-			var usButtonFlags = parseInt(cutils.jscGetDeepest(OSStuff.getRawInputDataBuffer.mouse.usButtonFlags));
-			// console.log('rez_getRawInputData:', rez_getRawInputData, rez_getRawInputData.toString());
-			if (usButtonFlags != 0) {
-				var usButtonFlagStrs = {}; // key value. key is aRawMouseConstStr value is 0 unless its wheel, in which case it is either 1 up/right or -1 for for left/down
-				for (var aRawMouseConstStr in OSStuff.rawMouseConsts) {
-					if (usButtonFlags & OSStuff.rawMouseConsts[aRawMouseConstStr]) {
-						switch (aRawMouseConstStr) {
-							case 'RI_MOUSE_HORIZONTAL_WHEEL':
-							case 'RI_MOUSE_WHEEL':
-								usButtonFlagStrs[aRawMouseConstStr] = parseInt(cutils.jscGetDeepest(ctypes.cast(ostypes.TYPE.USHORT(OSStuff.getRawInputDataBuffer.mouse.usButtonData), ostypes.TYPE.SHORT))) > 0 ? 1 : -1;
-								break;
-							default:
-								usButtonFlagStrs[aRawMouseConstStr] = 0;
-						}
-					}
-				}
-				var pth = OS.Path.join(OS.Constants.Path.desktopDir, 'RawInputMouse.txt');
-				var valOpen = OS.File.open(pth, {write: true, append: true});
-				var txtToAppend = JSON.stringify(usButtonFlagStrs) + '\n';
-				var txtEncoded = TextEncoder().encode(txtToAppend);
-				valOpen.write(txtEncoded);
-				valOpen.close();
-				console.log('usButtonFlagStrs:', usButtonFlagStrs);
-			}
-		}
-		*/
 	}
 	// console.log('message loop ended');
 	stopMonitor(); // must stop monitor when stop loop otherwise mouse will freeze up for like 5sec, well thats what happens to me on win81
@@ -321,10 +289,6 @@ function winCreateHiddenWindowForMessageLoop() {
 		// var rez_UnregisterClass = ostypes.API('UnregisterClass')(ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol'), null);
 		// console.log('rez_UnregisterClass:', rez_UnregisterClass);
 	});
-
-	
-
-	
 }
 
 function syncMonitorMouse() {
@@ -356,6 +320,24 @@ function syncMonitorMouse() {
 						WM_XBUTTONUP: 0x20C,
 						WM_XBUTTONDBLCLK: 0x20D,
 						WM_MOUSEHWHEEL: 0x20E
+						// WM_NCXBUTTONDOWN: 0x00AB, // im not sure if these ncx things will trigger // i actually think the abovbe dblclicks wont trigger either
+						// WM_NCXBUTTONUP: 0x00AC,
+						// WM_NCXBUTTONDBLCLK: 0x00AD
+					};
+					
+					OSStuff.mouseConstToMouseControlConst = {
+						WM_LBUTTONDOWN: 'B1_DN',
+						WM_LBUTTONUP: 'B1_UP',
+						WM_RBUTTONDOWN: 'B2_DN',
+						WM_RBUTTONUP: 'B2_UP',
+						WM_MBUTTONDOWN: 'B3_DN',
+						WM_MBUTTONUP: 'B3_UP',
+						WM_MOUSEWHEEL: 'WV_??',
+						WM_XBUTTONDOWN: 'B?_DN',
+						WM_XBUTTONUP: 'B?_UP',
+						WM_MOUSEHWHEEL: 'WH_??',
+						WM_NCXBUTTONDOWN: 'B?_DN',
+						WM_NCXBUTTONUP: 'B?_UP'
 					};
 				};
 				
@@ -380,8 +362,40 @@ function syncMonitorMouse() {
 
 					var mhs = ostypes.TYPE.MSLLHOOKSTRUCT.ptr(ctypes.UInt64(lParam));
 
-					console.info('myLLMouseHook | ', cutils.jscGetDeepest(eventType), 'nCode:', cutils.jscGetDeepest(nCode), 'wParam:', cutils.jscGetDeepest(wParam), 'lParam:', cutils.jscGetDeepest(lParam), 'mhs.contents:', mhs.contents.toString());
+					var mouseDataLowordUnsigned = parseInt(cutils.jscGetDeepest(mhs.contents.mouseData)) & 0xffff;
+					var mouseDataLowordSigned = mouseDataLowordUnsigned >= 32768 ? mouseDataLowordUnsigned - 65536 : mouseDataLowordUnsigned;
+					
+					var mouseDataHiwordUnsigned = (parseInt(cutils.jscGetDeepest(mhs.contents.mouseData)) >> 16) & 0xffff;
+					var mouseDataHiwordSigned = mouseDataHiwordUnsigned >= 32768 ? mouseDataHiwordUnsigned - 65536 : mouseDataHiwordUnsigned;
+					
+					console.info('myLLMouseHook | ', eventType, 'nCode:', cutils.jscGetDeepest(nCode), 'wParam:', cutils.jscGetDeepest(wParam), 'lParam:', cutils.jscGetDeepest(lParam), 'mouseDataLoword:', mouseDataLowordSigned, 'mouseDataHiword:', mouseDataHiwordSigned, 'mhs.contents:', mhs.contents.toString());
+					
+					/*
+					/////
+					var usButtonFlagStrs = {}; // key value. key is aRawMouseConstStr value is 0 unless its wheel, in which case it is either 1 up/right or -1 for for left/down
+					for (var aMouseConstStr in OSStuff.rawMouseConsts) {
+						if (usButtonFlags & OSStuff.rawMouseConsts[aMouseConstStr]) {
+							switch (aMouseConstStr) {
+								case 'WM_MOUSEWHEEL':
+								case 'WM_MOUSEHWHEEL':
+									usButtonFlagStrs[aMouseConstStr] = parseInt(cutils.jscGetDeepest(ctypes.cast(ostypes.TYPE.USHORT(OSStuff.getRawInputDataBuffer.mouse.usButtonData), ostypes.TYPE.SHORT))) > 0 ? 1 : -1;
+									break;
+								default:
+									usButtonFlagStrs[aMouseConstStr] = 0;
+							}
+						}
+					}
+					var pth = OS.Path.join(OS.Constants.Path.desktopDir, 'RawInputMouse.txt');
+					var valOpen = OS.File.open(pth, {write: true, append: true});
+					var txtToAppend = JSON.stringify(usButtonFlagStrs) + '\n';
+					var txtEncoded = TextEncoder().encode(txtToAppend);
+					valOpen.write(txtEncoded);
+					valOpen.close();
+					console.log('usButtonFlagStrs:', usButtonFlagStrs);
+					/////
+					*/
 
+					
 					if (new Date().getTime() - OSStuff.hookStartTime > 10000) {
 						// its been 10sec, lets post message to make GetMessage return, because it seems my GetMessage is blocking forever as its not getting any messages posted to it
 						var rez_PostMessage = ostypes.API('PostMessage')(OSStuff.msgWinHwnd, ostypes.CONST.WM_INPUT, 0, 0);
@@ -390,9 +404,26 @@ function syncMonitorMouse() {
 						console.log('time not up yet');
 					}
 					
-					var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
-					// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
-					return rez_CallNext;
+					if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
+						// start - block link4841115
+						// have to return rez callback					
+						var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
+						// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
+						return rez_CallNext;
+						// end - block link4841115
+					} else {
+						if (eventType != 'WM_MOUSEMOVE') {
+							// lets block it!
+							return -1;
+						} else {
+							// start - copy of block link4841115
+							// have to return rez callback					
+							var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
+							// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
+							return rez_CallNext;
+							// end - copy of block link4841115
+						}
+					}
 				};
 				OSStuff.myLLMouseHook_c = ostypes.TYPE.LowLevelMouseProc.ptr(OSStuff.myLLMouseHook_js);
 				
