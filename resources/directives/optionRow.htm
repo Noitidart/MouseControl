@@ -5,8 +5,8 @@
 	<select ng-options="aOptVal as aOptLabel for (aOptVal, aOptLabel) in aOption.values" ng-model="aOption.value" />
 </span>
 <span ng-switch-when="button">
-	<button type="button" ng-repeat="aBtnLabel in aOption.values">
-		{{aBtnLabel}}
+	<button type="button" ng-repeat="aBtnInfo in aOption.values" ng-click="aBtnInfo.action()">
+		{{aBtnInfo.label}}
 	</button>
 </span>
 <span ng-switch-when="text">

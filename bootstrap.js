@@ -40,6 +40,7 @@ const core = {
 
 const JETPACK_DIR_BASENAME = 'jetpack';
 const OSPath_simpleStorage = OS.Path.join(OS.Constants.Path.profileDir, JETPACK_DIR_BASENAME, core.addon.id, 'simple-storage');
+const OSPath_config = OS.Path.join(OSPath_simpleStorage, 'config.json');
 const myPrefBranch = 'extensions.' + core.addon.id + '.';
 
 var ADDON_MANAGER_ENTRY;
@@ -266,7 +267,7 @@ var prefs = {
 			// 1 - text only
 	},
 	'zoom-indicator': {
-		default: false,
+		default: true,
 		type: Ci.nsIPrefBranch.PREF_BOOL
 		// values
 			// true - show
@@ -431,7 +432,7 @@ function readConfigFromFile() {
 		// array because this function is used by fsFuncs
 		
 	var mainDeferred_readConfigFromFile = new Deferred();
-	var promise_readConfig = OS.File.read(OS.Path.join(OSPath_simpleStorage, 'config.json'), {encoding:'utf-8'});
+	var promise_readConfig = OS.File.read(OSPath_config, {encoding:'utf-8'});
 	promise_readConfig.then(
 		function(aVal) {
 			console.log('Fullfilled - promise_readConfig - ', aVal);
@@ -573,6 +574,69 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 	},
 	setPref: function(aPrefName, aNewVal) {
 		prefs[aPrefName].value = aNewVal;
+	},
+	updateConfigsOnServer: function(aNewConfigJson) {
+		gConfigJson = aNewConfigJson;
+		
+		var promise_saveConfigs = tryOsFile_ifDirsNoExistMakeThenRetry('writeAtomic', [OSPath_config, JSON.stringify(aNewConfigJson), {
+			tmpPath: OSPath_config + '.tmp'
+		}], OS.Constants.Path.profileDir);
+		
+		promise_saveConfigs.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_saveConfigs - ', aVal);
+				// start - do stuff here - promise_saveConfigs
+				// end - do stuff here - promise_saveConfigs
+			},
+			function(aReason) {
+				var rejObj = {name:'promise_saveConfigs', aReason:aReason};
+				console.error('Rejected - promise_saveConfigs - ', rejObj);
+				// deferred_createProfile.reject(rejObj);
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {name:'promise_saveConfigs', aCaught:aCaught};
+				console.error('Caught - promise_saveConfigs - ', rejObj);
+				// deferred_createProfile.reject(rejObj);
+			}
+		);
+	},
+	restoreDefaults: function() {
+		// :todo: in future add bool for just config restore, or all. (meaning prefs and config)
+		
+		// reset prefs
+		for (var aPrefName in prefs) {
+			prefs[aPrefName].value = prefs[aPrefName].default;
+			// the setter on the value will update the Services.prefs system
+		}
+		
+		// reset config
+		gConfigJson = gConfigJsonDefault();
+		
+		var promise_delteConfig = OS.File.remove(OSPath_config);
+		
+		promise_delteConfig.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_delteConfig - ', aVal);
+				// start - do stuff here - promise_delteConfig
+				// end - do stuff here - promise_delteConfig
+			},
+			function(aReason) {
+				var rejObj = {name:'promise_delteConfig', aReason:aReason};
+				console.error('Rejected - promise_delteConfig - ', rejObj);
+				
+				// if it fails, i really need to ensure it deletes, cuz if it exists on next addon startup or read it will get that instead of the defaults
+				// deferred_createProfile.reject(rejObj);
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {name:'promise_delteConfig', aCaught:aCaught};
+				console.error('Caught - promise_delteConfig - ', rejObj);
+				// deferred_createProfile.reject(rejObj);
+			}
+		);
+		
+		return [];
 	}
 };
 var fsMsgListener = {
@@ -938,11 +1002,233 @@ function prefTypeAsStr(aTypeAsInt) {
 			throw new Error('got invalid aTypeAsInt');
 	}
 }
+
 function ensureBool(aVal) {
 	if (aVal === 'false' || aVal === false || !aVal) { // !aVal covers blank string '', null, undefined
 		return false;
 	} else {
 		return true;
 	}
+}
+
+function makeDir_Bug934283(path, options) {
+	// pre FF31, using the `from` option would not work, so this fixes that so users on FF 29 and 30 can still use my addon
+	// the `from` option should be a string of a folder that you know exists for sure. then the dirs after that, in path will be created
+	// for example: path should be: `OS.Path.join('C:', 'thisDirExistsForSure', 'may exist', 'may exist2')`, and `from` should be `OS.Path.join('C:', 'thisDirExistsForSure')`
+	// options of like ignoreExisting is exercised on final dir
+	
+	if (!options || !('from' in options)) {
+		console.error('you have no need to use this, as this is meant to allow creation from a folder that you know for sure exists, you must provide options arg and the from key');
+		throw new Error('you have no need to use this, as this is meant to allow creation from a folder that you know for sure exists, you must provide options arg and the from key');
+	}
+
+	if (path.toLowerCase().indexOf(options.from.toLowerCase()) == -1) {
+		console.error('The `from` string was not found in `path` string');
+		throw new Error('The `from` string was not found in `path` string');
+	}
+
+	var options_from = options.from;
+	delete options.from;
+
+	var dirsToMake = OS.Path.split(path).components.slice(OS.Path.split(options_from).components.length);
+	console.log('dirsToMake:', dirsToMake);
+
+	var deferred_makeDir_Bug934283 = new Deferred();
+	var promise_makeDir_Bug934283 = deferred_makeDir_Bug934283.promise;
+
+	var pathExistsForCertain = options_from;
+	var makeDirRecurse = function() {
+		pathExistsForCertain = OS.Path.join(pathExistsForCertain, dirsToMake[0]);
+		dirsToMake.splice(0, 1);
+		var promise_makeDir = OS.File.makeDir(pathExistsForCertain, options);
+		promise_makeDir.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_makeDir - ', 'ensured/just made:', pathExistsForCertain, aVal);
+				if (dirsToMake.length > 0) {
+					makeDirRecurse();
+				} else {
+					deferred_makeDir_Bug934283.resolve('this path now exists for sure: "' + pathExistsForCertain + '"');
+				}
+			},
+			function(aReason) {
+				var rejObj = {
+					promiseName: 'promise_makeDir',
+					aReason: aReason,
+					curPath: pathExistsForCertain
+				};
+				console.error('Rejected - ' + rejObj.promiseName + ' - ', rejObj);
+				deferred_makeDir_Bug934283.reject(rejObj);
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {name:'promise_makeDir', aCaught:aCaught};
+				console.error('Caught - promise_makeDir - ', rejObj);
+				deferred_makeDir_Bug934283.reject(rejObj); // throw aCaught;
+			}
+		);
+	};
+	makeDirRecurse();
+
+	return promise_makeDir_Bug934283;
+}
+function tryOsFile_ifDirsNoExistMakeThenRetry(nameOfOsFileFunc, argsOfOsFileFunc, fromDir, aOptions={}) {
+	//last update: 061215 0303p - verified worker version didnt have the fix i needed to land here ALSO FIXED so it handles neutering of Fx37 for writeAtomic and I HAD TO implement this fix to worker version, fix was to introduce aOptions.causesNeutering
+	// aOptions:
+		// causesNeutering - default is false, if you use writeAtomic or another function and use an ArrayBuffer then set this to true, it will ensure directory exists first before trying. if it tries then fails the ArrayBuffer gets neutered and the retry will fail with "invalid arguments"
+		
+	// i use this with writeAtomic, copy, i havent tested with other things
+	// argsOfOsFileFunc is array of args
+	// will execute nameOfOsFileFunc with argsOfOsFileFunc, if rejected and reason is directories dont exist, then dirs are made then rexecute the nameOfOsFileFunc
+	// i added makeDir as i may want to create a dir with ignoreExisting on final dir as was the case in pickerIconset()
+	// returns promise
+	
+	var deferred_tryOsFile_ifDirsNoExistMakeThenRetry = new Deferred();
+	
+	if (['writeAtomic', 'copy', 'makeDir'].indexOf(nameOfOsFileFunc) == -1) {
+		deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject('nameOfOsFileFunc of "' + nameOfOsFileFunc + '" is not supported');
+		// not supported because i need to know the source path so i can get the toDir for makeDir on it
+		return deferred_tryOsFile_ifDirsNoExistMakeThenRetry.promise; //just to exit further execution
+	}
+	
+	// setup retry
+	var retryIt = function() {
+		console.info('tryosFile_ retryIt', 'nameOfOsFileFunc:', nameOfOsFileFunc, 'argsOfOsFileFunc:', argsOfOsFileFunc);
+		var promise_retryAttempt = OS.File[nameOfOsFileFunc].apply(OS.File, argsOfOsFileFunc);
+		promise_retryAttempt.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_retryAttempt - ', aVal);
+				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.resolve('retryAttempt succeeded');
+			},
+			function(aReason) {
+				var rejObj = {name:'promise_retryAttempt', aReason:aReason};
+				console.error('Rejected - promise_retryAttempt - ', rejObj);
+				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject(rejObj); //throw rejObj;
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {name:'promise_retryAttempt', aCaught:aCaught};
+				console.error('Caught - promise_retryAttempt - ', rejObj);
+				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject(rejObj); // throw aCaught;
+			}
+		);
+	};
+	
+	// popToDir
+	var toDir;
+	var popToDir = function() {
+		switch (nameOfOsFileFunc) {
+			case 'writeAtomic':
+				toDir = OS.Path.dirname(argsOfOsFileFunc[0]);
+				break;
+				
+			case 'copy':
+				toDir = OS.Path.dirname(argsOfOsFileFunc[1]);
+				break;
+
+			case 'makeDir':
+				toDir = OS.Path.dirname(argsOfOsFileFunc[0]);
+				break;
+				
+			default:
+				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject('nameOfOsFileFunc of "' + nameOfOsFileFunc + '" is not supported');
+				return; // to prevent futher execution
+		}
+	};
+	
+	// setup recurse make dirs
+	var makeDirs = function() {
+		if (!toDir) {
+			popToDir();
+		}
+		var promise_makeDirsRecurse = makeDir_Bug934283(toDir, {from: fromDir});
+		promise_makeDirsRecurse.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_makeDirsRecurse - ', aVal);
+				retryIt();
+			},
+			function(aReason) {
+				var rejObj = {name:'promise_makeDirsRecurse', aReason:aReason};
+				console.error('Rejected - promise_makeDirsRecurse - ', rejObj);
+				/*
+				if (aReason.becauseNoSuchFile) {
+					console.log('make dirs then do retryAttempt');
+					makeDirs();
+				} else {
+					// did not get becauseNoSuchFile, which means the dirs exist (from my testing), so reject with this error
+				*/
+					deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject(rejObj); //throw rejObj;
+				/*
+				}
+				*/
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {name:'promise_makeDirsRecurse', aCaught:aCaught};
+				console.error('Caught - promise_makeDirsRecurse - ', rejObj);
+				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject(rejObj); // throw aCaught;
+			}
+		);
+	};
+
+	var doInitialAttempt = function() {
+		var promise_initialAttempt = OS.File[nameOfOsFileFunc].apply(OS.File, argsOfOsFileFunc);
+		console.info('tryosFile_ initial', 'nameOfOsFileFunc:', nameOfOsFileFunc, 'argsOfOsFileFunc:', argsOfOsFileFunc);
+		promise_initialAttempt.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_initialAttempt - ', aVal);
+				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.resolve('initialAttempt succeeded');
+			},
+			function(aReason) {
+				var rejObj = {name:'promise_initialAttempt', aReason:aReason};
+				console.error('Rejected - promise_initialAttempt - ', rejObj);
+				if (aReason.becauseNoSuchFile) { // this is the flag that gets set to true if parent dir(s) dont exist, i saw this from experience
+					console.log('make dirs then do secondAttempt');
+					makeDirs();
+				} else {
+					deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject(rejObj); //throw rejObj;
+				}
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {name:'promise_initialAttempt', aCaught:aCaught};
+				console.error('Caught - promise_initialAttempt - ', rejObj);
+				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject(rejObj); // throw aCaught;
+			}
+		);
+	};
+	
+	if (!aOptions.causesNeutering) {
+		doInitialAttempt();
+	} else {
+		// ensure dir exists, if it doesnt then go to makeDirs
+		popToDir();
+		var promise_checkDirExistsFirstAsCausesNeutering = OS.File.exists(toDir);
+		promise_checkDirExistsFirstAsCausesNeutering.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_checkDirExistsFirstAsCausesNeutering - ', aVal);
+				// start - do stuff here - promise_checkDirExistsFirstAsCausesNeutering
+				if (!aVal) {
+					makeDirs();
+				} else {
+					doInitialAttempt(); // this will never fail as we verified this folder exists
+				}
+				// end - do stuff here - promise_checkDirExistsFirstAsCausesNeutering
+			},
+			function(aReason) {
+				var rejObj = {name:'promise_checkDirExistsFirstAsCausesNeutering', aReason:aReason};
+				console.warn('Rejected - promise_checkDirExistsFirstAsCausesNeutering - ', rejObj);
+				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject(rejObj);
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {name:'promise_checkDirExistsFirstAsCausesNeutering', aCaught:aCaught};
+				console.error('Caught - promise_checkDirExistsFirstAsCausesNeutering - ', rejObj);
+				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject(rejObj);
+			}
+		);
+	}
+	
+	
+	return deferred_tryOsFile_ifDirsNoExistMakeThenRetry.promise;
 }
 // end - common helper functions

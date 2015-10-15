@@ -113,6 +113,16 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 	.controller('BodyController', ['$scope', '$sce', '$q', '$timeout', function($scope, $sce, $q, $timeout) {
 		var BC = this;
 
+		// start - button actions
+		BC.restoreDefaults = function() {
+			// :todo: in future add bool (and modal dialog) for just config restore, or all. (meaning prefs and config)
+			sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['restoreDefaults'], bootstrapMsgListener.funcScope, function() {
+				console.log('ok server said it resotred defaults, so now do reinit');
+				init(true);
+			});
+		};
+		// end - button actions
+		
 		// start - pref to dom modeling
 		BC.options = [ // order here is the order it is displayed in, in the dom
 			{
@@ -131,8 +141,11 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-gen'),
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-restore'),
 				type: 'button',
-				values: [
-					myServices.sb.GetStringFromName('mousecontrol.prefs.restore')
+				values: [ // for type button. values is an arr holding objects
+					{
+						label: myServices.sb.GetStringFromName('mousecontrol.prefs.restore'),
+						action: BC.restoreDefaults
+					}
 				],
 				desc: ''
 			},
@@ -141,8 +154,14 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-port'),
 				type: 'button',
 				values: [
-					myServices.sb.GetStringFromName('mousecontrol.prefs.export'),
-					myServices.sb.GetStringFromName('mousecontrol.prefs.import')
+					{
+						label: myServices.sb.GetStringFromName('mousecontrol.prefs.export'),
+						action: BC.export
+					},
+					{
+						label: myServices.sb.GetStringFromName('mousecontrol.prefs.import'),
+						action: BC.import
+					}
 				],
 				desc: ''
 			},
@@ -418,9 +437,17 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 						
 				// special stuff for edit or for add
 				if (BC.modal.config_type == 'edit') {
+					// make sure keys from aConfig show in BC.building
 					for (var p in BC.modal.aConfig) {
 						BC.building[p] = BC.modal.aConfig[p];
 					}
+					
+					// // make sure non existing keys from aConfig dont show in BC.buliding
+					// for (var p in BC.building) {
+						// if (!(p in BC.modal.aConfig)) {
+							// delete BC.modal.aConfig[p];
+						// }
+					// }
 				} else if (BC.modal.type == 'config' && BC.modal.config_type == 'add') {
 					// find smallest negative id
 					// because if id is negative, then that means it hasnt got a server id yet. but i need to keep decrementing the negative id, as i cant have multiple of the same ids
@@ -433,7 +460,13 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 					
 					var newAddId = smallestNegativeId - 1;
 					BC.building = {
-						id: newAddId
+						id: newAddId,
+						func: '',
+						name: '',
+						group: '',
+						desc: '',
+						config: ''
+						// :note: :maintain: make sure all the default keys go in here
 					};
 				}
 			}
@@ -451,6 +484,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 						for (var i=0; i<BC.configs.length; i++) {
 							if (BC.configs[i].id == BC.modal.aConfig.id) {
 								BC.configs.splice(i, 1);
+								updateConfigsOnServer();
 								return;
 							}
 						}
@@ -480,6 +514,8 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 									// BC.configs.push(BC.building);
 									// not simply doing push of BC.building because, the hide modal is an animation. and if BC.guiShouldShowNewGroupTxtBox() then if I change BC.building.group to that value of BC.building_newly_created_group_name it will change the dom while its in hiding transition for 200ms
 								
+									updateConfigsOnServer();
+									
 								break;
 							case 'edit':
 									
@@ -492,6 +528,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 													BC.configs[i][p] = BC.building[p];
 												}
 											}
+											updateConfigsOnServer();
 											return;
 										}
 									}
@@ -523,26 +560,46 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			}
 		};
 		
+		var updateConfigsOnServer = function() {
+			// tells bootstrap to updates configs in its global AND save it to disk
+			
+			// clone the BC.configs array, but delete the $$hashKey item from each element as thats ng stuff
+			console.log('in saveConfigsToFile');
+			
+			var configs = BC.configs.map(function(curEl) {
+				delete curEl.$$hashKey;
+				return curEl;
+			});
+			
+			console.log('configs cleaned:', JSON.stringify(configs), configs);
+			
+			contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['updateConfigsOnServer', configs]);
+		};
 		// end - create/add new function
 		
 		
 		// start - init
-		var init = function() {
+		var init = function(isReInit) {
+			// if isReInit then it will skip some stuff
+			
+			console.log('in init');
 			
 			var promiseAllArr_digest = [];
 			
-			// get core obj
-			var deferred_getCore = new Deferred();
-			promiseAllArr_digest.push(deferred_getCore.promise);
-			sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['fetchCore'], bootstrapMsgListener.funcScope, function(aCore) {
-				console.log('got aCore:', aCore);
-				core = aCore;
-				$scope.BC.core = core;
-				deferred_getCore.resolve();
-			});
+			if (!isReInit) {
+				// get core obj
+				var deferred_getCore = new Deferred();
+				promiseAllArr_digest.push(deferred_getCore.promise);
+				sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['fetchCore'], bootstrapMsgListener.funcScope, function(aCore) {
+					console.log('got aCore:', aCore);
+					core = aCore;
+					$scope.BC.core = core;
+					deferred_getCore.resolve();
+				});
+			}
 			
 			// update prefs object
-			var promise_updatePrefs = BC.updatePrefsFromServer(false, true);
+			var promise_updatePrefs = BC.updatePrefsFromServer(false, isReInit ? false : true);
 			promiseAllArr_digest.push(promise_updatePrefs);
 			
 			// get json config from bootstrap
