@@ -579,7 +579,8 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 		gConfigJson = aNewConfigJson;
 		
 		var promise_saveConfigs = tryOsFile_ifDirsNoExistMakeThenRetry('writeAtomic', [OSPath_config, JSON.stringify(aNewConfigJson), {
-			tmpPath: OSPath_config + '.tmp'
+			tmpPath: OSPath_config + '.tmp',
+			encoding: 'utf-8'
 		}], OS.Constants.Path.profileDir);
 		
 		promise_saveConfigs.then(
@@ -637,6 +638,153 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 		);
 		
 		return [];
+	},
+	exportSettings: function() {
+		var fp = Cc['@mozilla.org/filepicker;1'].createInstance(Ci.nsIFilePicker);
+		fp.init(Services.wm.getMostRecentWindow('navigator:browser'), myServices.sb.GetStringFromName('exporttitle'), Ci.nsIFilePicker.modeSave);
+		fp.appendFilter(myServices.sb.GetStringFromName('exportimportfilterlabel') + ' (*.mousecontrol.json)', '*.mousecontrol.json');
+
+		var rv = fp.show();
+		if (rv == Ci.nsIFilePicker.returnOK || rv == Ci.nsIFilePicker.returnReplace) {
+			
+			var exportFileContent = {
+				config: gConfigJson,
+				prefs: {}
+			};
+			
+			var promiseAllArr_gotValues = [];
+			
+			for (var aPrefName in prefs) {
+				var cPrefVal = prefs[aPrefName].value;
+				if (cPrefVal.constructor.name == 'Promise') {
+					var deferred_cPrefVal = new Deferred();
+					promiseAllArr_gotValues.push(deferred_cPrefVal.promise);
+					
+					cPrefVal.then(
+						function(aAPrefName, aVal) {
+							console.log('Fullfilled - cPrefVal - ', aVal);
+							// start - do stuff here - cPrefVal
+							exportFileContent.prefs[aAPrefName] = cPrefVal;
+							deferred_cPrefVal.resolve();
+							// end - do stuff here - cPrefVal
+						}.bind(null, aPrefName),
+						function(aReason) {
+							var rejObj = {name:'cPrefVal', aReason:aReason};
+							console.error('Rejected - cPrefVal - ', rejObj);
+							deferred_cPrefVal.reject(rejObj);
+						}
+					).catch(
+						function(aCaught) {
+							var rejObj = {name:'cPrefVal', aCaught:aCaught};
+							console.error('Caught - cPrefVal - ', rejObj);
+							deferred_cPrefVal.reject(rejObj);
+						}
+					);
+				} else {
+					exportFileContent.prefs[aPrefName] = cPrefVal;
+				}
+			}
+			
+			var promiseAll_gotValues = Promise.all(promiseAllArr_gotValues);
+			promiseAll_gotValues.then(
+				function(aVal) {
+					console.log('Fullfilled - promiseAll_gotValues - ', aVal);
+					// start - do stuff here - promiseAll_gotValues
+					
+					var fixedFilePath = fp.file.path;
+					
+					if (!/\.mousecontrol\.json/i.test(fixedFilePath)) {
+						fixedFilePath += '.mousecontrol.json';
+					}
+					
+					console.error('writing to:', fixedFilePath);
+					var promise_export = OS.File.writeAtomic(fixedFilePath, JSON.stringify(exportFileContent), {
+						encoding: 'utf-8',
+						tmpPath: fixedFilePath + '.tmp'
+					});
+					promise_export.then(
+						function(aVal) {
+							console.log('Fullfilled - promise_export - ', aVal);
+							// start - do stuff here - promise_export
+							// end - do stuff here - promise_export
+						},
+						function(aReason) {
+							var rejObj = {name:'promise_export', aReason:aReason};
+							console.error('Rejected - promise_export - ', rejObj);
+							// deferred_createProfile.reject(rejObj);
+						}
+					).catch(
+						function(aCaught) {
+							var rejObj = {name:'promise_export', aCaught:aCaught};
+							console.error('Caught - promise_export - ', rejObj);
+							// deferred_createProfile.reject(rejObj);
+						}
+					);
+					
+					// end - do stuff here - promiseAll_gotValues
+				},
+				function(aReason) {
+					var rejObj = {name:'promiseAll_gotValues', aReason:aReason};
+					console.error('Rejected - promiseAll_gotValues - ', rejObj);
+					// deferred_createProfile.reject(rejObj);
+				}
+			).catch(
+				function(aCaught) {
+					var rejObj = {name:'promiseAll_gotValues', aCaught:aCaught};
+					console.error('Caught - promiseAll_gotValues - ', rejObj);
+					// deferred_createProfile.reject(rejObj);
+				}
+			);
+		}// else { // cancelled	}
+	},
+	importSettings: function() {
+		
+		var mainDeferred_importSettings = new Deferred();
+		
+		var fp = Cc['@mozilla.org/filepicker;1'].createInstance(Ci.nsIFilePicker);
+		fp.init(Services.wm.getMostRecentWindow('navigator:browser'), myServices.sb.GetStringFromName('importtitle'), Ci.nsIFilePicker.modeOpen);
+		fp.appendFilter(myServices.sb.GetStringFromName('exportimportfilterlabel') + ' (*.mousecontrol.json)', '*.mousecontrol.json');
+
+		var rv = fp.show();
+		if (rv == Ci.nsIFilePicker.returnOK) {
+
+			var promise_import = OS.File.read(fp.file.path, {
+				encoding: 'utf-8'
+			});
+			promise_import.then(
+				function(aVal) {
+					console.log('Fullfilled - promise_import - ', aVal);
+					// start - do stuff here - promise_import
+					var importFileContents = JSON.parse(aVal);
+					gConfigJson = importFileContents.config;
+					
+					for (var aPrefName in importFileContents.prefs) {
+						prefs[aPrefName].value = importFileContents.prefs[aPrefName];
+					}
+					console.log('ok resolving import');
+					mainDeferred_importSettings.resolve([true])
+					// end - do stuff here - promise_import
+				},
+				function(aReason) {
+					var rejObj = {name:'promise_import', aReason:aReason};
+					console.error('Rejected - promise_import - ', rejObj);
+					// deferred_createProfile.reject(rejObj);
+					mainDeferred_importSettings.reject(rejObj);
+				}
+			).catch(
+				function(aCaught) {
+					var rejObj = {name:'promise_import', aCaught:aCaught};
+					console.error('Caught - promise_import - ', rejObj);
+					mainDeferred_importSettings.reject(rejObj);
+					// deferred_createProfile.reject(rejObj);
+				}
+			);
+		} else { 
+			// cancelled
+			mainDeferred_importSettings.resolve([false])
+		}
+		
+		return mainDeferred_importSettings.promise;
 	}
 };
 var fsMsgListener = {

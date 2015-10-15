@@ -121,6 +121,19 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				init(true);
 			});
 		};
+		
+		BC.import = function() {
+			sendAsyncMessageWithCallback(contentMMFromContentWindow_Method2(window), core.addon.id, ['importSettings'], bootstrapMsgListener.funcScope, function(importSuccess) {
+				console.log('ok back in fs callback of import');
+				if (importSuccess) {
+					init(true);
+				}
+			});
+		};
+		
+		BC.export = function() {
+			contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['exportSettings']);
+		};
 		// end - button actions
 		
 		// start - pref to dom modeling
@@ -560,16 +573,19 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			}
 		};
 		
-		var updateConfigsOnServer = function() {
-			// tells bootstrap to updates configs in its global AND save it to disk
-			
+		var getCleanConfigs = function() {
 			// clone the BC.configs array, but delete the $$hashKey item from each element as thats ng stuff
-			console.log('in saveConfigsToFile');
-			
-			var configs = BC.configs.map(function(curEl) {
+			return BC.configs.map(function(curEl) {
 				delete curEl.$$hashKey;
 				return curEl;
 			});
+		};
+		var updateConfigsOnServer = function() {
+			// tells bootstrap to updates configs in its global AND save it to disk
+
+			console.log('in saveConfigsToFile');
+			
+			var configs = getCleanConfigs();
 			
 			console.log('configs cleaned:', JSON.stringify(configs), configs);
 			
