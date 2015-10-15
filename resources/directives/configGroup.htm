@@ -1,4 +1,4 @@
 <span class="config-group-head">
 	{{aGroupName}}
 </span>
-<config-row ng-repeat="aConfig in BC.configs | filter:{group:aGroupName}"/>
+<config-row ng-repeat="aConfig in BC.configs | filter:{group:aGroupName} | orderBy:'name'"/>

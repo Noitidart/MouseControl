@@ -48,9 +48,12 @@ var ADDON_MANAGER_ENTRY;
 
 var gConfigJson;
 var gConfigJsonDefault = function() {
+	// :todo: once setup server, ensure that these items get the id here. or whatever id they get there submit it here
+	// because if id is negative, then that means it hasnt got a server id yet. but i need to keep decrementing the negative id, as i cant have multiple of the same ids
+	// on share to server, then the negative id should be replaced with $insertId from server
 	return [
 		{
-			id: -1,
+			id: 1,
 			name: myServices.sb.GetStringFromName('config_name-jumptab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
@@ -58,7 +61,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -2,
+			id: 2,
 			name: myServices.sb.GetStringFromName('config_name-duptab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
@@ -66,7 +69,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -3,
+			id: 3,
 			name: myServices.sb.GetStringFromName('config_name-newtab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
@@ -74,7 +77,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -4,
+			id: 4,
 			name: myServices.sb.GetStringFromName('config_name-nexttab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
@@ -82,7 +85,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -5,
+			id: 5,
 			name: myServices.sb.GetStringFromName('config_name-prevtab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
@@ -90,7 +93,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -6,
+			id: 6,
 			name: myServices.sb.GetStringFromName('config_name-closetab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
@@ -98,7 +101,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -7,
+			id: 7,
 			name: myServices.sb.GetStringFromName('config_name-resetzoom'),
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
@@ -106,7 +109,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -8,
+			id: 8,
 			name: myServices.sb.GetStringFromName('config_name-zoomin'),
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
@@ -114,7 +117,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -9,
+			id: 9,
 			name: myServices.sb.GetStringFromName('config_name-zoomout'),
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
@@ -122,7 +125,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -10,
+			id: 10,
 			name: myServices.sb.GetStringFromName('config_name-removeel'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
@@ -130,7 +133,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -11,
+			id: 11,
 			name: myServices.sb.GetStringFromName('config_name-memscrolltop'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
@@ -138,7 +141,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -12,
+			id: 12,
 			name: myServices.sb.GetStringFromName('config_name-memscrollbot'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
@@ -146,7 +149,7 @@ var gConfigJsonDefault = function() {
 			func:''
 		},
 		{
-			id: -13,
+			id: 13,
 			name: myServices.sb.GetStringFromName('config_name-memscrollmemy'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),

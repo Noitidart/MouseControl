@@ -96,9 +96,9 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 	.filter('groupBy', function() {
 		// this just filters out duplicates based on a property that is a string
 		return function(arr, property) {
-			if (arr === undefined) {
-				// the variable has not yet been initialized
-				return;
+			if (Object.prototype.toString.call( arr ) !== '[object Array]') {
+				// must be an arr, otherwise just return what it is
+				return arr;
 			}
 			if (typeof property !== 'string') {
 				throw new Error('need a property to check for');
@@ -392,13 +392,136 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				BC.modal[p] = aObjKeys[p];
 			}
 			
+			// special stuff for config
+			if (BC.modal.type == 'config') {
+				
+				
+				// reset BC.building_newly_created_group_name
+				BC.building_newly_created_group_name = '';
+				
+				// build BC.building_groups
+				BC.building_groups = [];
+				
+				for (var i=0; i<BC.configs.length; i++) {
+					if (BC.building_groups.indexOf(BC.configs[i].group) == -1) {
+						BC.building_groups.push(BC.configs[i].group);
+					}
+				}
+				
+				BC.building_groups.sort();
+				
+				BC.createNewGroupLabel = myServices.sb.GetStringFromName('mousecontrol.prefs.createnewgroup');
+				while (BC.building_groups.indexOf(BC.createNewGroupLabel) > -1) {
+					BC.createNewGroupLabel += ' ';
+				}
+				BC.building_groups.push(BC.createNewGroupLabel);
+						
+				// special stuff for edit or for add
+				if (BC.modal.config_type == 'edit') {
+					for (var p in BC.modal.aConfig) {
+						BC.building[p] = BC.modal.aConfig[p];
+					}
+				} else if (BC.modal.type == 'config' && BC.modal.config_type == 'add') {
+					// find smallest negative id
+					// because if id is negative, then that means it hasnt got a server id yet. but i need to keep decrementing the negative id, as i cant have multiple of the same ids
+					var smallestNegativeId = 0;
+					for (var i=0; i<BC.configs.length; i++) {
+						if (BC.configs[i].id < smallestNegativeId) {
+							smallestNegativeId = BC.configs[i].id;
+						}
+					}
+					
+					var newAddId = smallestNegativeId - 1;
+					BC.building = {
+						id: newAddId
+					};
+				}
+			}
 			// show it
 			BC.modal.show = true;
+		};
+		
+		BC.modalOkBtn = function() {
+			
+			BC.hideModal();
+			
+			switch (BC.modal.type) {
+				case 'trash':
+					
+						for (var i=0; i<BC.configs.length; i++) {
+							if (BC.configs[i].id == BC.modal.aConfig.id) {
+								BC.configs.splice(i, 1);
+								return;
+							}
+						}
+					
+					break;
+				case 'share':
+					
+						//
+					
+					break;
+				case 'config':
+
+						switch (BC.modal.config_type) {
+							case 'add':
+
+									var pushThis = {};
+									
+									for (var p in BC.building) {
+										pushThis[p] = BC.building[p];
+									}
+									if (BC.guiShouldShowNewGroupTxtBox()) {
+										pushThis.group = BC.building_newly_created_group_name;
+									}
+									
+									BC.configs.push(pushThis);
+									
+									// BC.configs.push(BC.building);
+									// not simply doing push of BC.building because, the hide modal is an animation. and if BC.guiShouldShowNewGroupTxtBox() then if I change BC.building.group to that value of BC.building_newly_created_group_name it will change the dom while its in hiding transition for 200ms
+								
+								break;
+							case 'edit':
+									
+									for (var i=0; i<BC.configs.length; i++) {
+										if (BC.configs[i].id == BC.modal.aConfig.id) {
+											for (var p in BC.configs[i]) {
+												if (p == 'group' && BC.guiShouldShowNewGroupTxtBox()) {
+													BC.configs[i].group = BC.building_newly_created_group_name;
+												} else {
+													BC.configs[i][p] = BC.building[p];
+												}
+											}
+											return;
+										}
+									}
+								
+								break;
+							default:
+								console.error('should never ever get here');
+						}
+					
+					break;
+				default:
+					console.error('should never ever get here');
+			}
 		};
 		// end - modal stuff
 		
 		// start - create/add new function
 		BC.building = {};
+		BC.building_groups = [];
+		
+		BC.guiShouldShowNewGroupTxtBox = function() {
+			// purely ng gui func
+			if (BC.building.group == BC.createNewGroupLabel) { // :note: BC.createNewGroupLabel is just a gui helper. to help test if selected index is last one which will be "Create New Group". had to go through this mess in case in localizations they have "Create New Group" as same value as a group name
+				// show the create new group textbox
+				// BC.building_newly_created_group_name = '';
+				return true;
+			} else {
+				return false;
+			}
+		};
 		
 		// end - create/add new function
 		

@@ -1,5 +1,5 @@
 <span class="option-group-head">
-	<span style="float:right;">
+	<span style="float:right;" ng-click="BC.showModal('config', {config_type:'add'})">
 		Add
 	</span>
 	<span style="float:right;">
@@ -10,4 +10,4 @@
 	</span>
 	{{BC.l10n['mousecontrol.prefs.group-config']}}
 </span>
-<config-group ng-repeat="aGroupName in BC.configs | groupBy:'group'" />
+<config-group ng-repeat="aGroupName in BC.configs | groupBy:'group' | orderBy:aGroupName" />
