@@ -44,6 +44,118 @@ const myPrefBranch = 'extensions.' + core.addon.id + '.';
 
 var ADDON_MANAGER_ENTRY;
 
+// Global config stuff
+
+var gConfigJson;
+var gConfigJsonDefault = function() {
+	return [
+		{
+			id: -1,
+			name: myServices.sb.GetStringFromName('config_name-jumptab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			id: -2,
+			name: myServices.sb.GetStringFromName('config_name-duptab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			id: -3,
+			name: myServices.sb.GetStringFromName('config_name-newtab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			id: -4,
+			name: myServices.sb.GetStringFromName('config_name-nexttab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			id: -5,
+			name: myServices.sb.GetStringFromName('config_name-prevtab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			id: -6,
+			name: myServices.sb.GetStringFromName('config_name-closetab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
+			config:'0+2',
+			func:''
+		},
+		{
+			id: -7,
+			name: myServices.sb.GetStringFromName('config_name-resetzoom'),
+			group: myServices.sb.GetStringFromName('config_group-zoom'),
+			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
+			config:'2+1',
+			func:''
+		},
+		{
+			id: -8,
+			name: myServices.sb.GetStringFromName('config_name-zoomin'),
+			group: myServices.sb.GetStringFromName('config_group-zoom'),
+			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
+			config:'2+1',
+			func:''
+		},
+		{
+			id: -9,
+			name: myServices.sb.GetStringFromName('config_name-zoomout'),
+			group: myServices.sb.GetStringFromName('config_group-zoom'),
+			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
+			config:'2+1',
+			func:''
+		},
+		{
+			id: -10,
+			name: myServices.sb.GetStringFromName('config_name-removeel'),
+			group: myServices.sb.GetStringFromName('config_group-dom'),
+			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
+			config:'2+1',
+			func:''
+		},
+		{
+			id: -11,
+			name: myServices.sb.GetStringFromName('config_name-memscrolltop'),
+			group: myServices.sb.GetStringFromName('config_group-dom'),
+			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
+			config:'2+1',
+			func:''
+		},
+		{
+			id: -12,
+			name: myServices.sb.GetStringFromName('config_name-memscrollbot'),
+			group: myServices.sb.GetStringFromName('config_group-dom'),
+			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
+			config:'2+1',
+			func:''
+		},
+		{
+			id: -13,
+			name: myServices.sb.GetStringFromName('config_name-memscrollmemy'),
+			group: myServices.sb.GetStringFromName('config_group-dom'),
+			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
+			config:'2+1',
+			func:''
+		}
+	];
+};
+
 // Preferences
 // custom - -1, must specify an getter and setter on value
 // Ci.nsIPrefBranch.PREF_INVALID 0
@@ -246,151 +358,6 @@ for (var aPrefName in prefs) {
 	}
 }
 
-var watchBranches = {};
-watchBranches[myPrefBranch] = { //have to do it this way because in the watchBranches obj i can't do { myPrefBranch: {...} }
-	ownType: 0, //0-full, 1-none, 2-partial
-	prefNames: {
-		'autoup': {
-			owned: true,
-			default: true,
-			value: undefined,
-			type: Ci.nsIPrefBranch.PREF_BOOL,
-			// on_PrefOnObj_Change: writePrefToIni
-		},
-		'dev': {
-			owned: true,
-			default: false,
-			value: undefined,
-			type: Ci.nsIPrefBranch.PREF_BOOL,
-			// on_PrefOnObj_Change: writePrefToIni
-		},
-		'dev-builds': {
-			owned: true,
-			default: '[]',
-			value: undefined,
-			type: Ci.nsIPrefBranch.PREF_STRING,
-			// on_PrefOnObj_Change: writePrefToIni
-		},
-		'launch_on_create': {
-			owned: true,
-			default: true,
-			value: undefined,
-			type: Ci.nsIPrefBranch.PREF_BOOL,
-			// on_PrefOnObj_Change: writePrefToIni
-		}
-	}
-	// on_UnknownPrefNameOnObj_Change: function(oldVal, newVal, rejObj) {}
-};
-
-var gConfigJsonDefault = function() {
-	return [
-		{
-			id: -1,
-			name: myServices.sb.GetStringFromName('config_name-jumptab'),
-			group: myServices.sb.GetStringFromName('config_group-tabs'),
-			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
-			config:'0+2',
-			func:''
-		},
-		{
-			id: -2,
-			name: myServices.sb.GetStringFromName('config_name-duptab'),
-			group: myServices.sb.GetStringFromName('config_group-tabs'),
-			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
-			config:'0+2',
-			func:''
-		},
-		{
-			id: -3,
-			name: myServices.sb.GetStringFromName('config_name-newtab'),
-			group: myServices.sb.GetStringFromName('config_group-tabs'),
-			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
-			config:'0+2',
-			func:''
-		},
-		{
-			id: -4,
-			name: myServices.sb.GetStringFromName('config_name-nexttab'),
-			group: myServices.sb.GetStringFromName('config_group-tabs'),
-			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
-			config:'0+2',
-			func:''
-		},
-		{
-			id: -5,
-			name: myServices.sb.GetStringFromName('config_name-prevtab'),
-			group: myServices.sb.GetStringFromName('config_group-tabs'),
-			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
-			config:'0+2',
-			func:''
-		},
-		{
-			id: -6,
-			name: myServices.sb.GetStringFromName('config_name-closetab'),
-			group: myServices.sb.GetStringFromName('config_group-tabs'),
-			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
-			config:'0+2',
-			func:''
-		},
-		{
-			id: -7,
-			name: myServices.sb.GetStringFromName('config_name-resetzoom'),
-			group: myServices.sb.GetStringFromName('config_group-zoom'),
-			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
-			config:'2+1',
-			func:''
-		},
-		{
-			id: -8,
-			name: myServices.sb.GetStringFromName('config_name-zoomin'),
-			group: myServices.sb.GetStringFromName('config_group-zoom'),
-			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
-			config:'2+1',
-			func:''
-		},
-		{
-			id: -9,
-			name: myServices.sb.GetStringFromName('config_name-zoomout'),
-			group: myServices.sb.GetStringFromName('config_group-zoom'),
-			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
-			config:'2+1',
-			func:''
-		},
-		{
-			id: -10,
-			name: myServices.sb.GetStringFromName('config_name-removeel'),
-			group: myServices.sb.GetStringFromName('config_group-dom'),
-			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
-			config:'2+1',
-			func:''
-		},
-		{
-			id: -11,
-			name: myServices.sb.GetStringFromName('config_name-memscrolltop'),
-			group: myServices.sb.GetStringFromName('config_group-dom'),
-			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
-			config:'2+1',
-			func:''
-		},
-		{
-			id: -12,
-			name: myServices.sb.GetStringFromName('config_name-memscrollbot'),
-			group: myServices.sb.GetStringFromName('config_group-dom'),
-			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
-			config:'2+1',
-			func:''
-		},
-		{
-			id: -13,
-			name: myServices.sb.GetStringFromName('config_name-memscrollmemy'),
-			group: myServices.sb.GetStringFromName('config_group-dom'),
-			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
-			config:'2+1',
-			func:''
-		}
-	];
-};
-
 // Lazy Imports
 const myServices = {};
 XPCOMUtils.defineLazyGetter(myServices, 'hph', function () { return Cc['@mozilla.org/network/protocol;1?name=http'].getService(Ci.nsIHttpProtocolHandler); });
@@ -442,15 +409,6 @@ function AboutFactory(component) {
 }
 // end - about module
 
-// END - Addon Functionalities
-
-function install() {}
-
-function uninstall(aData, aReason) {
-	if (aReason == ADDON_UNINSTALL) {
-		// delete prefs
-	}
-}
 
 var MMWorkerFuncs = {
 	init: function() {
@@ -464,9 +422,59 @@ var MMWorkerFuncs = {
 	}
 };
 
+function readConfigFromFile() {
+	// reads file and sets global
+	// resolves with array with single element being json. if file does not exist it gives gConfigJsonDefault
+		// array because this function is used by fsFuncs
+		
+	var mainDeferred_readConfigFromFile = new Deferred();
+	var promise_readConfig = OS.File.read(OS.Path.join(OSPath_simpleStorage, 'config.json'), {encoding:'utf-8'});
+	promise_readConfig.then(
+		function(aVal) {
+			console.log('Fullfilled - promise_readConfig - ', aVal);
+			// start - do stuff here - promise_readConfig
+			gConfigJson = JSON.parse(aVal);
+			console.log('on readConfigFromFile file not found so retruning defaults');
+			mainDeferred_readConfigFromFile.resolve([gConfigJson]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
+			// end - do stuff here - promise_readConfig
+		},
+		function(aReason) {
+			if (aReasonMax(aReason).becauseNoSuchFile) {
+				console.log('on readConfigFromFile file not found so retruning defaults');
+				gConfigJson = gConfigJsonDefault();
+				mainDeferred_readConfigFromFile.resolve([gConfigJson]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
+				return;
+			}
+			var rejObj = {name:'promise_readConfig', aReason:aReason};
+			console.error('Rejected - promise_readConfig - ', rejObj);
+			mainDeferred_readConfigFromFile.reject(rejObj);
+		}
+	).catch(
+		function(aCaught) {
+			var rejObj = {name:'promise_readConfig', aCaught:aCaught};
+			console.error('Caught - promise_readConfig - ', rejObj);
+			mainDeferred_readConfigFromFile.reject(rejObj);
+		}
+	);
+	
+	return mainDeferred_readConfigFromFile.promise;
+}
+// END - Addon Functionalities
+
+function install() {}
+
+function uninstall(aData, aReason) {
+	if (aReason == ADDON_UNINSTALL) {
+		// delete prefs
+	}
+}
+
 function startup(aData, aReason) {
 	// core.addon.aData = aData;
 	extendCore();
+	
+	// read in config from file
+	readConfigFromFile();
 	
 	// startup worker
 	var promise_getMMWorker = SICWorker('MMWorker', core.addon.path.workers + 'MMSyncWorker.js', MMWorkerFuncs);
@@ -519,36 +527,12 @@ function shutdown(aData, aReason) {
 // functions for framescripts to call in main thread
 var fsFuncs = { // can use whatever, but by default its setup to use this
 	fetchConfig: function(bootstrapCallbacks_name, aMsgEvent) {
-		var mainDeferred_fetchConfig = new Deferred();
-		var promise_readConfig = OS.File.read(OS.Path.join(OSPath_simpleStorage, 'config.json'), {encoding:'utf-8'});
-		promise_readConfig.then(
-			function(aVal) {
-				console.log('Fullfilled - promise_readConfig - ', aVal);
-				// start - do stuff here - promise_readConfig
-				var configJson = JSON.parse(aVal);
-				console.log('will send back default config json to this contentframe, get it from aMsgEvent:', aMsgEvent);
-				mainDeferred_fetchConfig.resolve([configJson]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
-				// end - do stuff here - promise_readConfig
-			},
-			function(aReason) {
-				if (aReasonMax(aReason).becauseNoSuchFile) {
-					console.log('will send back default config json to this contentframe, get it from aMsgEvent:', aMsgEvent);
-					mainDeferred_fetchConfig.resolve([gConfigJsonDefault()]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
-					return;
-				}
-				var rejObj = {name:'promise_readConfig', aReason:aReason};
-				console.error('Rejected - promise_readConfig - ', rejObj);
-				mainDeferred_fetchConfig.reject(rejObj);
-			}
-		).catch(
-			function(aCaught) {
-				var rejObj = {name:'promise_readConfig', aCaught:aCaught};
-				console.error('Caught - promise_readConfig - ', rejObj);
-				mainDeferred_fetchConfig.reject(rejObj);
-			}
-		);
-		
-		return mainDeferred_fetchConfig.promise;
+		if (gConfigJson) {
+			return [gConfigJson];
+		} else {
+			// i do start read as soon as startup happens. however if options page is open and it sends message to here, ill do double read to ensure it gets it, no biggie
+			return readConfigFromFile();
+		}
 	},
 	fetchCore: function() {
 		return [core];
