@@ -1,4 +1,4 @@
-<div class="modal-dialog msg-{{BC.modal.type}}">
+<div class="modal-dialog msg-{{BC.modal.type}}{{BC.modal.config_type == 'add' ? ' msg-create' : ''}}">
 	<span ng-show="BC.modal.type == 'share'">
 		<div class="msg-header">Share Configuration</div>
 		<div class="msg-body">
@@ -21,7 +21,7 @@
 		</div>
 	</span>
 	<span ng-show="BC.modal.type == 'config'">
-		<div class="msg-header">{{BC.modal.config_type == 'edit' ? 'Edit Configuration' : 'Create New Configuration'}}</div>
+		<div class="msg-header">{{BC.modal.config_type == 'edit' ? 'Edit Configuration' : 'Add New Configuration'}}</div>
 		<div class="msg-body">
 			<div class="modal-row">
 				<span>Group</span>

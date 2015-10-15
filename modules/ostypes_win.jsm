@@ -653,6 +653,17 @@ var winInit = function() {
 				self.TYPE.HWND	// hWnd
 			);
 		},
+		DispatchMessage: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644934%28v=vs.85%29.aspx
+			 * LRESULT WINAPI DispatchMessage(
+			 *   __in_ const MSG *lpmsg
+			 * );
+			 */
+			return lib('user32').declare('DestroyWindow', self.TYPE.ABI,
+				self.TYPE.LRESULT,	// return
+				self.TYPE.MSG.ptr	// *lpmsg
+			);
+		},
 		EnumDisplayDevices: function() {
 			/* https://msdn.microsoft.com/en-us/library/windows/desktop/dd162609%28v=vs.85%29.aspx
 			 * BOOL EnumDisplayDevices(
@@ -904,6 +915,23 @@ var winInit = function() {
 				self.TYPE.DWORD,	// return
 				self.TYPE.HWND,		// hWnd
 				self.TYPE.LPDWORD	// lpdwProcessId
+			);
+		},
+		PostMessage: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644944%28v=vs.85%29.aspx
+			 * BOOL WINAPI PostMessage(
+			 *  __in_opt_ HWND   hWnd,
+			 *  __in_     UINT   Msg,
+			 *  __in_     WPARAM wParam,
+			 *  __in_     LPARAM lParam
+			 * );
+			 */
+			return lib('user32').declare(ifdef_UNICODE ? 'PostMessageW' : 'PostMessageA', self.TYPE.ABI,
+				self.TYPE.BOOL,		// return
+				self.TYPE.HWND, 	// hWnd
+				self.TYPE.UINT,		// Msg
+				self.TYPE.WPARAM, 	// wParam
+				self.TYPE.LPARAM	// lParam
 			);
 		},
 		memcpy: function() {

@@ -20,7 +20,7 @@ function utilsInit() {
 			console.log('trying on:', obj.toString())
 		}
 		*/
-		while (obj && isNaN(obj) && ('contents' in obj || 'value' in obj)) {
+		while (obj && Object.prototype.toString.call(obj) == '[object Object]' && ('contents' in obj || 'value' in obj)) {
 			if ('contents' in obj) {
 				if (obj.constructor.targetType && obj.constructor.targetType.size === undefined) {
 					//console.error('breaking as no targetType.size on obj level:', obj.toString());
