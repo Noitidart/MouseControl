@@ -113,7 +113,7 @@ function init(objCore) {
 		case 'winmo':
 		case 'wince':
 			importScripts(core.addon.path.content + 'modules/ostypes_win.jsm');
-			break
+			break;
 		case 'gtk':
 			importScripts(core.addon.path.content + 'modules/ostypes_x11.jsm');
 			break;
@@ -140,6 +140,47 @@ function init(objCore) {
 
 // Start - Addon Functionality
 
+var MmJson; // global so it doesnt get gc'ed, it will be the stringified of infoObjForWorker // is cCharArr with length of cInt_MmJsonLen
+
+// these 3 vars are always constant, i only modify their contents, as they are shared // always keep alive never GC in either thread
+var cCharArr_addieOfMmJson = ctypes.char.array(41)(); // 40 chars with null term // i update this to address of MMJson everytype i update it
+var cInt_doWhat = ctypes.int();
+var cInt_MmJsonLen = ctypes.int();
+
+function createShareables_andSecondaryInit(aInitInfoObj, infoObjForWorker) {
+	console.log('in CommWorker createShareables_andSecondaryInit:', 'aInitInfoObj:', aInitInfoObj, 'infoObjForWorker:', infoObjForWorker);
+
+	var addieOf = {};
+	addieOf.cInt_doWhat = cutils.strOfPtr(cInt_doWhat.address());
+	addieOf.cInt_MmJsonLen = cutils.strOfPtr(cInt_MmJsonLen.address());
+	addieOf.cCharArr_addieOfMmJson = cutils.strOfPtr(cCharArr_addieOfMmJson.address());
+	
+	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
+		case 'winnt':
+		case 'winmo':
+		case 'wince':
+		
+				OSStuff.winMmWorkerThreadId = aInitInfoObj.winMmWorkerThreadId;
+				
+			break;
+		default:
+			// do nothing
+	}
+	
+	putInfoObjForWorker_intoShareables(infoObjForWorker);
+	cInt_doWhat.value = 1; // tells MMWorker actOnDoWhat to read in
+	
+	return [addieOf];
+}
+
+function putInfoObjForWorker_intoShareables(infoObjForWorker) {
+	var stringified = JSON.stringify(infoObjForWorker);
+	MmJson = ctypes.char.array()(stringified);
+	cInt_MmJsonLen.value = MmJson.length; // stringified.length + 1 for null terminator
+	console.log('set cInt_MmJsonLen.value to:', MmJson.length, 'cInt_MmJsonLen.value:', cInt_MmJsonLen.value);
+	cutils.modifyCStr(cCharArr_addieOfMmJson, cutils.strOfPtr(MmJson.address())); // if i want to modify this str from MMWorker i have to do cutils.modifyCStr(cCharArr_addieOfMmJson.contents, 'new string')
+}
+ 
 // End - Addon Functionality
 
 

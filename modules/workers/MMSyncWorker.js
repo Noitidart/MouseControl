@@ -140,7 +140,7 @@ function init(objCore) {
 		case 'wince':
 		
 				var thisThreadId = ostypes.API('GetCurrentThreadId')();
-				aInfoObj.winThreadId = parseInt(cutils.jscGetDeepest(thisThreadId));
+				aInitInfoObj.winMmWorkerThreadId = parseInt(cutils.jscGetDeepest(thisThreadId));
 				
 			break;
 		default:
@@ -162,6 +162,70 @@ self.onclose = function() {
 	
 	for (var i=0; i<terminators.length; i++) {
 		terminators[i]();
+	}
+}
+
+var jsMmJsonParsed;
+
+var cCharArr_addieOfMmJson;
+var cInt_doWhat;
+var cInt_MmJsonLen;
+
+function initShareablesAndStartMM(addieOf) {
+	cInt_doWhat = ctypes.int.ptr(ctypes.UInt64(addieOf.cInt_doWhat));
+	cInt_MmJsonLen = ctypes.int.ptr(ctypes.UInt64(addieOf.cInt_MmJsonLen));
+	cCharArr_addieOfMmJson = ctypes.char.array(41).ptr(ctypes.UInt64(addieOf.cCharArr_addieOfMmJson));
+	
+	if (cInt_doWhat.contents != 1) {
+		console.error('whaaa VERY BAD ERROR. im in initShareables, CommWorker createShareables_andSecondaryInit SHOULD HAVE set cInt_doWhat to 1 but it is:', cInt_doWhat.contents);
+	}
+	
+	actOnDoWhat();
+	
+	syncMonitorMouse();
+	
+	
+}
+
+function actOnDoWhat() {	
+	// after acting on doWhat i set it to the negative
+	
+	switch (cInt_doWhat.contents) {
+		case 1:
+			
+				// read in MmJson
+				console.log('actOnDoWhat :: read in MmJson');
+				
+				var jsStr_addieOfMmJson = cCharArr_addieOfMmJson.contents.readString();
+				console.log('jsStr_addieOfMmJson:', jsStr_addieOfMmJson);
+				
+				var jsInt_MmJsonLen = cInt_MmJsonLen.contents;
+				console.log('jsInt_MmJsonLen:', jsInt_MmJsonLen);
+				
+				var jsMmJsonStringified = ctypes.char.array(jsInt_MmJsonLen).ptr(ctypes.UInt64(jsStr_addieOfMmJson)).contents.readString();
+				console.log('jsMmJsonStringified:', jsMmJsonStringified);
+				
+				jsMmJsonParsed = JSON.parse(jsMmJsonStringified);
+				
+				
+			
+			break;
+		case 2:
+			
+				// sendMouseEventsToMT to true
+				sendMouseEventsToMT = true;
+				cInt_doWhat.contents = -2;
+			
+			break;
+		case 3:
+			
+				// sendMouseEventsToMT to false
+				sendMouseEventsToMT = false;
+				cInt_doWhat.contents = -3;
+			
+			break;
+		default:
+			console.error('unrecognized jsInt_doWhat of "', jsInt_doWhat, '"');
 	}
 }
 
@@ -336,7 +400,7 @@ function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 function syncMonitorMouse() {
 	// this will get events and can block them
 	
-	console.log('in syncMonitorMouse holdDuration:', holdDuration, 'multiClickSpeed:', multiClickSpeed, 'config:', config);
+	console.log('in syncMonitorMouse jsMmJsonParsed.prefs.holdDuration:', jsMmJsonParsed.prefs.holdDuration, 'jsMmJsonParsed.prefs.multiClickSpeed:', jsMmJsonParsed.prefs.multiClickSpeed, 'jsMmJsonParsed.config:', jsMmJsonParsed.config);
 	
 	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
 		case 'winnt':

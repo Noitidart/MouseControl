@@ -420,7 +420,7 @@ var MMWorkerFuncs = {
 		
 		// send init info obj of MMWorker to CommWorker, along with multiClickSpeed, holdDuration, and config
 			// CommWorker will create a shareable int which will be dowhat int. and a 4th which will be shareable string of 40 characters. this will hold the address of the json that MMWorker should read then upate its json. then it should set dowhat saying its done.
-		
+			// also needs shareable int for length of string arr
 		var infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
 		
 		// steup prefs for worker
@@ -430,14 +430,14 @@ var MMWorkerFuncs = {
 		
 		// setup config for worker
 		infoObjForWorker.config = {};
-		for (var p in gConfigJson) {
-			infoObjForWorker.config[p] = gConfigJson[p].config;
+		for (var i=0; i<gConfigJson.length; i++) {
+			infoObjForWorker.config[gConfigJson[i].id] = gConfigJson[i].config;
 		}
 		
 		CommWorker.postMessageWithCallback(['createShareables_andSecondaryInit', aInitInfoObj, infoObjForWorker], function(aShareableAddiesObj) {
 			// aShareableAddiesObj is what CommWorker sends to me, it is key holding ctypes.TYPE and value a string address
 			// ill send these to MMWorker, who will then store them in global, and of course its secondary init so it reads them in
-			MMWorker.postMessage(['secondaryInit_forShareables', aShareableAddiesObj]);
+			MMWorker.postMessage(['initShareablesAndStartMM', aShareableAddiesObj]);
 			// secondaryInit_forShareables will also start the mouse monitor
 			// so now from this point, assume mouse monitor is in a infinite js loop
 				// so to now communicate with MMWorker i have to CommWorker.postMessage to transferToMMWorker (for windows im in a lock for sure, linux im pretty sure, osx i might not, so for osx i should still send this same post message, but on callback of it, i should then send mmworker a message to read in from the shreables as they were updated)
