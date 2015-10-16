@@ -444,10 +444,10 @@ var MMWorkerFuncs = {
 				// the other reason to commToMMworker is to tell it to start or stop sending mouse events
 		});
 		
-		Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
-			console.error('stopping mouse monitor');
-			CommWorker.postMessage(['tellMmWorker', 'stop-mouse-monitor']);
-		}, 30000);
+		// Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
+			// console.error('stopping mouse monitor');
+			// CommWorker.postMessage(['tellMmWorker', 'stop-mouse-monitor']);
+		// }, 30000);
 	},
 	threadIdOnInit: function(aThreadId) {
 		// needed for windows
@@ -596,11 +596,18 @@ function startup(aData, aReason) {
 }
 
 function shutdown(aData, aReason) {
-	if (aReason == APP_SHUTDOWN) { return }
-	
 	if (MMWorker) {
-		MMWorker.terminate();
+		CommWorker.postMessageWithCallback(['tellMmWorker', 'stop-mouse-monitor'], function() {
+			console.error('ok tellMmWorker done');
+			MMWorker.postMessageWithCallback(['preTerminate'], function() {
+				console.error('ok mmworker preterminate done');
+				MMWorker.terminate();
+				CommWorker.terminate();
+			})
+		});
 	}
+	
+	if (aReason == APP_SHUTDOWN) { return }
 	
 	// an issue with this unload is that framescripts are left over, i want to destory them eventually
 	aboutFactory_mousecontrol.unregister();

@@ -154,15 +154,21 @@ function init(objCore) {
 
 // Start - Addon Functionality
 
-var terminators = [];
 self.onclose = function() {
-	console.log('MMSyncWorker.js terminating');
+	console.error('MMSyncWorker.js TERMINATED');
+}
+
+var terminators = [];
+function preTerminate() {
+	console.log('MMSyncWorker.js pre-terminating');
 	
 	// stopMonitor();
 	
 	for (var i=0; i<terminators.length; i++) {
 		terminators[i]();
 	}
+	
+	return [];
 }
 
 var jsMmJsonParsed;
@@ -235,7 +241,7 @@ function actOnDoWhat() {
 			
 			break;
 		default:
-			console.error('unrecognized jsInt_doWhat of "', jsInt_doWhat, '"');
+			console.error('unrecognized cInt_doWhat.contents of "', cInt_doWhat.contents, '"');
 	}
 }
 
@@ -462,7 +468,7 @@ function syncMonitorMouse() {
 				OSStuff.hookStartTime = new Date().getTime();
 				OSStuff.myLLMouseHook_js = function(nCode, wParam, lParam) {
 
-					console.error('in hook callback!!');
+					// console.error('in hook callback!!');
 					
 					// if (new Date().getTime() - OSStuff.hookStartTime > 10000) {
 						// // its been 10sec, lets post message to make GetMessage return, because it seems my GetMessage is blocking forever as its not getting any messages posted to it
@@ -535,7 +541,7 @@ function syncMonitorMouse() {
 							
 							console.info('mouseTracker:', mouseTracker);
 							self.postMessage(['testHit', mouseTracker.length]);
-							return -1;
+							return rezCallNextEx(); // return -1;
 						} else {
 							return rezCallNextEx();
 						}

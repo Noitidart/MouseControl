@@ -138,6 +138,10 @@ function init(objCore) {
 	self.postMessage(['init']);
 }
 
+self.onclose = function() {
+	console.error('CommWorker.js TERMINATED');
+}
+
 // Start - Addon Functionality
 
 var MmJson; // global so it doesnt get gc'ed, it will be the stringified of infoObjForWorker // is cCharArr with length of cInt_MmJsonLen
@@ -227,6 +231,8 @@ function tellMmWorker(aWhat, infoObjForWorker) {
 				message: 'Operating system, "' + OS.Constants.Sys.Name + '" is not supported'
 			});
 	}
+	
+	return [];
 }
  
 // End - Addon Functionality
