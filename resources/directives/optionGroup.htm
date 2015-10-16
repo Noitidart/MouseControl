@@ -1,5 +1,5 @@
 <span class="option-group-head">
 	{{aGroupName}}
 </span>
-<option-row ng-repeat="aOption in BC.options | filter:{groupName:aGroupName}" ng-switch="aOption.type" />
+<option-row ng-repeat="aOption in BC.options | filter:{groupName:aGroupName}:true" ng-switch="aOption.type" />
 {{content}}
