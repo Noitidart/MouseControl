@@ -194,6 +194,8 @@ function actOnDoWhat() {
 		case 1:
 			
 				// read in MmJson
+				cInt_doWhat.contents = -1;
+				
 				console.log('actOnDoWhat :: read in MmJson');
 				
 				var jsStr_addieOfMmJson = cCharArr_addieOfMmJson.contents.readString();
@@ -207,21 +209,29 @@ function actOnDoWhat() {
 				
 				jsMmJsonParsed = JSON.parse(jsMmJsonStringified);
 				
-				
 			
 			break;
 		case 2:
 			
 				// sendMouseEventsToMT to true
-				sendMouseEventsToMT = true;
 				cInt_doWhat.contents = -2;
+				
+				sendMouseEventsToMT = true;
 			
 			break;
 		case 3:
 			
 				// sendMouseEventsToMT to false
-				sendMouseEventsToMT = false;
 				cInt_doWhat.contents = -3;
+				
+				sendMouseEventsToMT = false;
+			
+		case 4:
+			
+				// stop mouse monitor
+				cInt_doWhat.contents = -4;
+				
+				return -4;
 			
 			break;
 		default:
@@ -315,16 +325,10 @@ function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 		console.log('LMessage.message:', LMessage.toString());		
 		
 		// i set the wParam to custom things to signal my thread. to either just break from GetMessage to repeat loop, or quit
-		var wParam = parseInt(cutils.jscGetDeepest(LMessage.wParam));
-		switch (wParam) {
-			case 3:
+		switch (actOnDoWhat()) {
+			case -4:
 					
-					// i sent this code so it gets out of getmessage so i can update config/prefs into worker
-					
-				break;
-			case 4:
-					
-					// break loop
+					// stop mouse monitor
 					break labelSoSwitchCanBreakWhile;
 					
 				break;
@@ -460,11 +464,11 @@ function syncMonitorMouse() {
 
 					console.error('in hook callback!!');
 					
-					if (new Date().getTime() - OSStuff.hookStartTime > 10000) {
-						// its been 10sec, lets post message to make GetMessage return, because it seems my GetMessage is blocking forever as its not getting any messages posted to it
-						var rez_PostMessage = ostypes.API('PostMessage')(null, ostypes.CONST.WM_INPUT, 4, 0);
-						console.log('rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString());
-					}
+					// if (new Date().getTime() - OSStuff.hookStartTime > 10000) {
+						// // its been 10sec, lets post message to make GetMessage return, because it seems my GetMessage is blocking forever as its not getting any messages posted to it
+						// var rez_PostMessage = ostypes.API('PostMessage')(null, ostypes.CONST.WM_INPUT, 4, 0);
+						// console.log('rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString());
+					// }
 					
 					var eventType;
 					for (var p in OSStuff.mouseConsts) {

@@ -444,10 +444,10 @@ var MMWorkerFuncs = {
 				// the other reason to commToMMworker is to tell it to start or stop sending mouse events
 		});
 		
-		// Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
-			// console.log('stopping mouse monitor');
-			// MMWorker.postMessage(['stopMonitor']);
-		// }, 10000);
+		Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
+			console.error('stopping mouse monitor');
+			CommWorker.postMessage(['tellMmWorker', 'stop-mouse-monitor']);
+		}, 30000);
 	},
 	threadIdOnInit: function(aThreadId) {
 		// needed for windows
@@ -460,20 +460,24 @@ var MMWorkerFuncs = {
 	}
 };
 
-function tellMMWorkerPrefsAndConfig(fromInit) {
-	var configForWorker = {};
+function tellMMWorkerPrefsAndConfig() {
 	
-	for (var p in gConfigJson) {
-		configForWorker[p] = gConfigJson[p].config;
+	// for use once mouse monitor is running
+	
+	var infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
+	
+	// steup prefs for worker
+	infoObjForWorker.prefs = {};
+	infoObjForWorker.prefs.multiClickSpeed = prefs['dbl-click-speed'].value;
+	infoObjForWorker.prefs.holdDuration = prefs['hold-duration'].value;
+	
+	// setup config for worker
+	infoObjForWorker.config = {};
+	for (var i=0; i<gConfigJson.length; i++) {
+		infoObjForWorker.config[gConfigJson[i].id] = gConfigJson[i].config;
 	}
 	
-	var prefsForWorker = {
-		multiClickSpeed: prefs['dbl-click-speed'].value,
-		holdDuration: prefs['hold-duration'].value
-	};
-	
-	MMWorker.postMessage(['updatePrefsAndConfig', {prefs: prefsForWorker, config: configForWorker}]);
-	MMWorker.postMessage(['syncMonitorMouse']);
+	CommWorker.postMessage(['tellMmWorker', 'update-prefs-config', infoObjForWorker]);
 }
 
 var CommWorkerFuncs = {
@@ -652,9 +656,15 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 	},
 	setPref: function(aPrefName, aNewVal) {
 		prefs[aPrefName].value = aNewVal;
+		
+		// update worker:
+		tellMMWorkerPrefsAndConfig();
 	},
 	updateConfigsOnServer: function(aNewConfigJson) {
 		gConfigJson = aNewConfigJson;
+		
+		// update worker:
+		tellMMWorkerPrefsAndConfig();
 		
 		var promise_saveConfigs = tryOsFile_ifDirsNoExistMakeThenRetry('writeAtomic', [OSPath_config, JSON.stringify(aNewConfigJson), {
 			tmpPath: OSPath_config + '.tmp',

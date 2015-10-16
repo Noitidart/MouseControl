@@ -180,6 +180,54 @@ function putInfoObjForWorker_intoShareables(infoObjForWorker) {
 	console.log('set cInt_MmJsonLen.value to:', MmJson.length, 'cInt_MmJsonLen.value:', cInt_MmJsonLen.value);
 	cutils.modifyCStr(cCharArr_addieOfMmJson, cutils.strOfPtr(MmJson.address())); // if i want to modify this str from MMWorker i have to do cutils.modifyCStr(cCharArr_addieOfMmJson.contents, 'new string')
 }
+
+function tellMmWorker(aWhat, infoObjForWorker) {
+	switch (aWhat) {
+		case 'stop-mouse-monitor':
+			
+				cInt_doWhat.value = 4;
+			
+			break;
+		case 'update-prefs-config':
+			
+				putInfoObjForWorker_intoShareables(infoObjForWorker);
+				cInt_doWhat.value = 1;
+			
+			break;
+		default:
+			console.error('unrecognized aWhat: "', aWhat, '"');
+			return;
+	}
+	
+	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
+		case 'winnt':
+		case 'winmo':
+		case 'wince':
+			
+				// make GetMessage in the MMWorker loop unblock
+				
+				console.error('CommWorker sending stop msg to MMWorker now');
+				var rez_PostMessage = ostypes.API('PostThreadMessage')(OSStuff.winMmWorkerThreadId, ostypes.CONST.WM_INPUT, 2, 0); // i send wparam of 2, because for wm_input wmparam should be either 0 or 1, so i send invalid of 2, doesnt do anything if it was 0 or 1 though, but whatever
+				console.error('ok should have stopped. CommWorker rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString());
+			
+			break;
+		case 'gtk':
+			
+				// 
+			
+			break;
+		case 'darwin':
+			
+				// 
+			
+			break;
+		default:
+			throw new Error({
+				name: 'addon-error',
+				message: 'Operating system, "' + OS.Constants.Sys.Name + '" is not supported'
+			});
+	}
+}
  
 // End - Addon Functionality
 

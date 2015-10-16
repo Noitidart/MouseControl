@@ -939,15 +939,32 @@ var winInit = function() {
 		PostMessage: function() {
 			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644944%28v=vs.85%29.aspx
 			 * BOOL WINAPI PostMessage(
-			 *  __in_opt_ HWND   hWnd,
-			 *  __in_     UINT   Msg,
-			 *  __in_     WPARAM wParam,
-			 *  __in_     LPARAM lParam
+			 *   __in_opt_ HWND   hWnd,
+			 *   __in_     UINT   Msg,
+			 *   __in_     WPARAM wParam,
+			 *   __in_     LPARAM lParam
 			 * );
 			 */
 			return lib('user32').declare(ifdef_UNICODE ? 'PostMessageW' : 'PostMessageA', self.TYPE.ABI,
 				self.TYPE.BOOL,		// return
 				self.TYPE.HWND, 	// hWnd
+				self.TYPE.UINT,		// Msg
+				self.TYPE.WPARAM, 	// wParam
+				self.TYPE.LPARAM	// lParam
+			);
+		},
+		PostThreadMessage: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644946%28v=vs.85%29.aspx
+			 * BOOL WINAPI PostThreadMessage(
+			 *   __in_ DWORD  idThread,
+			 *   __in_ UINT   Msg,
+			 *   __in_ WPARAM wParam,
+			 *   __in_ LPARAM lParam
+			 * );
+			 */
+			return lib('user32').declare(ifdef_UNICODE ? 'PostThreadMessageW' : 'PostThreadMessageA', self.TYPE.ABI,
+				self.TYPE.BOOL,		// return
+				self.TYPE.DWORD, 	// idThread
 				self.TYPE.UINT,		// Msg
 				self.TYPE.WPARAM, 	// wParam
 				self.TYPE.LPARAM	// lParam
