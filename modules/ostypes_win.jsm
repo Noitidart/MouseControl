@@ -312,6 +312,7 @@ var winTypes = function() {
 		this.WPARAM,	// wParam,
 		this.LPARAM	// lParam
 	]);
+	this.TIMERPROC = ctypes.FunctionType(this.CALLBACK_ABI, this.VOID, [this.HWND, this.UINT, this.UINT_PTR, this.DWORD]);
 	
 	// some more guess types
 	this.HOOKPROC = this.LowLevelMouseProc.ptr; // not a guess really, as this is the hook type i use, so yeah it has to be a pointer to it
@@ -922,6 +923,19 @@ var winInit = function() {
 				self.TYPE.LPDWORD	// lpdwProcessId
 			);
 		},
+		KillTimer: function() {
+			/* http://msdn.microsoft.com/en-us/library/windows/desktop/ms633522%28v=vs.85%29.aspx
+			 * BOOL WINAPI KillTimer(
+			 *   _in_opt_ HWND     hWnd,
+			 *   _in_     UINT_PTR uIDEvent
+			 * );
+			 */
+			return lib('user32').declare('KillTimer', self.TYPE.ABI,
+				self.TYPE.BOOL,		// return
+				self.TYPE.HWND,		// hWnd
+				self.TYPE.UINT_PTR	// uIDEvent
+			);
+		},
 		PostMessage: function() {
 			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644944%28v=vs.85%29.aspx
 			 * BOOL WINAPI PostMessage(
@@ -1021,6 +1035,23 @@ var winInit = function() {
 				self.TYPE.HGDIOBJ, //return
 				self.TYPE.HDC, // hdc
 				self.TYPE.HGDIOBJ // hgdiobj
+			);
+		},
+		SetTimer: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms644906%28v=vs.85%29.aspx
+			 * UINT_PTR WINAPI SetTimer(
+			 *   _in_opt_ HWND      hWnd,
+			 *   _in_     UINT_PTR  nIDEvent,
+			 *   _in_     UINT      uElapse,
+			 *   _in_opt_ TIMERPROC lpTimerFunc
+			 * );
+			 */
+			return lib('user32').declare('SetTimer', self.TYPE.ABI,
+				self.TYPE.UINT_PTR,		//return
+				self.TYPE.HWND,			// hWnd
+				self.TYPE.UINT_PTR,		// nIDEvent
+				self.TYPE.UINT,			// uElapse
+				self.TYPE.TIMERPROC.ptr	// lpTimerFunc
 			);
 		},
 		SetWindowPos: function() {

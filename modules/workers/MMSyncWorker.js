@@ -18,6 +18,19 @@ var core = { // have to set up the main keys that you want when aCore is merged 
 
 var OSStuff = {}; // global vars populated by init, based on OS
 
+var multiClickSpeed = 300;
+var holdDuration = 300;
+
+var configs = {
+	'funcNameToCallInMainThread': [
+		{
+			stdConst: 'B2_DN',
+			hold: false,
+			multi: 1
+		}
+	]
+};
+
 // Imports that use stuff defined in chrome
 // I don't import ostypes_*.jsm yet as I want to init core first, as they use core stuff like core.os.isWinXP etc
 // imported scripts have access to global vars on MainWorker.js
@@ -156,52 +169,52 @@ self.onclose = function() {
 	}
 }
 
-function winRunMessageLoopOLDER(wMsgFilterMin, wMsgFilterMax) {
-	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
-	// based on http://stackoverflow.com/questions/6901063/how-to-create-a-pure-winapi-window
-	
-	// great thing about handling my own message loop is that i can make it not respond to mouse move by setting minFilter to one above WM_MOUSEMOVE, thankfully WM_MOUSEMOVE is the lowest at 0x200
-	
-	// this sets up the thread message loop
-	var LMessage = ostypes.TYPE.MSG();
-	var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_NOREMOVE);
-	console.info('rez_PeekMessage:', rez_PeekMessage);
-	
-	var nowTime = new Date().getTime();
-	// your main loop
-	// while (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
-		// look for messages in the threads message queue and process them in turn.
-		// You can use GetMessage here instead and it will block waiting for messages
-		// which is good if you don't have anything else to do in your thread.
-		var checkForMessage = function() {
-			var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_REMOVE);
-			if (rez_PeekMessage) {
-				console.log('message found:', LMessage);
-			} else {
-				console.log('no message found:', rez_PeekMessage);
-			}
-			
-			/*
-			if (cutils.jscEqual(LMessage.message, ostypes.CONST.WM_INPUT)) {
-				// console.info('LMessage.lParam:', LMessage.lParam, LMessage.lParam.toString());
-				var hrawinput = ostypes.TYPE.HRAWINPUT(LMessage.lParam); // ctypes.cast(LMEssage.lParam, ostypes.TYPE.HRAWINPUT) doesnt work here as the Message.lParam is not really ostypes.TYPE.LPARAM it gets unwrapped so its primiated js type, its just a number. thats why i can just wrap it with a ostypes.TYPE.HRAWINPUT
-				var rez_getRawInputData = ostypes.API('GetRawInputData')(hrawinput, ostypes.CONST.RID_INPUT, OSStuff.getRawInputDataBuffer.address(), OSStuff.rawInputDataBufferSize.address(), ostypes.TYPE.RAWINPUTHEADER.size);
-				console.log('rez_getRawInputData:', rez_getRawInputData, rez_getRawInputData.toString());
-				console.info('OSStuff.getRawInputDataBuffer', OSStuff.getRawInputDataBuffer.mouse);
-			}
-			*/
-			
-			if (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
-				setTimeout(checkForMessage, 10);
-			} else {
-				console.log('message loop ended');
-			}
-		};
-		checkForMessage();
-	// }
-	
-	// console.log('message loop ended');
-}
+// function winRunMessageLoopOLDER(wMsgFilterMin, wMsgFilterMax) {
+// 	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
+// 	// based on http://stackoverflow.com/questions/6901063/how-to-create-a-pure-winapi-window
+// 	
+// 	// great thing about handling my own message loop is that i can make it not respond to mouse move by setting minFilter to one above WM_MOUSEMOVE, thankfully WM_MOUSEMOVE is the lowest at 0x200
+// 	
+// 	// this sets up the thread message loop
+// 	var LMessage = ostypes.TYPE.MSG();
+// 	var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_NOREMOVE);
+// 	console.info('rez_PeekMessage:', rez_PeekMessage);
+// 	
+// 	var nowTime = new Date().getTime();
+// 	// your main loop
+// 	// while (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
+// 		// look for messages in the threads message queue and process them in turn.
+// 		// You can use GetMessage here instead and it will block waiting for messages
+// 		// which is good if you don't have anything else to do in your thread.
+// 		var checkForMessage = function() {
+// 			var rez_PeekMessage = ostypes.API('PeekMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax, ostypes.CONST.PM_REMOVE);
+// 			if (rez_PeekMessage) {
+// 				console.log('message found:', LMessage);
+// 			} else {
+// 				console.log('no message found:', rez_PeekMessage);
+// 			}
+// 			
+// 			/*
+// 			if (cutils.jscEqual(LMessage.message, ostypes.CONST.WM_INPUT)) {
+// 				// console.info('LMessage.lParam:', LMessage.lParam, LMessage.lParam.toString());
+// 				var hrawinput = ostypes.TYPE.HRAWINPUT(LMessage.lParam); // ctypes.cast(LMEssage.lParam, ostypes.TYPE.HRAWINPUT) doesnt work here as the Message.lParam is not really ostypes.TYPE.LPARAM it gets unwrapped so its primiated js type, its just a number. thats why i can just wrap it with a ostypes.TYPE.HRAWINPUT
+// 				var rez_getRawInputData = ostypes.API('GetRawInputData')(hrawinput, ostypes.CONST.RID_INPUT, OSStuff.getRawInputDataBuffer.address(), OSStuff.rawInputDataBufferSize.address(), ostypes.TYPE.RAWINPUTHEADER.size);
+// 				console.log('rez_getRawInputData:', rez_getRawInputData, rez_getRawInputData.toString());
+// 				console.info('OSStuff.getRawInputDataBuffer', OSStuff.getRawInputDataBuffer.mouse);
+// 			}
+// 			*/
+// 			
+// 			if (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
+// 				setTimeout(checkForMessage, 10);
+// 			} else {
+// 				console.log('message loop ended');
+// 			}
+// 		};
+// 		checkForMessage();
+// 	// }
+// 	
+// 	// console.log('message loop ended');
+// }
 
 function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
@@ -218,78 +231,102 @@ function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 	
 	var nowTime = new Date().getTime();
 	// your main loop
-	while (new Date().getTime() - nowTime < 10000) { // run it for 10 sec
+	
+	labelSoSwitchCanBreakWhile:
+	while (true) { // run it for 10 sec
 
-		var rez_GetMessage = ostypes.API('GetMessage')(LMessage.address(), OSStuff.msgWinHwnd, wMsgFilterMin, wMsgFilterMax);
+		var rez_GetMessage = ostypes.API('GetMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax);
 		console.log('rez_GetMessage:', rez_GetMessage);
+
+		console.log('LMessage.message:', LMessage.toString());
 		
 		var rez_DispatchMessage = ostypes.API('DispatchMessage')(LMessage.address());
 		console.log('rez_DispatchMessage:', rez_DispatchMessage);
+
+		console.log('LMessage.message:', LMessage.toString());		
+		
+		// i set the wParam to custom things to signal my thread. to either just break from GetMessage to repeat loop, or quit
+		var wParam = parseInt(cutils.jscGetDeepest(LMessage.wParam));
+		switch (wParam) {
+			case 3:
+					
+					// i sent this code so it gets out of getmessage so i can update config/prefs into worker
+					
+				break;
+			case 4:
+					
+					// break loop
+					break labelSoSwitchCanBreakWhile;
+					
+				break;
+			default:
+				// continue loop
+		}
 	}
 	// console.log('message loop ended');
 	stopMonitor(); // must stop monitor when stop loop otherwise mouse will freeze up for like 5sec, well thats what happens to me on win81
 }
 
-function winCreateHiddenWindowForMessageLoop() {
-	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
-	
-	// based on http://ochameau.github.io/2010/08/24/jsctypes-unleashed/
-	if (OSStuff.msgWinHwnd) {
-		throw new Error('already registered class window, this message loop thing can only be called once');
-	}
-	
-	var windowProc = function(hwnd, uMsg, wParam, lParam) {
-		
-		var eventType;
-		for (var p in OSStuff.mouseConsts) {
-			if (cutils.jscEqual(OSStuff.mouseConsts[p], lParam)) {
-				eventType = p;
-				break;
-			}
-		}
-		
-		console.info('windowProc | ', 'eventType:', eventType, 'uMsg:', uMsg, 'wParam:', wParam, 'lParam:', lParam);
-		// 0 means that we handle this event
-		// return 0; 
-		
-		// Mandatory use default win32 procedure!
-		var rez_DefWindowProc = ostypes.API('DefWindowProc')(hwnd, uMsg, wParam, lParam);
-		console.log('rez_DefWindowProc:', rez_DefWindowProc, rez_DefWindowProc.toString());
-		
-		return rez_DefWindowProc;
-	};
-	OSStuff.windowProc = windowProc; // so it doesnt get gc'ed
-	
-	// Define a custom Window Class in order to bind our custom Window Proc
-	var wndclass = ostypes.TYPE.WNDCLASS();
-	wndclass.lpszClassName = ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol');
-	wndclass.lpfnWndProc = ostypes.TYPE.WNDPROC.ptr(windowProc);
-	var rez_registerClass = ostypes.API('RegisterClass')(wndclass.address());
-	console.info('rez_registerClass:', rez_registerClass, rez_registerClass.toString());
-	if (cutils.jscEqual(rez_registerClass, 0)) {
-		console.warn('failed to register class, last error:', ctypes.winLastError);
-		// throw new Error('failed to register class');
-	}
-	
-	// Create a Message event only Window using this custom class
-	var msgWinHwnd = ostypes.API('CreateWindowEx')(0, wndclass.lpszClassName, ostypes.TYPE.LPCTSTR.targetType.array()('window-mozilla-firefox-addon-mousecontrol'), 0, 0, 0, 0, 0,  ostypes.TYPE.HWND(ostypes.CONST.HWND_MESSAGE), null, null, null);
-	console.info('msgWinHwnd:', msgWinHwnd, msgWinHwnd.toString());
-	
-	if (msgWinHwnd.isNull()) {
-		console.error('failed to create window, last error:', ctypes.winLastError);
-		throw new Error('failed to create window');
-	}
-	
-	OSStuff.msgWinHwnd = msgWinHwnd; // so it doesnt get gc'ed
-	
-	terminators.push(function() {
-		// var rez_destroyWindow = ostypes.API('DestroyWindow')(OSStuff.msgWinHwnd);
-		// console.log('rez_destroyWindow:', rez_destroyWindow);
-		
-		// var rez_UnregisterClass = ostypes.API('UnregisterClass')(ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol'), null);
-		// console.log('rez_UnregisterClass:', rez_UnregisterClass);
-	});
-}
+// function winCreateHiddenWindowForMessageLoop() {
+// 	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
+// 	
+// 	// based on http://ochameau.github.io/2010/08/24/jsctypes-unleashed/
+// 	if (OSStuff.msgWinHwnd) {
+// 		throw new Error('already registered class window, this message loop thing can only be called once');
+// 	}
+// 	
+// 	var windowProc = function(hwnd, uMsg, wParam, lParam) {
+// 		
+// 		var eventType;
+// 		for (var p in OSStuff.mouseConsts) {
+// 			if (cutils.jscEqual(OSStuff.mouseConsts[p], lParam)) {
+// 				eventType = p;
+// 				break;
+// 			}
+// 		}
+// 		
+// 		console.info('windowProc | ', 'eventType:', eventType, 'uMsg:', uMsg, 'wParam:', wParam, 'lParam:', lParam);
+// 		// 0 means that we handle this event
+// 		// return 0; 
+// 		
+// 		// Mandatory use default win32 procedure!
+// 		var rez_DefWindowProc = ostypes.API('DefWindowProc')(hwnd, uMsg, wParam, lParam);
+// 		console.log('rez_DefWindowProc:', rez_DefWindowProc, rez_DefWindowProc.toString());
+// 		
+// 		return rez_DefWindowProc;
+// 	};
+// 	OSStuff.windowProc = windowProc; // so it doesnt get gc'ed
+// 	
+// 	// Define a custom Window Class in order to bind our custom Window Proc
+// 	var wndclass = ostypes.TYPE.WNDCLASS();
+// 	wndclass.lpszClassName = ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol');
+// 	wndclass.lpfnWndProc = ostypes.TYPE.WNDPROC.ptr(windowProc);
+// 	var rez_registerClass = ostypes.API('RegisterClass')(wndclass.address());
+// 	console.info('rez_registerClass:', rez_registerClass, rez_registerClass.toString());
+// 	if (cutils.jscEqual(rez_registerClass, 0)) {
+// 		console.warn('failed to register class, last error:', ctypes.winLastError);
+// 		// throw new Error('failed to register class');
+// 	}
+// 	
+// 	// Create a Message event only Window using this custom class
+// 	var msgWinHwnd = ostypes.API('CreateWindowEx')(0, wndclass.lpszClassName, ostypes.TYPE.LPCTSTR.targetType.array()('window-mozilla-firefox-addon-mousecontrol'), 0, 0, 0, 0, 0,  ostypes.TYPE.HWND(ostypes.CONST.HWND_MESSAGE), null, null, null);
+// 	console.info('msgWinHwnd:', msgWinHwnd, msgWinHwnd.toString());
+// 	
+// 	if (msgWinHwnd.isNull()) {
+// 		console.error('failed to create window, last error:', ctypes.winLastError);
+// 		throw new Error('failed to create window');
+// 	}
+// 	
+// 	OSStuff.msgWinHwnd = msgWinHwnd; // so it doesnt get gc'ed
+// 	
+// 	terminators.push(function() {
+// 		// var rez_destroyWindow = ostypes.API('DestroyWindow')(OSStuff.msgWinHwnd);
+// 		// console.log('rez_destroyWindow:', rez_destroyWindow);
+// 		
+// 		// var rez_UnregisterClass = ostypes.API('UnregisterClass')(ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol'), null);
+// 		// console.log('rez_UnregisterClass:', rez_UnregisterClass);
+// 	});
+// }
 
 function syncMonitorMouse() {
 	// this will get events and can block them
@@ -325,23 +362,22 @@ function syncMonitorMouse() {
 						// WM_NCXBUTTONDBLCLK: 0x00AD
 					};
 					
-					OSStuff.mouseConstToMouseControlConst = {
+					// because all the os'es have different constants, i "standardize" them
+					OSStuff.mouseConstToStdConst = {
 						WM_LBUTTONDOWN: 'B1_DN',
 						WM_LBUTTONUP: 'B1_UP',
 						WM_RBUTTONDOWN: 'B2_DN',
 						WM_RBUTTONUP: 'B2_UP',
 						WM_MBUTTONDOWN: 'B3_DN',
 						WM_MBUTTONUP: 'B3_UP',
-						WM_MOUSEWHEEL: 'WV_??',
-						WM_XBUTTONDOWN: 'B?_DN',
-						WM_XBUTTONUP: 'B?_UP',
-						WM_MOUSEHWHEEL: 'WH_??',
-						WM_NCXBUTTONDOWN: 'B?_DN',
-						WM_NCXBUTTONUP: 'B?_UP'
+						WM_MOUSEWHEEL: ['WV_DN', 'WV_UP'],
+						WM_XBUTTONDOWN: ['B4_DN', 'B5_DN'],
+						WM_XBUTTONUP: ['B4_UP', 'B5_UP'],
+						WM_MOUSEHWHEEL: ['WH_LT', 'WH_RT']
 					};
 				};
 				
-				winCreateHiddenWindowForMessageLoop();
+				// winCreateHiddenWindowForMessageLoop();
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_LBUTTONDOWN, ostypes.CONST.WM_MOUSEHWHEEL);
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT);
 				// winRunMessageLoop(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT); // for async
@@ -398,15 +434,35 @@ function syncMonitorMouse() {
 					
 					if (new Date().getTime() - OSStuff.hookStartTime > 10000) {
 						// its been 10sec, lets post message to make GetMessage return, because it seems my GetMessage is blocking forever as its not getting any messages posted to it
-						var rez_PostMessage = ostypes.API('PostMessage')(OSStuff.msgWinHwnd, ostypes.CONST.WM_INPUT, 0, 0);
+						var rez_PostMessage = ostypes.API('PostMessage')(null, ostypes.CONST.WM_INPUT, 4, 0);
 						console.log('rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString());
 					} else {
 						console.log('time not up yet');
 					}
 					
+					/*
+					if (!OSStuff.timerSet) {
+						console.log('will now set timer');
+						OSStuff.timerSet = true;
+						OSStuff.timerIdHold = 1337;
+						OSStuff.timerIdMulti = 10;
+						var thisTimerId = OSStuff.timerLastId
+						OSStuff.timerFunc_js = function(hwnd, uMsg, idEvent, dwTime) {
+							console.error('triggered timerFunc_js', 'hwnd:', hwnd.toString(), 'uMsg:', uMsg.toString(), 'idEvent:', idEvent.toString(), 'dwTime:', dwTime.toString());
+							var rez_KillTimer = ostypes.API('KillTimer')(OSStuff.timerIdHold);
+							console.log('rez_KillTimer:', rez_KillTimer);
+						};
+						OSStuff.timerFunc_c = ostypes.TYPE.TIMERPROC.ptr(OSStuff.timerFunc_js);
+						
+						var rez_SetTimer = ostypes.API('SetTimer')(null, OSStuff.timerIdHold, 1000, OSStuff.timerFunc_c);
+						console.log('rez_SetTimer:', rez_SetTimer, 'winLastError:', ctypes.winLastError);
+							
+					}
+					*/
+					
 					if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
+						// have to return rez callback because nCode is negative, this is per the docs			
 						// start - block link4841115
-						// have to return rez callback					
 						var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
 						// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
 						return rez_CallNext;
@@ -417,7 +473,6 @@ function syncMonitorMouse() {
 							return -1;
 						} else {
 							// start - copy of block link4841115
-							// have to return rez callback					
 							var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
 							// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
 							return rez_CallNext;
@@ -442,7 +497,8 @@ function syncMonitorMouse() {
 				}
 				
 
-				winRunMessageLoop(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT); // for sync
+				// winRunMessageLoop(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT); // for sync
+				winRunMessageLoop(0, 0); // for sync
 
 				
 			break
