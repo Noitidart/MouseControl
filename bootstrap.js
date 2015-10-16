@@ -58,7 +58,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-jumptab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
-			config:'0+2',
+			config:[],
 			func:''
 		},
 		{
@@ -66,7 +66,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-duptab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
-			config:'0+2',
+			config:[],
 			func:''
 		},
 		{
@@ -74,7 +74,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-newtab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
-			config:'0+2',
+			config:[],
 			func:''
 		},
 		{
@@ -82,7 +82,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-nexttab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
-			config:'0+2',
+			config:[],
 			func:''
 		},
 		{
@@ -90,7 +90,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-prevtab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
-			config:'0+2',
+			config:[],
 			func:''
 		},
 		{
@@ -98,7 +98,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-closetab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
-			config:'0+2',
+			config:[],
 			func:''
 		},
 		{
@@ -106,7 +106,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-resetzoom'),
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
-			config:'2+1',
+			config:[],
 			func:''
 		},
 		{
@@ -114,7 +114,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-zoomin'),
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
-			config:'2+1',
+			config:[],
 			func:''
 		},
 		{
@@ -122,7 +122,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-zoomout'),
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
-			config:'2+1',
+			config:[],
 			func:''
 		},
 		{
@@ -130,7 +130,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-removeel'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
-			config:'2+1',
+			config:[],
 			func:''
 		},
 		{
@@ -138,7 +138,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-memscrolltop'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
-			config:'2+1',
+			config:[],
 			func:''
 		},
 		{
@@ -146,7 +146,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-memscrollbot'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
-			config:'2+1',
+			config:[],
 			func:''
 		},
 		{
@@ -154,7 +154,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-memscrollmemy'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
-			config:'2+1',
+			config:[],
 			func:''
 		}
 	];
@@ -457,6 +457,13 @@ var MMWorkerFuncs = {
 	},
 	testHit: function(aStr) {
 		console.error('testhit trigger with:', aStr);
+	},
+	mouseEvent: function(aMouseEvent) {
+		// this is triggered for every mouse event except mousemove, while mousemonitor is running
+		console.log('bootstrap got mouseEvent:', aMouseEvent);
+		if (bowserFsWantingMouseEvents) { // i decided to allow only one framescript getting mousevents at a time. as only time its needed is when mouse is over that record section
+			bowserFsWantingMouseEvents.messageManager.sendAsyncMessage(core.addon.id, ['mouseEvent', aMouseEvent]);
+		}
 	}
 };
 
@@ -618,6 +625,7 @@ function shutdown(aData, aReason) {
 
 // start - server/framescript comm layer
 // functions for framescripts to call in main thread
+var bowserFsWantingMouseEvents;
 var fsFuncs = { // can use whatever, but by default its setup to use this
 	fetchConfig: function(bootstrapCallbacks_name, aMsgEvent) {
 		if (gConfigJson) {
@@ -880,6 +888,14 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 		}
 		
 		return mainDeferred_importSettings.promise;
+	},
+	requestingMouseEvents: function(aMsgEvent) {
+		bowserFsWantingMouseEvents = aMsgEvent.target; // :note: possibly should use weak reference here to avoid zombie
+		CommWorker.postMessage(['tellMmWorker', 'send-mouse-events']);
+	},
+	requestingWitholdMouseEvents: function(aMsgEvent) {
+		bowserFsWantingMouseEvents = null;
+		CommWorker.postMessage(['tellMmWorker', 'withold-mouse-events']);
 	}
 };
 var fsMsgListener = {

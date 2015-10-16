@@ -8,5 +8,7 @@
 	</small>
 </span>
 <span>
-	{{aConfig.config}}
+	<span ng-repeat="aMouseConfig in aConfig.config">
+		{{aMouseConfig.multi > 1 ? aMouseConfig.multi + 'x ' : ''}}{{aMouseConfig.stdConst}}
+	</span>
 </span>

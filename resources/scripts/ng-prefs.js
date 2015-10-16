@@ -452,7 +452,11 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				if (BC.modal.config_type == 'edit') {
 					// make sure keys from aConfig show in BC.building
 					for (var p in BC.modal.aConfig) {
-						BC.building[p] = BC.modal.aConfig[p];
+						if (p == 'config') {
+							BC.building.config = BC.modal.aConfig.config.slice();
+						} else {
+							BC.building[p] = BC.modal.aConfig[p];
+						}
 					}
 					
 					// // make sure non existing keys from aConfig dont show in BC.buliding
@@ -478,7 +482,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 						name: '',
 						group: '',
 						desc: '',
-						config: ''
+						config: []
 						// :note: :maintain: make sure all the default keys go in here
 					};
 				}
@@ -516,7 +520,12 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 									var pushThis = {};
 									
 									for (var p in BC.building) {
-										pushThis[p] = BC.building[p];
+										if (p == 'config') {
+											pushThis[p] = BC.building[p].slice();
+										} else {
+											pushThis[p] = BC.building[p];
+										}
+										
 									}
 									if (BC.guiShouldShowNewGroupTxtBox()) {
 										pushThis.group = BC.building_newly_created_group_name;
@@ -537,6 +546,8 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 											for (var p in BC.configs[i]) {
 												if (p == 'group' && BC.guiShouldShowNewGroupTxtBox()) {
 													BC.configs[i].group = BC.building_newly_created_group_name;
+												} else if (p == 'config') {
+													BC.configs[i][p] = BC.building[p].slice();
 												} else {
 													BC.configs[i][p] = BC.building[p];
 												}
@@ -593,6 +604,18 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 		};
 		// end - create/add new function
 		
+		// start - recording mouse events
+		BC.requestingWitholdMouseEvents = function(aEvent) {
+			aEvent.stopPropagation();
+			console.log('ok moused over it');
+			contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['requestingWitholdMouseEvents']);
+		};
+		BC.requestingMouseEvents = function(aEvent) {
+			aEvent.stopPropagation();
+			console.log('ok mouse left');
+			contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['requestingMouseEvents']);
+		};
+		// end - recording mouse events
 		
 		// start - init
 		var init = function(isReInit) {
@@ -659,6 +682,11 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 // sendAsyncMessageWithCallback - rev3
 var bootstrapCallbacks = { // can use whatever, but by default it uses this
 	// put functions you want called by bootstrap/server here
+	mouseEvent: function(aMouseEvent) {
+		console.log('framescript getting mouseEvent:', aMouseEvent);
+		gAngScope.BC.building.config.push(aMouseEvent);
+		gAngScope.$digest();
+	}
 };
 const SAM_CB_PREFIX = '_sam_gen_cb_';
 var sam_last_cb_id = -1;

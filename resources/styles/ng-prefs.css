@@ -85,7 +85,7 @@ config-row:not(:last-of-type)::after {
 	margin-bottom: 2px;
 }
 
-config-row span:first-of-type {
+config-row > span:first-of-type {
 	display: flex;
 	flex-direction: column;
 }
@@ -95,7 +95,7 @@ config-row small {
 	padding-right: 7px;
 }
 
-config-row span {
+config-row > span {
 	flex-grow: 1;
 	width: 45% !important;
 }
@@ -137,3 +137,32 @@ config-row:hover .pseudo-config {
 }
 /* end - config row hover buttons */
 /* end config group stuff */
+
+/* start - modal stuff*/
+.combo-set-area {
+	position: relative;
+}
+.combo-set-area * {
+	pointer-events: none;
+}
+
+.combo-set-area small {
+	left: 0;
+	right: 0;
+	display:block;
+	text-align:center;
+	position:absolute;
+	top: 0;
+}
+
+.combo-set-area img:first-of-type {
+	right: 7px;
+	display:block;
+	text-align:center;
+	position:absolute;
+	top: 4px;
+	cursor: pointer;
+	pointer-events: auto;
+}
+/* end - modal stuff*/
+

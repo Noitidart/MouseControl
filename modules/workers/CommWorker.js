@@ -198,6 +198,16 @@ function tellMmWorker(aWhat, infoObjForWorker) {
 				cInt_doWhat.value = 1;
 			
 			break;
+		case 'send-mouse-events':
+			
+				cInt_doWhat.value = 2;
+			
+			break;
+		case 'withold-mouse-events':
+			
+				cInt_doWhat.value = 3;
+			
+			break;
 		default:
 			console.error('unrecognized aWhat: "', aWhat, '"');
 			return;

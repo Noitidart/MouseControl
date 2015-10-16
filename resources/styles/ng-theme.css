@@ -136,14 +136,14 @@ textarea {
 	/*border-radius: 2px;*/
 	position: relative;
 	/*font-family: tahoma;*/
-	width: 100%;
+	width: calc(100% - 4px);
 	color: rgb(68, 68, 68);
 	text-align: left;
 	font-size: 12px;
 	padding-bottom: 2px;
 	box-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.2) inset;
-	resize: none;
-	padding: 0 2px;
+	resize: vertical;
+	padding: 2px;
 }
 /* textfields */
 /* start - modal dialog */
@@ -186,6 +186,7 @@ modal {
 	pointer-events: none;
 	transition: margin-top 150ms ease-in, opacity 150ms ease-in;
 	display: inline-block;
+	width: 60%;
 }
 
 .modal-dialog .modal-row {
@@ -330,11 +331,20 @@ modal {
 	content: '';
 }
 .msg-config .combo-set-area {
-	display:flex;
-	align-items: center;
-	justify-content: center;
+	text-align: center;
+	display; block;
 	padding: 30px 0;
-	border: 1px dashed #eee;
+	border: 1px dashed #ddd;
+}
+
+.msg-config .combo-set-area span:not(:last-of-type)::after {
+	content: ' > ';
+	font-style: italic;
+}
+
+config-row > span:last-of-type span:not(:last-of-type)::after {
+	content: ' > ';
+	font-style: italic;
 }
 /*** the custom content of modal ***/
 /* end - modal dialog */

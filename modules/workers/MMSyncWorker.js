@@ -220,6 +220,7 @@ function actOnDoWhat() {
 		case 2:
 			
 				// sendMouseEventsToMT to true
+				console.log('MMWorker ok enabling mouse sending');
 				cInt_doWhat.contents = -2;
 				
 				sendMouseEventsToMT = true;
@@ -230,12 +231,17 @@ function actOnDoWhat() {
 				// sendMouseEventsToMT to false
 				cInt_doWhat.contents = -3;
 				
+				console.log('MMWorker ok DISALBING mouse sending');
+				
 				sendMouseEventsToMT = false;
 			
+			break;
 		case 4:
 			
 				// stop mouse monitor
 				cInt_doWhat.contents = -4;
+				
+				console.log('MMWorker ok STOPPING MOUSE MON');
 				
 				return -4;
 			
@@ -243,15 +249,6 @@ function actOnDoWhat() {
 		default:
 			console.error('unrecognized cInt_doWhat.contents of "', cInt_doWhat.contents, '"');
 	}
-}
-
-function updatePrefsAndConfig(aInfoObj) {
-	for (var p in aInfoObj.prefs) {
-		WORKER[p] = aInfoObj.prefs[p];
-	}
-	
-	WORKER.config = aInfoObj.config; // key is func name to call in mainthread, and value is array of the buttons
-	console.log('ok finished updatePrefsAndConfig');
 }
 
 // function winRunMessageLoopOLDER(wMsgFilterMin, wMsgFilterMax) {
@@ -451,10 +448,10 @@ function syncMonitorMouse() {
 						WM_RBUTTONUP: 'B2_UP',
 						WM_MBUTTONDOWN: 'B3_DN',
 						WM_MBUTTONUP: 'B3_UP',
-						WM_MOUSEWHEEL: ['WV_DN', 'WV_UP'],
+						WM_MOUSEWHEEL: ['WV_UP', 'WV_DN'],
 						WM_XBUTTONDOWN: ['B4_DN', 'B5_DN'],
 						WM_XBUTTONUP: ['B4_UP', 'B5_UP'],
-						WM_MOUSEHWHEEL: ['WH_LT', 'WH_RT']
+						WM_MOUSEHWHEEL: ['WH_RT', 'WH_LT']
 					};
 				};
 				
@@ -539,9 +536,14 @@ function syncMonitorMouse() {
 										});
 							}
 							
-							console.info('mouseTracker:', mouseTracker);
-							self.postMessage(['testHit', mouseTracker.length]);
-							return rezCallNextEx(); // return -1;
+							// console.info('mouseTracker:', mouseTracker);
+							
+							if (sendMouseEventsToMT) {
+								self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
+								return -1;
+							} else {
+								return rezCallNextEx(); // return -1;
+							}
 						} else {
 							return rezCallNextEx();
 						}
