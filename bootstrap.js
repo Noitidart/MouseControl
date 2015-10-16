@@ -413,19 +413,97 @@ function AboutFactory(component) {
 }
 // end - about module
 
-
+var MMWorkerThreadId;
 var MMWorkerFuncs = {
-	init: function() {
-		console.log('ok calling init main thread callback');
-		MMWorker.postMessage(['syncMonitorMouse']);
+	init: function(aInitInfoObj) {
+		console.log('ok Comm and MM workers are inited');
+		
+		// send init info obj of MMWorker to CommWorker, along with multiClickSpeed, holdDuration, and config
+			// CommWorker will create a shareable int which will be dowhat int. and a 4th which will be shareable string of 40 characters. this will hold the address of the json that MMWorker should read then upate its json. then it should set dowhat saying its done.
+		
+		var infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
+		
+		// steup prefs for worker
+		infoObjForWorker.prefs = {};
+		infoObjForWorker.prefs.multiClickSpeed = prefs['dbl-click-speed'].value;
+		infoObjForWorker.prefs.holdDuration = prefs['hold-duration'].value;
+		
+		// setup config for worker
+		infoObjForWorker.config = {};
+		for (var p in gConfigJson) {
+			infoObjForWorker.config[p] = gConfigJson[p].config;
+		}
+		
+		CommWorker.postMessageWithCallback(['createShareables_andSecondaryInit', aInitInfoObj, infoObjForWorker], function(aShareableAddiesObj) {
+			// aShareableAddiesObj is what CommWorker sends to me, it is key holding ctypes.TYPE and value a string address
+			// ill send these to MMWorker, who will then store them in global, and of course its secondary init so it reads them in
+			MMWorker.postMessage(['secondaryInit_forShareables', aShareableAddiesObj]);
+			// secondaryInit_forShareables will also start the mouse monitor
+			// so now from this point, assume mouse monitor is in a infinite js loop
+				// so to now communicate with MMWorker i have to CommWorker.postMessage to transferToMMWorker (for windows im in a lock for sure, linux im pretty sure, osx i might not, so for osx i should still send this same post message, but on callback of it, i should then send mmworker a message to read in from the shreables as they were updated)
+				// the other reason to commToMMworker is to tell it to start or stop sending mouse events
+		});
 		
 		// Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
 			// console.log('stopping mouse monitor');
 			// MMWorker.postMessage(['stopMonitor']);
 		// }, 10000);
+	},
+	threadIdOnInit: function(aThreadId) {
+		// needed for windows
+		// worker tells me what its thread id is so i can store, then send it postemssages to break the loop
+		console.log('in threadIdOnInit, got aThreadId:', aThreadId);
+		MMWorkerThreadId = aThreadId;
+	},
+	testHit: function(aStr) {
+		console.error('testhit trigger with:', aStr);
 	}
 };
 
+function tellMMWorkerPrefsAndConfig(fromInit) {
+	var configForWorker = {};
+	
+	for (var p in gConfigJson) {
+		configForWorker[p] = gConfigJson[p].config;
+	}
+	
+	var prefsForWorker = {
+		multiClickSpeed: prefs['dbl-click-speed'].value,
+		holdDuration: prefs['hold-duration'].value
+	};
+	
+	MMWorker.postMessage(['updatePrefsAndConfig', {prefs: prefsForWorker, config: configForWorker}]);
+	MMWorker.postMessage(['syncMonitorMouse']);
+}
+
+var CommWorkerFuncs = {
+	init: function() {
+		// init MMWorker
+		var promise_getMMWorker = SICWorker('MMWorker', core.addon.path.workers + 'MMSyncWorker.js', MMWorkerFuncs);
+		promise_getMMWorker.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_getMMWorker - ', aVal);
+				// start - do stuff here - promise_getMMWorker
+				// end - do stuff here - promise_getMMWorker
+			},
+			function(aReason) {
+				var rejObj = {
+					name: 'promise_getMMWorker',
+					aReason: aReason
+				};
+				console.warn('Rejected - promise_getMMWorker - ', rejObj);
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {
+					name: 'promise_getMMWorker',
+					aCaught: aCaught
+				};
+				console.error('Caught - promise_getMMWorker - ', rejObj);
+			}
+		);
+	}
+};
 function readConfigFromFile() {
 	// reads file and sets global
 	// resolves with array with single element being json. if file does not exist it gives gConfigJsonDefault
@@ -481,27 +559,27 @@ function startup(aData, aReason) {
 	readConfigFromFile();
 	
 	// startup worker
-	var promise_getMMWorker = SICWorker('MMWorker', core.addon.path.workers + 'MMSyncWorker.js', MMWorkerFuncs);
-	promise_getMMWorker.then(
+	var promise_initCommWorker = SICWorker('CommWorker', core.addon.path.workers + 'CommWorker.js', CommWorkerFuncs);
+	promise_initCommWorker.then(
 		function(aVal) {
-			console.log('Fullfilled - promise_getMMWorker - ', aVal);
-			// start - do stuff here - promise_getMMWorker
-			// end - do stuff here - promise_getMMWorker
+			console.log('Fullfilled - promise_initCommWorker - ', aVal);
+			// start - do stuff here - promise_initCommWorker
+			// end - do stuff here - promise_initCommWorker
 		},
 		function(aReason) {
 			var rejObj = {
-				name: 'promise_getMMWorker',
+				name: 'promise_initCommWorker',
 				aReason: aReason
 			};
-			console.warn('Rejected - promise_getMMWorker - ', rejObj);
+			console.warn('Rejected - promise_initCommWorker - ', rejObj);
 		}
 	).catch(
 		function(aCaught) {
 			var rejObj = {
-				name: 'promise_getMMWorker',
+				name: 'promise_initCommWorker',
 				aCaught: aCaught
 			};
-			console.error('Caught - promise_getMMWorker - ', rejObj);
+			console.error('Caught - promise_initCommWorker - ', rejObj);
 		}
 	);
 	

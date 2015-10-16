@@ -1,8 +1,5 @@
-'use strict';
-
 // Imports
 importScripts('resource://gre/modules/osfile.jsm');
-importScripts('resource://gre/modules/workers/require.js');
 
 // Globals
 var core = { // have to set up the main keys that you want when aCore is merged from mainthread in init
@@ -18,18 +15,8 @@ var core = { // have to set up the main keys that you want when aCore is merged 
 
 var OSStuff = {}; // global vars populated by init, based on OS
 
-var multiClickSpeed = 300;
-var holdDuration = 300;
-
-var configs = {
-	'funcNameToCallInMainThread': [
-		{
-			stdConst: 'B2_DN',
-			hold: false,
-			multi: 1
-		}
-	]
-};
+var mouseTracker = [];
+var sendMouseEventsToMT = false;
 
 // Imports that use stuff defined in chrome
 // I don't import ostypes_*.jsm yet as I want to init core first, as they use core stuff like core.os.isWinXP etc
@@ -146,14 +133,23 @@ function init(objCore) {
 	}
 	
 	// OS Specific Init
+	var aInitInfoObj = {};
 	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
+		case 'winnt':
+		case 'winmo':
+		case 'wince':
+		
+				var thisThreadId = ostypes.API('GetCurrentThreadId')();
+				aInfoObj.winThreadId = parseInt(cutils.jscGetDeepest(thisThreadId));
+				
+			break;
 		default:
 			// do nothing special
 	}
 	
 	console.log('init worker done');
 	
-	self.postMessage(['init']);
+	self.postMessage(['init', aInitInfoObj]);
 }
 
 // Start - Addon Functionality
@@ -167,6 +163,15 @@ self.onclose = function() {
 	for (var i=0; i<terminators.length; i++) {
 		terminators[i]();
 	}
+}
+
+function updatePrefsAndConfig(aInfoObj) {
+	for (var p in aInfoObj.prefs) {
+		WORKER[p] = aInfoObj.prefs[p];
+	}
+	
+	WORKER.config = aInfoObj.config; // key is func name to call in mainthread, and value is array of the buttons
+	console.log('ok finished updatePrefsAndConfig');
 }
 
 // function winRunMessageLoopOLDER(wMsgFilterMin, wMsgFilterMax) {
@@ -331,6 +336,8 @@ function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 function syncMonitorMouse() {
 	// this will get events and can block them
 	
+	console.log('in syncMonitorMouse holdDuration:', holdDuration, 'multiClickSpeed:', multiClickSpeed, 'config:', config);
+	
 	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
 		case 'winnt':
 		case 'winmo':
@@ -388,6 +395,13 @@ function syncMonitorMouse() {
 				OSStuff.myLLMouseHook_js = function(nCode, wParam, lParam) {
 
 					console.error('in hook callback!!');
+					
+					if (new Date().getTime() - OSStuff.hookStartTime > 10000) {
+						// its been 10sec, lets post message to make GetMessage return, because it seems my GetMessage is blocking forever as its not getting any messages posted to it
+						var rez_PostMessage = ostypes.API('PostMessage')(null, ostypes.CONST.WM_INPUT, 4, 0);
+						console.log('rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString());
+					}
+					
 					var eventType;
 					for (var p in OSStuff.mouseConsts) {
 						if (cutils.jscEqual(OSStuff.mouseConsts[p], wParam)) {
@@ -395,90 +409,166 @@ function syncMonitorMouse() {
 							break;
 						}
 					}
-
-					var mhs = ostypes.TYPE.MSLLHOOKSTRUCT.ptr(ctypes.UInt64(lParam));
-
-					var mouseDataLowordUnsigned = parseInt(cutils.jscGetDeepest(mhs.contents.mouseData)) & 0xffff;
-					var mouseDataLowordSigned = mouseDataLowordUnsigned >= 32768 ? mouseDataLowordUnsigned - 65536 : mouseDataLowordUnsigned;
-					
-					var mouseDataHiwordUnsigned = (parseInt(cutils.jscGetDeepest(mhs.contents.mouseData)) >> 16) & 0xffff;
-					var mouseDataHiwordSigned = mouseDataHiwordUnsigned >= 32768 ? mouseDataHiwordUnsigned - 65536 : mouseDataHiwordUnsigned;
-					
-					console.info('myLLMouseHook | ', eventType, 'nCode:', cutils.jscGetDeepest(nCode), 'wParam:', cutils.jscGetDeepest(wParam), 'lParam:', cutils.jscGetDeepest(lParam), 'mouseDataLoword:', mouseDataLowordSigned, 'mouseDataHiword:', mouseDataHiwordSigned, 'mhs.contents:', mhs.contents.toString());
-					
-					/*
-					/////
-					var usButtonFlagStrs = {}; // key value. key is aRawMouseConstStr value is 0 unless its wheel, in which case it is either 1 up/right or -1 for for left/down
-					for (var aMouseConstStr in OSStuff.rawMouseConsts) {
-						if (usButtonFlags & OSStuff.rawMouseConsts[aMouseConstStr]) {
-							switch (aMouseConstStr) {
-								case 'WM_MOUSEWHEEL':
-								case 'WM_MOUSEHWHEEL':
-									usButtonFlagStrs[aMouseConstStr] = parseInt(cutils.jscGetDeepest(ctypes.cast(ostypes.TYPE.USHORT(OSStuff.getRawInputDataBuffer.mouse.usButtonData), ostypes.TYPE.SHORT))) > 0 ? 1 : -1;
-									break;
-								default:
-									usButtonFlagStrs[aMouseConstStr] = 0;
-							}
-						}
-					}
-					var pth = OS.Path.join(OS.Constants.Path.desktopDir, 'RawInputMouse.txt');
-					var valOpen = OS.File.open(pth, {write: true, append: true});
-					var txtToAppend = JSON.stringify(usButtonFlagStrs) + '\n';
-					var txtEncoded = TextEncoder().encode(txtToAppend);
-					valOpen.write(txtEncoded);
-					valOpen.close();
-					console.log('usButtonFlagStrs:', usButtonFlagStrs);
-					/////
-					*/
-
-					
-					if (new Date().getTime() - OSStuff.hookStartTime > 10000) {
-						// its been 10sec, lets post message to make GetMessage return, because it seems my GetMessage is blocking forever as its not getting any messages posted to it
-						var rez_PostMessage = ostypes.API('PostMessage')(null, ostypes.CONST.WM_INPUT, 4, 0);
-						console.log('rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString());
-					} else {
-						console.log('time not up yet');
-					}
-					
-					/*
-					if (!OSStuff.timerSet) {
-						console.log('will now set timer');
-						OSStuff.timerSet = true;
-						OSStuff.timerIdHold = 1337;
-						OSStuff.timerIdMulti = 10;
-						var thisTimerId = OSStuff.timerLastId
-						OSStuff.timerFunc_js = function(hwnd, uMsg, idEvent, dwTime) {
-							console.error('triggered timerFunc_js', 'hwnd:', hwnd.toString(), 'uMsg:', uMsg.toString(), 'idEvent:', idEvent.toString(), 'dwTime:', dwTime.toString());
-							var rez_KillTimer = ostypes.API('KillTimer')(OSStuff.timerIdHold);
-							console.log('rez_KillTimer:', rez_KillTimer);
-						};
-						OSStuff.timerFunc_c = ostypes.TYPE.TIMERPROC.ptr(OSStuff.timerFunc_js);
-						
-						var rez_SetTimer = ostypes.API('SetTimer')(null, OSStuff.timerIdHold, 1000, OSStuff.timerFunc_c);
-						console.log('rez_SetTimer:', rez_SetTimer, 'winLastError:', ctypes.winLastError);
-							
-					}
-					*/
-					
-					if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
-						// have to return rez callback because nCode is negative, this is per the docs			
-						// start - block link4841115
+                
+					var rezCallNextEx = function() {
 						var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
 						// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
 						return rez_CallNext;
-						// end - block link4841115
+					};
+				
+					if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
+						// have to return rez callback because nCode is negative, this is per the docs			
+						return rezCallNextEx();
 					} else {
 						if (eventType != 'WM_MOUSEMOVE') {
-							// lets block it!
+							// lets add it to our global
+							switch (eventType) {
+								case 'WM_MOUSEWHEEL':
+								case 'WM_MOUSEHWHEEL':
+									
+										var mhs = ostypes.TYPE.MSLLHOOKSTRUCT.ptr(ctypes.UInt64(lParam));
+										
+										var mouseDataHiwordUnsigned = (parseInt(cutils.jscGetDeepest(mhs.contents.mouseData)) >> 16) & 0xffff;
+										var mouseDataHiwordSigned = mouseDataHiwordUnsigned >= 32768 ? mouseDataHiwordUnsigned - 65536 : mouseDataHiwordUnsigned;
+										var wheelDelta = mouseDataHiwordSigned;
+										
+										mouseTracker.push({
+											stdConst: wheelDelta > 0 ? OSStuff.mouseConstToStdConst[eventType][0] : OSStuff.mouseConstToStdConst[eventType][1],
+											multi: 1,
+											hold: false
+										});
+									
+									break;
+								case 'WM_XBUTTONDOWN':
+								case 'WM_XBUTTONUP':
+									
+										var mhs = ostypes.TYPE.MSLLHOOKSTRUCT.ptr(ctypes.UInt64(lParam));
+										
+										var mouseDataHiwordUnsigned = (parseInt(cutils.jscGetDeepest(mhs.contents.mouseData)) >> 16) & 0xffff;
+										// var mouseDataHiwordSigned = mouseDataHiwordUnsigned >= 32768 ? mouseDataHiwordUnsigned - 65536 : mouseDataHiwordUnsigned;
+										var xButtonNum = mouseDataHiwordUnsigned;
+										if (xButtonNum != ostypes.CONST.XBUTTON1 && xButtonNum != ostypes.CONST.XBUTTON2) {
+											console.error('VERY WEIRD, its not 1 or 2, so maybe 3+ for supporting more then just button 4 and button 5? it is:', xButtonNum);
+										}
+										mouseTracker.push({
+											stdConst: OSStuff.mouseConstToStdConst[eventType][xButtonNum-1],
+											multi: 1,
+											hold: false
+										});
+									
+									break;
+								default:
+										mouseTracker.push({
+											stdConst: OSStuff.mouseConstToStdConst[eventType],
+											multi: 1,
+											hold: false
+										});
+							}
+							
+							console.info('mouseTracker:', mouseTracker);
+							self.postMessage(['testHit', mouseTracker.length]);
 							return -1;
 						} else {
-							// start - copy of block link4841115
-							var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
-							// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
-							return rez_CallNext;
-							// end - copy of block link4841115
+							return rezCallNextEx();
 						}
 					}
+					
+
+				
+				
+				/////////// old stuff
+				//	console.error('in hook callback!!');
+				//	var eventType;
+				//	for (var p in OSStuff.mouseConsts) {
+				//		if (cutils.jscEqual(OSStuff.mouseConsts[p], wParam)) {
+				//			eventType = p;
+				//			break;
+				//		}
+				//	}
+                //
+				//	var mhs = ostypes.TYPE.MSLLHOOKSTRUCT.ptr(ctypes.UInt64(lParam));
+                //
+				//	var mouseDataLowordUnsigned = parseInt(cutils.jscGetDeepest(mhs.contents.mouseData)) & 0xffff;
+				//	var mouseDataLowordSigned = mouseDataLowordUnsigned >= 32768 ? mouseDataLowordUnsigned - 65536 : mouseDataLowordUnsigned;
+				//	
+				//	var mouseDataHiwordUnsigned = (parseInt(cutils.jscGetDeepest(mhs.contents.mouseData)) >> 16) & 0xffff;
+				//	var mouseDataHiwordSigned = mouseDataHiwordUnsigned >= 32768 ? mouseDataHiwordUnsigned - 65536 : mouseDataHiwordUnsigned;
+				//	
+				//	console.info('myLLMouseHook | ', eventType, 'nCode:', cutils.jscGetDeepest(nCode), 'wParam:', cutils.jscGetDeepest(wParam), 'lParam:', cutils.jscGetDeepest(lParam), 'mouseDataLoword:', mouseDataLowordSigned, 'mouseDataHiword:', mouseDataHiwordSigned, 'mhs.contents:', mhs.contents.toString());
+				//	
+				//	/*
+				//	/////
+				//	var usButtonFlagStrs = {}; // key value. key is aRawMouseConstStr value is 0 unless its wheel, in which case it is either 1 up/right or -1 for for left/down
+				//	for (var aMouseConstStr in OSStuff.rawMouseConsts) {
+				//		if (usButtonFlags & OSStuff.rawMouseConsts[aMouseConstStr]) {
+				//			switch (aMouseConstStr) {
+				//				case 'WM_MOUSEWHEEL':
+				//				case 'WM_MOUSEHWHEEL':
+				//					usButtonFlagStrs[aMouseConstStr] = parseInt(cutils.jscGetDeepest(ctypes.cast(ostypes.TYPE.USHORT(OSStuff.getRawInputDataBuffer.mouse.usButtonData), ostypes.TYPE.SHORT))) > 0 ? 1 : -1;
+				//					break;
+				//				default:
+				//					usButtonFlagStrs[aMouseConstStr] = 0;
+				//			}
+				//		}
+				//	}
+				//	var pth = OS.Path.join(OS.Constants.Path.desktopDir, 'RawInputMouse.txt');
+				//	var valOpen = OS.File.open(pth, {write: true, append: true});
+				//	var txtToAppend = JSON.stringify(usButtonFlagStrs) + '\n';
+				//	var txtEncoded = TextEncoder().encode(txtToAppend);
+				//	valOpen.write(txtEncoded);
+				//	valOpen.close();
+				//	console.log('usButtonFlagStrs:', usButtonFlagStrs);
+				//	/////
+				//	*/
+                //
+				//	
+				//	if (new Date().getTime() - OSStuff.hookStartTime > 10000) {
+				//		// its been 10sec, lets post message to make GetMessage return, because it seems my GetMessage is blocking forever as its not getting any messages posted to it
+				//		var rez_PostMessage = ostypes.API('PostMessage')(null, ostypes.CONST.WM_INPUT, 4, 0);
+				//		console.log('rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString());
+				//	} else {
+				//		console.log('time not up yet');
+				//	}
+				//	
+				//	/*
+				//	if (!OSStuff.timerSet) {
+				//		console.log('will now set timer');
+				//		OSStuff.timerSet = true;
+				//		OSStuff.timerIdHold = 1337;
+				//		OSStuff.timerIdMulti = 10;
+				//		var thisTimerId = OSStuff.timerLastId
+				//		OSStuff.timerFunc_js = function(hwnd, uMsg, idEvent, dwTime) {
+				//			console.error('triggered timerFunc_js', 'hwnd:', hwnd.toString(), 'uMsg:', uMsg.toString(), 'idEvent:', idEvent.toString(), 'dwTime:', dwTime.toString());
+				//			var rez_KillTimer = ostypes.API('KillTimer')(OSStuff.timerIdHold);
+				//			console.log('rez_KillTimer:', rez_KillTimer);
+				//		};
+				//		OSStuff.timerFunc_c = ostypes.TYPE.TIMERPROC.ptr(OSStuff.timerFunc_js);
+				//		
+				//		var rez_SetTimer = ostypes.API('SetTimer')(null, OSStuff.timerIdHold, 1000, OSStuff.timerFunc_c);
+				//		console.log('rez_SetTimer:', rez_SetTimer, 'winLastError:', ctypes.winLastError);
+				//			
+				//	}
+				//	*/
+				//	
+				//	if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
+				//		// have to return rez callback because nCode is negative, this is per the docs			
+				//		// start - block link4841115
+				//		var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
+				//		// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
+				//		return rez_CallNext;
+				//		// end - block link4841115
+				//	} else {
+				//		if (eventType != 'WM_MOUSEMOVE') {
+				//			// lets block it!
+				//			return -1;
+				//		} else {
+				//			// start - copy of block link4841115
+				//			var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
+				//			// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
+				//			return rez_CallNext;
+				//			// end - copy of block link4841115
+				//		}
+				//	}
 				};
 				OSStuff.myLLMouseHook_c = ostypes.TYPE.LowLevelMouseProc.ptr(OSStuff.myLLMouseHook_js);
 				
