@@ -224,6 +224,7 @@ function actOnDoWhat() {
 				cInt_doWhat.contents = -2;
 				
 				sendMouseEventsToMT = true;
+				// mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so when starting to send, it doesnt matter what was before, i dont have to clean it out, but i just do it
 			
 			break;
 		case 3:
@@ -234,6 +235,8 @@ function actOnDoWhat() {
 				console.log('MMWorker ok DISALBING mouse sending');
 				
 				sendMouseEventsToMT = false;
+				mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean
+				
 			
 			break;
 		case 4:
@@ -249,6 +252,50 @@ function actOnDoWhat() {
 		default:
 			console.error('unrecognized cInt_doWhat.contents of "', cInt_doWhat.contents, '"');
 	}
+}
+
+function checkMouseTracker() {
+	// goes through mouseTracker, and decides if it should call a function back in mainthread because mouse config matched AND/OR clear mouseTracker
+	
+	// check if mouseTracker matches anything exactly, if it does then call that function
+	// if current mouseTracker is not subset/substring_of_array of any config then clear mouseTracker
+	var mouseTrackerIsSubsetOfIds = {}; // holds ids that mouseTracker is a subset of. if its a fullset of, its not in this object as i will call it
+	labelSoIForCanContinueThePFor:
+	for (var p in jsMmJsonParsed.config) {
+		for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
+			if (i == mouseTracker.length) {
+				// mouseTracker length is shorter then that of jsMmJsonParsed.config[p] so its impossible for mouseTracker to be a fullset match
+				// console.info('mouseTracker length is shorter then that of jsMmJsonParsed.config[p] so its impossible for mouseTracker to be a fullset match');
+				continue labelSoIForCanContinueThePFor;
+			}
+			if (mouseTracker[i].stdConst != jsMmJsonParsed.config[p][i].stdConst) {
+				delete mouseTrackerIsSubsetOfIds[p];
+				continue labelSoIForCanContinueThePFor;
+			}
+			mouseTrackerIsSubsetOfIds[p] = true;
+		}
+		// got here so mouseTracker matches
+		// console.info('got here so mouseTracker matches');
+		delete mouseTrackerIsSubsetOfIds[p];
+		if (mouseTracker.length == jsMmJsonParsed.config[p].length) {
+			// mouseTracker and config length are same, so call this in mainthread. mouseTracker is fullset of config.
+			// :todo: call in mainthread this function
+			console.error('call mainthread func for id:', p, 'as its config was fullset matched to mouseTracker:', jsMmJsonParsed.config[p]);
+			// dont return, continue as user may have set the same config for multiple
+		} else {
+			// mouseTracker is superset of config (meaning config is subset of mouseTracker)
+			// mouseTracker.length > config length so this config was already called. but mouseTracker is dirty with this in there now because there is another config that mouseTracker is still a subset of
+		}
+	}
+	
+	for (var p in mouseTrackerIsSubsetOfIds) {
+		// mouseTracker is subset of a config, so keep it dirty, as user might complete that config (in which case he does then ill need to call the mainthread func)
+		// console.info('mouseTracker is subset of a config, so keep it dirty, as user might complete that config (in which case he does then ill need to call the mainthread func)');
+		return;
+	}
+	// mouseTracker is not subset of any config
+	// console.info('mouseTracker is not subset of any config');
+	mouseTracker = [];
 }
 
 // function winRunMessageLoopOLDER(wMsgFilterMin, wMsgFilterMax) {
@@ -542,6 +589,7 @@ function syncMonitorMouse() {
 								self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
 								return -1;
 							} else {
+								checkMouseTracker();
 								return rezCallNextEx(); // return -1;
 							}
 						} else {

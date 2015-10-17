@@ -254,7 +254,14 @@ var prefs = {
 							aApplyBackgroundUpdates = 1;
 						}
 					}
-					ADDON_MANAGER_ENTRY.applyBackgroundUpdates = aApplyBackgroundUpdates;
+					if (ADDON_MANAGER_ENTRY) {
+						ADDON_MANAGER_ENTRY.applyBackgroundUpdates = aApplyBackgroundUpdates;
+					} else {
+						AddonManager.getAddonByID(core.addon.id, function(addon_manager_entry) {
+							ADDON_MANAGER_ENTRY = addon_manager_entry;
+							ADDON_MANAGER_ENTRY.applyBackgroundUpdates = aApplyBackgroundUpdates;
+						});
+					}
 				}
 		}
 	},
@@ -431,8 +438,11 @@ var MMWorkerFuncs = {
 		// setup config for worker
 		infoObjForWorker.config = {};
 		for (var i=0; i<gConfigJson.length; i++) {
-			infoObjForWorker.config[gConfigJson[i].id] = gConfigJson[i].config;
+			if (gConfigJson[i].config.length) { // will not tell worker about any config that has blank config arr
+				infoObjForWorker.config[gConfigJson[i].id] = gConfigJson[i].config;
+			}
 		}
+		
 		
 		CommWorker.postMessageWithCallback(['createShareables_andSecondaryInit', aInitInfoObj, infoObjForWorker], function(aShareableAddiesObj) {
 			// aShareableAddiesObj is what CommWorker sends to me, it is key holding ctypes.TYPE and value a string address
@@ -469,6 +479,8 @@ var MMWorkerFuncs = {
 
 function tellMMWorkerPrefsAndConfig() {
 	
+	// will not tell worker about any config that has blank config arr
+	
 	// for use once mouse monitor is running
 	
 	var infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
@@ -481,7 +493,9 @@ function tellMMWorkerPrefsAndConfig() {
 	// setup config for worker
 	infoObjForWorker.config = {};
 	for (var i=0; i<gConfigJson.length; i++) {
-		infoObjForWorker.config[gConfigJson[i].id] = gConfigJson[i].config;
+		if (gConfigJson[i].config.length) { // will not tell worker about any config that has blank config arr
+			infoObjForWorker.config[gConfigJson[i].id] = gConfigJson[i].config;
+		}
 	}
 	
 	CommWorker.postMessage(['tellMmWorker', 'update-prefs-config', infoObjForWorker]);
@@ -716,6 +730,9 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 		
 		// reset config
 		gConfigJson = gConfigJsonDefault();
+		
+		// update worker:
+		tellMMWorkerPrefsAndConfig();
 		
 		var promise_delteConfig = OS.File.remove(OSPath_config);
 		

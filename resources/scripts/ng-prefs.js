@@ -586,8 +586,22 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 		
 		var getCleanConfigs = function() {
 			// clone the BC.configs array, but delete the $$hashKey item from each element as thats ng stuff
+			/*
+			var intermediateClean = JSON.parse(JSON.stringify(BC.configs));
+			for (var p in intermediateClean) {
+				delete intermediateClean[p].$$hashKey;
+				for (var i=0; i<intermediateClean[p].config.length; i++) {
+					delete intermediateClean[p].config[i].$$hashKey;
+				}
+			}
+			return intermediateClean;
+			*/
 			return BC.configs.map(function(curEl) {
 				delete curEl.$$hashKey;
+				for (var i=0; i<curEl.config.length; i++) {
+					// i checked, but make sure that curEl.config doesnt modify into BC.configs[x].config by asking on StackOverflow if curEl is duplicated already
+					delete curEl.config[i].$$hashKey;
+				}
 				return curEl;
 			});
 		};
