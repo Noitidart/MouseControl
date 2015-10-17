@@ -196,12 +196,29 @@ modal {
 }
 
 /*** the custom content of modal ***/
-.msg-share span {
-	width: 8em;
+.msg-share {
+	width: 200px;
+}
+
+.msg-share small {
+	padding: 0 0 5px !important;
+	display: block;
+	text-align: center;
+}
+.msg-share .msg-body .modal-row:first-of-type {
+	padding-top: 7px;
+}
+.msg-share .msg-body {
+	/*width: 8em;*/
+	padding: 0;
+}
+.msg-share .msg-body span {
+	/*width: 8em;*/
+	padding-right: 7px;
 }
 .msg-share input[type=text] {
 	flex-grow: 1;
-	text-align: right;
+	text-align: center;
 }
 
 .msg-config span {
