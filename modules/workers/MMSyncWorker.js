@@ -224,7 +224,6 @@ function actOnDoWhat() {
 				cInt_doWhat.contents = -2;
 				
 				sendMouseEventsToMT = true;
-				// mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so when starting to send, it doesnt matter what was before, i dont have to clean it out, but i just do it
 			
 			break;
 		case 3:
@@ -235,7 +234,6 @@ function actOnDoWhat() {
 				console.log('MMWorker ok DISALBING mouse sending');
 				
 				sendMouseEventsToMT = false;
-				mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean
 				
 			
 			break;
@@ -281,6 +279,7 @@ function checkMouseTracker() {
 			// mouseTracker and config length are same, so call this in mainthread. mouseTracker is fullset of config.
 			// :todo: call in mainthread this function
 			console.error('call mainthread func for id:', p, 'as its config was fullset matched to mouseTracker:', jsMmJsonParsed.config[p]);
+			self.postMessage(['triggerConfigFunc', p]);
 			// dont return, continue as user may have set the same config for multiple
 		} else {
 			// mouseTracker is superset of config (meaning config is subset of mouseTracker)
@@ -587,6 +586,7 @@ function syncMonitorMouse() {
 							
 							if (sendMouseEventsToMT) {
 								self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
+								mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean. but not if they just hovered in and hovered out. only if they get in and do a recording
 								return -1;
 							} else {
 								checkMouseTracker();

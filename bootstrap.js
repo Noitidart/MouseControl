@@ -59,7 +59,9 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
 			config:[],
-			func:''
+			func: uneval({
+
+			})
 		},
 		{
 			id: 2,
@@ -67,7 +69,27 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
 			config:[],
-			func:''
+			func: uneval({
+				__exec__: function() {
+					var DOMWindow = Services.wm.getMostRecentWindow(null);
+					var gBrowser = DOMWindow.gBrowser;
+					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
+						var origsPos = gBrowser.selectedTab._tPos;
+						if (prefs['dup-tab-pos'].value == 1) {
+							var newPos = origsPos + 1;
+						} else {
+							var newPos = gBrowser.tabContainer.childNodes.length;
+						}
+						
+						DOMWindow.duplicateTabIn(DOMWindow.gBrowser.selectedTab, 'tab', 1);
+
+						if (gBrowser.selectedTab._tPos != newPos) {
+							gBrowser.moveTabTo(gBrowser.selectedTab, newPos);
+						}
+					}
+					
+				}
+			})
 		},
 		{
 			id: 3,
@@ -75,7 +97,21 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
 			config:[],
-			func:''
+			func: uneval({
+				__exec__: function() {
+					var DOMWindow = Services.wm.getMostRecentWindow(null);
+					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
+						var gBrowser = DOMWindow.gBrowser;
+						if (prefs['new-tab-pos'].value == 1) {
+							var newIndex = gBrowser.selectedTab._tPos + 1;
+							DOMWindow.BrowserOpenTab();
+							gBrowser.moveTabTo(gBrowser.tabContainer.childNodes[gBrowser.tabContainer.childNodes.length-1], newIndex);
+						} else {
+							DOMWindow.BrowserOpenTab();
+						}
+					}
+				}
+			})
 		},
 		{
 			id: 4,
@@ -83,7 +119,14 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
 			config:[],
-			func:''
+			func: uneval({
+				__exec__: function() {
+					var DOMWindow = Services.wm.getMostRecentWindow(null);
+					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
+						DOMWindow.gBrowser.mTabContainer.advanceSelectedTab(1, true);
+					}
+				}
+			})
 		},
 		{
 			id: 5,
@@ -91,7 +134,14 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
 			config:[],
-			func:''
+			func: uneval({
+				__exec__: function() {
+					var DOMWindow = Services.wm.getMostRecentWindow(null);
+					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
+						DOMWindow.gBrowser.mTabContainer.advanceSelectedTab(-1, true);
+					}
+				}
+			})
 		},
 		{
 			id: 6,
@@ -99,7 +149,12 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
 			config:[],
-			func:''
+			func: uneval({
+				__exec__: function() {
+					var DOMWindow = Services.wm.getMostRecentWindow(null);
+					DOMWindow.BrowserCloseTabOrWindow();
+				}
+			})
 		},
 		{
 			id: 7,
@@ -107,7 +162,9 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
 			config:[],
-			func:''
+			func: uneval({
+
+			})
 		},
 		{
 			id: 8,
@@ -115,7 +172,9 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
 			config:[],
-			func:''
+			func: uneval({
+
+			})
 		},
 		{
 			id: 9,
@@ -123,7 +182,9 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
 			config:[],
-			func:''
+			func: uneval({
+
+			})
 		},
 		{
 			id: 10,
@@ -131,7 +192,9 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
 			config:[],
-			func:''
+			func: uneval({
+
+			})
 		},
 		{
 			id: 11,
@@ -139,7 +202,9 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
 			config:[],
-			func:''
+			func: uneval({
+
+			})
 		},
 		{
 			id: 12,
@@ -147,7 +212,9 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
 			config:[],
-			func:''
+			func: uneval({
+
+			})
 		},
 		{
 			id: 13,
@@ -155,7 +222,24 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
 			config:[],
-			func:''
+			func: uneval({
+
+			})
+		},
+		{
+			id: 14,
+			name: myServices.sb.GetStringFromName('config_name-undoclosetab'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-undoclosetab'),
+			config:[],
+			func: uneval({
+				__exec__: function() {
+					var DOMWindow = Services.wm.getMostRecentWindow(null);
+					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
+						DOMWindow.undoCloseTab();
+					}
+				}
+			})
 		}
 	];
 };
@@ -473,6 +557,15 @@ var MMWorkerFuncs = {
 		console.log('bootstrap got mouseEvent:', aMouseEvent);
 		if (bowserFsWantingMouseEvents) { // i decided to allow only one framescript getting mousevents at a time. as only time its needed is when mouse is over that record section
 			bowserFsWantingMouseEvents.messageManager.sendAsyncMessage(core.addon.id, ['mouseEvent', aMouseEvent]);
+		}
+	},
+	triggerConfigFunc: function(aConfigId) {
+		for (var i=0; i<gConfigJson.length; i++) {
+			if (gConfigJson[i].id == aConfigId) {
+				eval('var funcObj = ' + gConfigJson[i].func);
+				funcObj.__exec__();
+				return;
+			}
 		}
 	}
 };
