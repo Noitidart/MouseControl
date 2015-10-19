@@ -723,31 +723,113 @@ function syncMonitorMouse() {
 			break;
 		case 'darwin':
 			
+				/* // this wont work from off mainthread - im switching to CGEventTap as that works on threads per @KenThomases
+				if (OSStuff.rez_add) {
+					throw new Error('already monitoring');
+				}
 
-			if (OSStuff.rez_add) {
-				throw new Error('already monitoring');
-			}
-
-			OSStuff.myHandler_js = function(c_arg1__self, objc_arg1__aNSEventPtr) {
-				console.log('in myHandler', objc_arg1__aNSEventPtr.toString());
+				OSStuff.myHandler_js = function(c_arg1__self, objc_arg1__aNSEventPtr) {
+					console.log('in myHandler', objc_arg1__aNSEventPtr.toString());
+					
+					var cType = ostypes.API('objc_msgSend')(objc_arg1__aNSEventPtr, ostypes.HELPER.sel('type'));
+					console.info('cType:', cType, cType.toString());
+					
+					cType = ctypes.cast(cType, ostypes.TYPE.NSEventType);
+					console.info('cType:', cType, cType.toString());
+					
+					
+					return objc_arg1__aNSEventPtr; // return null to block
+				};
+				OSStuff.myHandler_c = ostypes.TYPE.IMP_for_EventMonitorCallback.ptr(OSStuff.myHandler_js);
+				OSStuff.myBlock_c = ostypes.HELPER.createBlock(OSStuff.myHandler_c);
 				
-				var cType = ostypes.API('objc_msgSend')(objc_arg1__aNSEventPtr, ostypes.HELPER.sel('type'));
-				console.info('cType:', cType, cType.toString());
+				console.info('myBlock_c:', OSStuff.myBlock_c, OSStuff.myBlock_c.toString());
+				console.info('myBlock_c.address():', OSStuff.myBlock_c.address(), OSStuff.myBlock_c.address().toString());
 				
-				cType = ctypes.cast(cType, ostypes.TYPE.NSEventType);
-				console.info('cType:', cType, cType.toString());
+				var rez_add = ostypes.API('objc_msgSend')(ostypes.HELPER.class('NSEvent'), ostypes.HELPER.sel('addLocalMonitorForEventsMatchingMask:handler:'), ostypes.TYPE.NSEventMask(ostypes.CONST.NSKeyDownMask), OSStuff.myBlock_c.address());
+				console.log('rez_add:', rez_add, rez_add.toString());
+				*/
+				// start the run loop
 				
+				if (!OSStuff.mouseConsts) {
+					OSStuff.mouseConsts = {
+						kCGEventLeftMouseDown: 1,
+						kCGEventLeftMouseUp: 2,
+						kCGEventRightMouseDown: 3,
+						kCGEventRightMouseUp: 4,
+						kCGEventOtherMouseDown: 25,
+						kCGEventOtherMouseUp: 26,
+						kCGEventScrollWheel: 22
+					};
+					
+					// because all the os'es have different constants, i "standardize" them
+					OSStuff.mouseConstToStdConst = {
+						kCGEventLeftMouseDown: 'B1_DN',
+						kCGEventLeftMouseUp: 'B1_UP',
+						kCGEventRightMouseDown: 'B2_DN',
+						kCGEventRightMouseUp: 'B2_UP',
+						kCGEventOtherMouseDown: 'B?_DN',
+						kCGEventOtherMouseUp: 'B?_UP',
+						kCGEventScrollWheel: 'W?_??'
+						// WM_XBUTTONUP: ['B4_UP', 'B5_UP'],
+						// WM_MOUSEHWHEEL: ['WH_RT', 'WH_LT']
+					};
+				};
 				
-				return objc_arg1__aNSEventPtr; // return null to block
-			};
-			OSStuff.myHandler_c = ostypes.TYPE.IMP_for_EventMonitorCallback.ptr(OSStuff.myHandler_js);
-			OSStuff.myBlock_c = ostypes.HELPER.createBlock(OSStuff.myHandler_c);
-			
-			console.info('myBlock_c:', OSStuff.myBlock_c, OSStuff.myBlock_c.toString());
-			console.info('myBlock_c.address():', OSStuff.myBlock_c.address(), OSStuff.myBlock_c.address().toString());
-			
-			var rez_add = ostypes.API('objc_msgSend')(ostypes.HELPER.class('NSEvent'), ostypes.HELPER.sel('addLocalMonitorForEventsMatchingMask:handler:'), ostypes.TYPE.NSEventMask(ostypes.CONST.NSKeyDownMask), OSStuff.myBlock_c.address());
-			console.log('rez_add:', rez_add, rez_add.toString());
+				var MouseTracker_js = function(proxy, type, event, refcon) {
+					console.error('in MouseTracker_js!!!!');
+					return event; // ostypes.TYPE.CGEventRef
+				};
+				OSStuff.MouseTracker = ostypes.TYPE.CGEventTapCallBack(MouseTracker_js);
+				
+				var mask =  ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventLeftMouseDown) | 
+							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventLeftMouseUp) |	
+							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventRightMouseDown) |
+							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventRightMouseUp) |
+							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventOtherMouseDown) |
+							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventOtherMouseUp) |
+							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventScrollWheel);
+				
+				var psn = ostypes.TYPE.ProcessSerialNumber();
+				var rez_GetCurrentProcess = ostypes.API('GetCurrentProcess')(psn.address());
+				console.log('rez_GetCurrentProcess:', rez_GetCurrentProcess, rez_GetCurrentProcess.toString());
+				
+				console.log('psn:', psn, psn.toString());
+				
+				var mouseEventTap = ostypes.API('CGEventTapCreateForPSN')(psn.address(), ostypes.CONST.kCGHeadInsertEventTap, ostypes.CONST.kCGEventTapOptionDefault, mask, OSStuff.MouseTracker, null);
+				console.log('mouseEventTap:', mouseEventTap, mouseEventTap.toString());
+				
+				if (!mouseEventTap.isNull()) {
+					var aRLS = ostypes.API('CFMachPortCreateRunLoopSource')(ostypes.CONST.kCFAllocatorDefault, mouseEventTap, 0);
+					console.log('aRLS:', aRLS, aRLS.toString());
+					
+					ostypes.API('CFRelease')(mouseEventTap);
+					console.log('cfreleased mouseEventTap');
+					
+					if (!aRLS.isNull()) {
+						var aLoop = ostypes.API('CFRunLoopGetCurrent')();
+						console.log('aLoop:', aLoop, aLoop.toString());
+						
+						ostypes.API('CFRunLoopAddSource')(aLoop, aRLS, ostypes.CONST.kCFRunLoopCommonModes); // returns void
+						console.log('did CFRunLoopAddSource');
+						
+						ostypes.API('CFRelease')(aRLS);
+						console.log('cfreleased aRLS');
+						
+						ostypes.API('CFRelease')(aLoop);
+						console.log('cfreleased aLoop');
+						
+						var rez_CFRunLoopRunInMode = ostypes.API('CFRunLoopRunInMode')(ostypes.CONST.kCFRunLoopCommonModes, 10, false);
+						console.log('rez_CFRunLoopRunInMode:', rez_CFRunLoopRunInMode, rez_CFRunLoopRunInMode.toString());
+						
+					} else {
+						console.error('aRLS is null!');
+					}
+					
+					
+				} else {
+					console.error('failed to create mouse tap');
+				}
 			
 			break;
 		default:
