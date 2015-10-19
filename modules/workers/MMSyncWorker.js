@@ -750,6 +750,9 @@ function syncMonitorMouse() {
 				console.log('rez_add:', rez_add, rez_add.toString());
 				*/
 				// start the run loop
+				if (OSStuff.aRLS) {
+					throw new Error('already monitoring');
+				}
 				
 				if (!OSStuff.mouseConsts) {
 					OSStuff.mouseConsts = {
@@ -790,6 +793,8 @@ function syncMonitorMouse() {
 							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventOtherMouseUp) |
 							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventScrollWheel);
 				
+				// var mask = ostypes.CONST.kCGEventMaskForAllEvents;
+				
 				var psn = ostypes.TYPE.ProcessSerialNumber();
 				var rez_GetCurrentProcess = ostypes.API('GetCurrentProcess')(psn.address());
 				console.log('rez_GetCurrentProcess:', rez_GetCurrentProcess, rez_GetCurrentProcess.toString());
@@ -800,21 +805,24 @@ function syncMonitorMouse() {
 				console.log('mouseEventTap:', mouseEventTap, mouseEventTap.toString());
 				
 				if (!mouseEventTap.isNull()) {
-					var aRLS = ostypes.API('CFMachPortCreateRunLoopSource')(ostypes.CONST.kCFAllocatorDefault, mouseEventTap, 0);
-					console.log('aRLS:', aRLS, aRLS.toString());
+					OSStuff.aRLS = ostypes.API('CFMachPortCreateRunLoopSource')(ostypes.CONST.kCFAllocatorDefault, mouseEventTap, 0);
+					console.log('OSStuff.aRLS:', OSStuff.aRLS, OSStuff.aRLS.toString());
 					
 					ostypes.API('CFRelease')(mouseEventTap);
 					console.log('cfreleased mouseEventTap');
 					
-					if (!aRLS.isNull()) {
+					if (!OSStuff.aRLS.isNull()) {
 						var aLoop = ostypes.API('CFRunLoopGetCurrent')();
 						console.log('aLoop:', aLoop, aLoop.toString());
 						
-						ostypes.API('CFRunLoopAddSource')(aLoop, aRLS, ostypes.CONST.kCFRunLoopCommonModes); // returns void
+						ostypes.API('CFRunLoopAddSource')(aLoop, OSStuff.aRLS, ostypes.CONST.kCFRunLoopCommonModes); // returns void
 						console.log('did CFRunLoopAddSource');
 						
-						ostypes.API('CFRelease')(aRLS);
-						console.log('cfreleased aRLS');
+						// ostypes.API('CGEventTapEnable')(mouseEventTap, true);
+						// console.log('did tap enable');
+						
+						// ostypes.API('CFRelease')(OSStuff.aRLS);
+						// console.log('cfreleased OSStuff.aRLS');
 						
 						ostypes.API('CFRelease')(aLoop);
 						console.log('cfreleased aLoop');
@@ -823,7 +831,7 @@ function syncMonitorMouse() {
 						console.log('rez_CFRunLoopRunInMode:', rez_CFRunLoopRunInMode, rez_CFRunLoopRunInMode.toString());
 						
 					} else {
-						console.error('aRLS is null!');
+						console.error('OSStuff.aRLS is null!');
 					}
 					
 					
@@ -873,6 +881,7 @@ function stopMonitor() {
 			break;
 		case 'darwin':
 			
+				/*
 				if (OSStuff.rez_add) {
 					var rez_remove = ostypes.API('objc_msgSend')(ostypes.HELPER.class('NSEvent'), ostypes.HELPER.sel('removeMonitor:'), OSStuff.rez_add);
 					console.log('rez_remove:', rez_remove, rez_remove.toString());
@@ -880,6 +889,18 @@ function stopMonitor() {
 					OSStuff.myHandler_js = null;
 					OSStuff.myHandler_c = null;
 					OSStuff.myBlock_c = null;
+				}
+				*/
+				if (OSStuff.aRLS) {
+					
+					ostypes.API('CFRunLoopSourceInvalidate')(OSStuff.aRLS);
+					console.log('invalidated loop source OSStuff.aRLS');
+					
+					ostypes.API('CFRelease')(OSStuff.aRLS);
+					console.log('cfreleased OSStuff.aRLS');
+					
+					OSStuff.aRLS = null;
+					OSStuff.MouseTracker = null;
 				}
 			
 			break;

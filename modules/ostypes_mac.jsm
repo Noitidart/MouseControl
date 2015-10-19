@@ -17,6 +17,7 @@ var macTypes = function() {
 	this.ABI = ctypes.default_abi;
 
 	// C TYPES
+	this.bool = ctypes.bool;
 	this.char = ctypes.char;
 	this.int = ctypes.int;
 	this.int16_t = ctypes.int16_t;
@@ -358,7 +359,7 @@ var macInit = function() {
 		kCGEventOtherMouseDragged: 27,
 		kCGEventTapDisabledByTimeout: 0xFFFFFFFE, // this.TYPE.CGEventType('0xFFFFFFFE'),
 		kCGEventTapDisabledByUserInput: 0xFFFFFFFF, // this.TYPE.CGEventType('0xFFFFFFFF'),
-		// kCGEventMaskForAllEvents: , // #define kCGEventMaskForAllEvents	(~(CGEventMask)0) // https://github.com/sschiesser/ASK_server/blob/a51e2fbdac894c37d97142fc72faa35f89057744/MacOSX10.6/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Headers/CGEventTypes.h#L380
+		kCGEventMaskForAllEvents: ctypes.UInt64('0xffffffffffffffff'), // #define kCGEventMaskForAllEvents	(~(CGEventMask)0) // https://github.com/sschiesser/ASK_server/blob/a51e2fbdac894c37d97142fc72faa35f89057744/MacOSX10.6/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Headers/CGEventTypes.h#L380
 		
 		kCFRunLoopRunFinished: 1,
 		kCFRunLoopRunStopped: 2,
@@ -551,6 +552,12 @@ var macInit = function() {
 				self.TYPE.CFRunLoopRef
 			);
 		},
+		CFRunLoopSourceInvalidate: function() {
+			return lib('CoreFoundation').declare('CFRunLoopSourceInvalidate', self.TYPE.ABI,
+				self.TYPE.VOID,
+				self.TYPE.CFRunLoopSourceRef
+			);
+		},
 		CFRunLoopRemoveSource: function() {
 			lib('CoreFoundation').declare('CFRunLoopRemoveSource', self.TYPE.ABI,
 				self.TYPE.VOID,
@@ -702,7 +709,9 @@ var macInit = function() {
 		},
 		CGEventTapEnable: function() {
 			return lib('CoreGraphics').declare('CGEventTapEnable', self.TYPE.ABI,
-			
+				self.TYPE.VOID,
+				self.TYPE.CFMachPortRef,
+				self.TYPE.bool
 			);
 		},
 		CGGetActiveDisplayList: function() {
