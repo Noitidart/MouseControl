@@ -723,7 +723,31 @@ function syncMonitorMouse() {
 			break;
 		case 'darwin':
 			
+
+			if (OSStuff.rez_add) {
+				throw new Error('already monitoring');
+			}
+
+			OSStuff.myHandler_js = function(c_arg1__self, objc_arg1__aNSEventPtr) {
+				console.log('in myHandler', objc_arg1__aNSEventPtr.toString());
 				
+				var cType = ostypes.API('objc_msgSend')(objc_arg1__aNSEventPtr, ostypes.HELPER.sel('type'));
+				console.info('cType:', cType, cType.toString());
+				
+				cType = ctypes.cast(cType, ostypes.TYPE.NSEventType);
+				console.info('cType:', cType, cType.toString());
+				
+				
+				return objc_arg1__aNSEventPtr; // return null to block
+			};
+			OSStuff.myHandler_c = ostypes.TYPE.IMP_for_EventMonitorCallback.ptr(OSStuff.myHandler_js);
+			OSStuff.myBlock_c = ostypes.HELPER.createBlock(OSStuff.myHandler_c);
+			
+			console.info('myBlock_c:', OSStuff.myBlock_c, OSStuff.myBlock_c.toString());
+			console.info('myBlock_c.address():', OSStuff.myBlock_c.address(), OSStuff.myBlock_c.address().toString());
+			
+			var rez_add = ostypes.API('objc_msgSend')(ostypes.HELPER.class('NSEvent'), ostypes.HELPER.sel('addLocalMonitorForEventsMatchingMask:handler:'), ostypes.TYPE.NSEventMask(ostypes.CONST.NSKeyDownMask), OSStuff.myBlock_c.address());
+			console.log('rez_add:', rez_add, rez_add.toString());
 			
 			break;
 		default:
@@ -767,7 +791,14 @@ function stopMonitor() {
 			break;
 		case 'darwin':
 			
-				
+				if (OSStuff.rez_add) {
+					var rez_remove = ostypes.API('objc_msgSend')(ostypes.HELPER.class('NSEvent'), ostypes.HELPER.sel('removeMonitor:'), OSStuff.rez_add);
+					console.log('rez_remove:', rez_remove, rez_remove.toString());
+					
+					OSStuff.myHandler_js = null;
+					OSStuff.myHandler_c = null;
+					OSStuff.myBlock_c = null;
+				}
 			
 			break;
 		default:

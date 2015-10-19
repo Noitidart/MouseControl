@@ -20,6 +20,7 @@ var macTypes = function() {
 	this.char = ctypes.char;
 	this.int = ctypes.int;
 	this.int16_t = ctypes.int16_t;
+	this.int32_t = ctypes.int32_t;
 	this.int64_t = ctypes.int64_t;
 	this.intptr_t = ctypes.intptr_t;
 	this.long = ctypes.long;
@@ -31,6 +32,7 @@ var macTypes = function() {
 	this.uint64_t = ctypes.uint64_t;
 	this.unsigned_char = ctypes.unsigned_char;
 	this.unsigned_long = ctypes.unsigned_long;
+	this.unsigned_long_long = ctypes.unsigned_long_long;
 	this.void = ctypes.void_t;
 	
 	// ADV C TYPES
@@ -92,6 +94,20 @@ var macTypes = function() {
 	this.__CFString = ctypes.StructType('__CFString');
 	this.__CFURL = ctypes.StructType('__CFURL');
 	this.__FSEventStream = ctypes.StructType("__FSEventStream");
+	
+	this.Block_descriptor_1 = ctypes.StructType('Block_descriptor_1', [
+		{ reserved: this.unsigned_long_long },
+		{ size: this.unsigned_long_long }
+	]);
+	
+	this.Block_literal_1 = ctypes.StructType('Block_literal_1', [
+		{ isa: this.void.ptr },
+		{ flags: this.int32_t },
+		{ reserved: this.int32_t },
+		{ invoke: this.void.ptr },
+		{ descriptor: this.Block_descriptor_1.ptr }
+	]);
+	
 	this.CFDictionaryRef = this.__CFDictionary.ptr;
 	this.CGImage = ctypes.StructType('CGImage');
 	this.CGContext = ctypes.StructType('CGContext');
@@ -193,12 +209,15 @@ var macTypes = function() {
 	
 	// ADV OBJC TYPES
 	this.NSBitmapFormat = this.NSUInteger;
+	this.NSEventType = this.NSUInteger;
+	this.NSEventMask = this.NSUInteger;
 	
 	// GUESS TYPES OBJC - they work though
 	this.id = ctypes.voidptr_t;
 	this.IMP = ctypes.voidptr_t;
 	this.SEL = ctypes.voidptr_t;
 	this.Class = ctypes.voidptr_t;
+	this.NSEvent = ctypes.voidptr_t;
 	this.NSWindow = ctypes.voidptr_t;
 	
 	// NULL CONSTs that i use for vaiadic args
@@ -208,7 +227,9 @@ var macTypes = function() {
 	
 	// ADV OBJC STRUCTS
 	
-
+	// FUNC OBJC TYPES
+	this.IMP_for_EventMonitorCallback = ctypes.FunctionType(this.CALLBACK_ABI, this.NSEvent.ptr, [this.id, this.NSEvent.ptr]);
+	
 	// dispatch stuff
 	this.dispatch_block_t = ctypes.FunctionType(this.CALLBACK_ABI, this.void, []).ptr;
 	this.dispatch_queue_t = ctypes.voidptr_t; // guess
@@ -226,6 +247,7 @@ var macInit = function() {
 	this.CONST = {
 		get CGRectNull () { if (!('CGRectNull' in _const)) { _const['CGRectNull'] = lib('CoreGraphics').declare('CGRectNull', self.TYPE.CGRect); } return _const['CGRectNull']; },
 		get kCFTypeArrayCallBacks () { if (!('kCFTypeArrayCallBacks' in _const)) { _const['kCFTypeArrayCallBacks'] = lib('CoreFoundation').declare('kCFTypeArrayCallBacks', self.TYPE.CFArrayCallBacks); } return _const['kCFTypeArrayCallBacks']; },
+		get _NSConcreteGlobalBlock () { if (!('_NSConcreteGlobalBlock' in _const)) { _const['_NSConcreteGlobalBlock'] = lib('objc').declare('_NSConcreteGlobalBlock', self.TYPE.void.ptr); } return _const['_NSConcreteGlobalBlock']; },
 		kCGErrorSuccess: 0,
 		kCGNullDirectDisplay: 0,
 		kCGBaseWindowLevelKey: 0,
@@ -257,12 +279,87 @@ var macInit = function() {
 		kCGWindowListOptionOnScreenBelowWindow: 4,
 		kCGWindowListOptionIncludingWindow: 8,
 		kCGWindowListExcludeDesktopElements: 16,
+		
+		NSLeftMouseDown: 1,				// TYPES.NSEventType
+		NSLeftMouseUp: 2,				// TYPES.NSEventType
+		NSRightMouseDown: 3,			// TYPES.NSEventType
+		NSRightMouseUp: 4,				// TYPES.NSEventType
+		NSMouseMoved: 5,				// TYPES.NSEventType
+		NSLeftMouseDragged: 6,			// TYPES.NSEventType
+		NSRightMouseDragged: 7,			// TYPES.NSEventType
+		NSMouseEntered: 8,				// TYPES.NSEventType
+		NSMouseExited: 9,				// TYPES.NSEventType
+		NSKeyDown: 10,					// TYPES.NSEventType
+		NSKeyUp: 11,					// TYPES.NSEventType
+		NSFlagsChanged: 12,				// TYPES.NSEventType
+		NSAppKitDefined: 13,			// TYPES.NSEventType
+		NSSystemDefined: 14,			// TYPES.NSEventType
+		NSApplicationDefined: 15,		// TYPES.NSEventType
+		NSPeriodic: 16,					// TYPES.NSEventType
+		NSCursorUpdate: 17,				// TYPES.NSEventType
+		NSScrollWheel: 22,				// TYPES.NSEventType
+		NSTabletPoint: 23,				// TYPES.NSEventType
+		NSTabletProximity: 24,			// TYPES.NSEventType
+		NSOtherMouseDown: 25,			// TYPES.NSEventType
+		NSOtherMouseUp: 26,				// TYPES.NSEventType
+		NSOtherMouseDragged: 27,		// TYPES.NSEventType
+		NSEventTypeGesture: 29,			// TYPES.NSEventType
+		NSEventTypeMagnify: 30,			// TYPES.NSEventType
+		NSEventTypeSwipe: 31,			// TYPES.NSEventType
+		NSEventTypeRotate: 18,			// TYPES.NSEventType
+		NSEventTypeBeginGesture: 19,	// TYPES.NSEventType
+		NSEventTypeEndGesture: 20,		// TYPES.NSEventType
+		NSEventTypeSmartMagnify: 32,	// TYPES.NSEventType
+		NSEventTypeQuickLook: 33,		// TYPES.NSEventType
+		NSEventTypePressure: 34,		// TYPES.NSEventType
+		NSUIntegerMax: this.TYPE.NSUInteger(is64bit ? '0xffffffff' : '0xffff'),		// TYPES.NSUInteger
+
+		BLOCK_HAS_COPY_DISPOSE: 1 << 25,
+		BLOCK_HAS_CTOR: 1 << 26,
+		BLOCK_IS_GLOBAL: 1 << 28,
+		BLOCK_HAS_STRET: 1 << 29,
+		BLOCK_HAS_SIGNATURE: 1 << 30,
+		
 		///////// OBJC - all consts are wrapped in a type as if its passed to variadic it needs to have type defind, see jsctypes chat with arai on 051015 357p
 		NO: self.TYPE.BOOL(0),
 		NSPNGFileType: self.TYPE.NSUInteger(4),
 		YES: self.TYPE.BOOL(1), // i do this instead of 1 becuase for varidic types we need to expclicitly define it
 		NIL: self.TYPE.void.ptr(ctypes.UInt64('0x0')) // needed for varidic args, as i cant pass null there
 	};
+	
+	// ADVANCED CONST
+	this.CONST.NSLeftMouseDownMask = 1 << this.CONST.NSLeftMouseDown;
+	this.CONST.NSLeftMouseUpMask = 1 << this.CONST.NSLeftMouseUp;
+	this.CONST.NSRightMouseDownMask = 1 << this.CONST.NSRightMouseDown;
+	this.CONST.NSRightMouseUpMask = 1 << this.CONST.NSRightMouseUp;
+	this.CONST.NSMouseMovedMask = 1 << this.CONST.NSMouseMoved;
+	this.CONST.NSLeftMouseDraggedMask = 1 << this.CONST.NSLeftMouseDragged;
+	this.CONST.NSRightMouseDraggedMask = 1 << this.CONST.NSRightMouseDragged;
+	this.CONST.NSMouseEnteredMask = 1 << this.CONST.NSMouseEntered;
+	this.CONST.NSMouseExitedMask = 1 << this.CONST.NSMouseExited;
+	this.CONST.NSKeyDownMask = 1 << this.CONST.NSKeyDown;
+	this.CONST.NSKeyUpMask = 1 << this.CONST.NSKeyUp;
+	this.CONST.NSFlagsChangedMask = 1 << this.CONST.NSFlagsChanged;
+	this.CONST.NSAppKitDefinedMask = 1 << this.CONST.NSAppKitDefined;
+	this.CONST.NSSystemDefinedMask = 1 << this.CONST.NSSystemDefined;
+	this.CONST.NSApplicationDefinedMask = 1 << this.CONST.NSApplicationDefined;
+	this.CONST.NSPeriodicMask = 1 << this.CONST.NSPeriodic;
+	this.CONST.NSCursorUpdateMask = 1 << this.CONST.NSCursorUpdate;
+	this.CONST.NSScrollWheelMask = 1 << this.CONST.NSScrollWheel;
+	this.CONST.NSTabletPointMask = 1 << this.CONST.NSTabletPoint;
+	this.CONST.NSTabletProximityMask = 1 << this.CONST.NSTabletProximity;
+	this.CONST.NSOtherMouseDownMask = 1 << this.CONST.NSOtherMouseDown;
+	this.CONST.NSOtherMouseUpMask = 1 << this.CONST.NSOtherMouseUp;
+	this.CONST.NSOtherMouseDraggedMask = 1 << this.CONST.NSOtherMouseDragged;
+	this.CONST.NSEventMaskGesture = 1 << this.CONST.NSEventTypeGesture;
+	this.CONST.NSEventMaskMagnify = 1 << this.CONST.NSEventTypeMagnify;
+	this.CONST.NSEventMaskSwipe = 1 << this.CONST.NSEventTypeSwipe;	// 1U << NSEventTypeSwipe
+	this.CONST.NSEventMaskRotate = 1 << this.CONST.NSEventTypeRotate;
+	this.CONST.NSEventMaskBeginGesture = 1 << this.CONST.NSEventTypeBeginGesture;
+	this.CONST.NSEventMaskEndGesture = 1 << this.CONST.NSEventTypeEndGesture;
+	this.CONST.NSEventMaskSmartMagnify = 1 << this.CONST.NSEventTypeSmartMagnify;	// 1ULL << NSEventTypeSmartMagnify;
+	this.CONST.NSEventMaskPressure = 1 << this.CONST.NSEventTypePressure;	// 1ULL << NSEventTypePressure
+	this.CONST.NSAnyEventMask = this.CONST.NSUIntegerMax; //0xffffffffU
 
 	var _lib = {}; // cache for lib
 	var lib = function(path) {
@@ -759,6 +856,28 @@ var macInit = function() {
 				}
 				this.coll = null;
 			};
+		},
+		createBlock: function(aFuncTypePtr) {
+			// based on work from here: https://github.com/trueinteractions/tint2/blob/f6ce18b16ada165b98b07869314dad1d7bee0252/modules/Bridge/core.js#L370-L394
+			var bl = self.TYPE.Block_literal_1();
+			
+			// Set the class of the instance
+			bl.isa = self.CONST._NSConcreteGlobalBlock;
+			
+			// Global flags
+			bl.flags = self.CONST.BLOCK_HAS_STRET;
+			bl.reserved = 0;
+			bl.invoke = aFuncTypePtr;
+			
+			// create descriptor
+			var desc = self.TYPE.Block_descriptor_1();
+			desc.reserved = 0;
+			desc.size = self.TYPE.Block_literal_1.size;
+			
+			// set descriptor into block literal
+			bl.descriptor = desc.address();
+
+			return bl;
 		}
 	};
 }
