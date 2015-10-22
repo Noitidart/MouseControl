@@ -167,6 +167,11 @@ function createShareables_andSecondaryInit(aInitInfoObj, infoObjForWorker) {
 				OSStuff.winMmWorkerThreadId = aInitInfoObj.winMmWorkerThreadId;
 				
 			break;
+		case 'darwin':
+		
+				OSStuff.macMmWorkerThread_CFRunLoopRef = ostypes.TYPE.CFRunLoopRef(ctypes.UInt64(aInitInfoObj.macMmWorkerThread_CFRunLoopRef_ptrStr));
+				
+			break;
 		default:
 			// do nothing
 	}
@@ -232,7 +237,7 @@ function tellMmWorker(aWhat, infoObjForWorker) {
 			break;
 		case 'darwin':
 			
-				// 
+				ostypes.API('CFRunLoopStop')(OSStuff.macMmWorkerThread_CFRunLoopRef);
 			
 			break;
 		default:

@@ -52,6 +52,7 @@ var macTypes = function() {
 	this.CGEventTapPlacement = ctypes.uint32_t;
 	this.CGEventType = ctypes.uint32_t;
 	this.CGFloat = is64bit ? ctypes.double : ctypes.float; // ctypes.float is 32bit deosntw ork as of May 10th 2015 see this bug: https://bugzilla.mozilla.org/show_bug.cgi?id=1163406 this would cause crash on CGDisplayGetBounds http://stackoverflow.com/questions/28216681/how-can-i-get-screenshot-from-all-displays-on-mac#comment48414568_28247749
+	this.CGEventField = ctypes.uint32_t;
 	this.CGWindowID = ctypes.uint32_t;
 	this.CGWindowLevel = ctypes.int32_t;
 	this.CGWindowLevelKey = ctypes.int32_t;
@@ -361,6 +362,26 @@ var macInit = function() {
 		kCGEventTapDisabledByUserInput: 0xFFFFFFFF, // this.TYPE.CGEventType('0xFFFFFFFF'),
 		kCGEventMaskForAllEvents: ctypes.UInt64('0xffffffffffffffff'), // #define kCGEventMaskForAllEvents	(~(CGEventMask)0) // https://github.com/sschiesser/ASK_server/blob/a51e2fbdac894c37d97142fc72faa35f89057744/MacOSX10.6/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Headers/CGEventTypes.h#L380
 		
+		kCGMouseEventNumber: 0,
+		kCGMouseEventClickState: 1,
+		kCGMouseEventPressure: 2,
+		kCGMouseEventButtonNumber: 3,
+		kCGMouseEventDeltaX: 4,
+		kCGMouseEventDeltaY: 5,
+		kCGMouseEventInstantMouser: 6,
+		kCGMouseEventSubtype: 7,
+		
+		kCGScrollWheelEventDeltaAxis1: 11,
+		kCGScrollWheelEventDeltaAxis2: 12,
+		kCGScrollWheelEventDeltaAxis3: 13,
+		kCGScrollWheelEventFixedPtDeltaAxis1: 93,
+		kCGScrollWheelEventFixedPtDeltaAxis2: 94,
+		kCGScrollWheelEventFixedPtDeltaAxis3: 95,
+		kCGScrollWheelEventPointDeltaAxis1: 96,
+		kCGScrollWheelEventPointDeltaAxis2: 97,
+		kCGScrollWheelEventPointDeltaAxis3: 98,
+		kCGScrollWheelEventInstantMouser: 14,
+		
 		kCFRunLoopRunFinished: 1,
 		kCFRunLoopRunStopped: 2,
 		kCFRunLoopRunTimedOut: 3,
@@ -667,6 +688,19 @@ var macInit = function() {
 			return lib('CoreGraphics').declare('CGDisplayShowCursor', self.TYPE.ABI,
 				self.TYPE.CGError,
 				self.TYPE.CGDirectDisplayID
+			);
+		},
+		CGEventGetIntegerValueField: function() {
+			/* https://developer.apple.com/library/mac/documentation/Carbon/Reference/QuartzEventServicesRef/index.html#//apple_ref/c/func/CGEventGetIntegerValueField
+			 * int64_t CGEventGetIntegerValueField (
+			 *   CGEventRef event,
+			 *   CGEventField field
+			 * ); 
+			 */
+			return lib('CoreGraphics').declare('CGEventGetIntegerValueField', self.TYPE.ABI,
+				self.TYPE.int64_t,		// return
+				self.TYPE.CGEventRef,	// event
+				self.TYPE.CGEventField	// field
 			);
 		},
 		CGEventMaskBit: function() {

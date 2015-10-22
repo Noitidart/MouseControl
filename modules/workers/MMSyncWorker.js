@@ -143,6 +143,13 @@ function init(objCore) {
 				aInitInfoObj.winMmWorkerThreadId = parseInt(cutils.jscGetDeepest(thisThreadId));
 				
 			break;
+		case 'darwin':
+			
+					OSStuff.aLoop = ostypes.API('CFRunLoopGetCurrent')();
+					console.log('OSStuff.aLoop:', OSStuff.aLoop, OSStuff.aLoop.toString());
+					aInitInfoObj.macMmWorkerThread_CFRunLoopRef_ptrStr = cutils.strOfPtr(OSStuff.aLoop);
+			
+			break;
 		default:
 			// do nothing special
 	}
@@ -771,8 +778,8 @@ function syncMonitorMouse() {
 						kCGEventLeftMouseUp: 'B1_UP',
 						kCGEventRightMouseDown: 'B2_DN',
 						kCGEventRightMouseUp: 'B2_UP',
-						kCGEventOtherMouseDown: 'B?_DN',
-						kCGEventOtherMouseUp: 'B?_UP',
+						kCGEventOtherMouseDown: '_DN',
+						kCGEventOtherMouseUp: '_UP',
 						kCGEventScrollWheel: 'W?_??'
 						// WM_XBUTTONUP: ['B4_UP', 'B5_UP'],
 						// WM_MOUSEHWHEEL: ['WH_RT', 'WH_LT']
@@ -781,6 +788,98 @@ function syncMonitorMouse() {
 				
 				var MouseTracker_js = function(proxy, type, event, refcon) {
 					console.error('in MouseTracker_js!!!!');
+					
+					var eventType;
+					for (var p in OSStuff.mouseConsts) {
+						if (cutils.jscEqual(OSStuff.mouseConsts[p], type)) {
+							eventType = p;
+							break;
+						}
+					}
+					
+					if (!eventType) {
+						if (cutils.jscEqual(event_type, ostypes.CONST.kCGEventTapDisabledByTimeout) || cutils.jscEqual(event_type, ostypes.CONST.kCGEventTapDisabledByUserInput)) {
+							console.error('RENABLING!!!!');
+							ostypes.API('CGEventTapEnable')(OSStuff.mouseEventTap, true);
+							return null;
+						} else {
+							console.error('this should never happen!!!! but return event so things work as my tap is non-passive');
+							return event;
+						}
+					}
+					
+					switch (eventType) {
+						case 'kCGEventScrollWheel':
+							
+								// kCGScrollWheelEventDeltaAxis1 - vertical
+								// kCGScrollWheelEventDeltaAxis2 - horizontal
+								// kCGScrollWheelEventDeltaAxis3 - not used according to the docs: https://developer.apple.com/library/mac/documentation/Carbon/Reference/QuartzEventServicesRef/index.html#//apple_ref/c/tdef/CGEventField
+								var wheelLetter;
+								var deltaVert = ostypes.API('CGEventGetIntegerValueField')(event, ostypes.CONST.kCGScrollWheelEventDeltaAxis1);
+								
+								if (cutils.jscEqual(deltaVert, 0)) {
+									// then user di horizontal
+									wheelLetter = 'H';
+									// assuming if deltaVert is 0, then user must have scrolled horizontal wheel. i think this is safe assumption as kCGScrollWheelEventDeltaAxis3 is unused per docs
+									var deltaHor = ostypes.API('CGEventGetIntegerValueField')(event, ostypes.CONST.kCGScrollWheelEventDeltaAxis2);
+									if (cutils.jscEqual(deltaHor, 0)) {
+										console.error('what on earth this should never happen, vert and hor delats are 0? then how did i get a kCGEventScrollWheel type event');
+									}
+								} else {
+									wheelLetter = 'V';
+								}
+								
+								var wheelDir;
+								if (cutils.jscEqual(deltaVert, 1)) {
+									wheelDir = 'UP';
+								} else {
+									// its -1
+									wheelDir = 'DN';
+								}
+								console.info('wheelLetter:', wheelLetter, 'deltaHor:', deltaHor, 'deltaVert:', deltaVert);
+								
+								mouseTracker.push({
+									stdConst: 'W' + wheelLetter + '_' + wheelDir,
+									multi: 1,
+									hold: false
+								});
+								
+							break;
+						case 'kCGEventOtherMouseDown':
+						case 'kCGEventOtherMouseUp':
+							
+								var eventBtnNum = ostypes.API('CGEventGetIntegerValueField')(event, ostypes.CONST.kCGMouseEventButtonNumber);
+								console.info('eventBtnNum:', eventBtnNum, eventBtnNum.toString());
+								// eventBtnNum when kCGEventLeftMouseDown is 0
+								// eventBtnNum when kCGEventLeftMouseDown is 1
+								// eventBtnNum when kCGEventScrollWheel is 0
+
+								mouseTracker.push({
+									stdConst: 'B' + (parseInt(eventBtnNum) + 1) + OSStuff.mouseConstToStdConst[eventType],
+									multi: 1,
+									hold: false
+								});
+								
+							break;
+						default:
+								mouseTracker.push({
+									stdConst: OSStuff.mouseConstToStdConst[eventType],
+									multi: 1,
+									hold: false
+								});
+					}
+					
+					console.info('mouseTracker:', mouseTracker[mouseTracker.length-1].stdConst);
+					
+					if (sendMouseEventsToMT) {
+						// self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
+						// mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean. but not if they just hovered in and hovered out. only if they get in and do a recording
+						// return null;
+					} else {
+						// checkMouseTracker();
+						// return event;
+					}
+					
 					return event; // ostypes.TYPE.CGEventRef
 				};
 				OSStuff.MouseTracker = ostypes.TYPE.CGEventTapCallBack(MouseTracker_js);
@@ -791,7 +890,7 @@ function syncMonitorMouse() {
 							(1 << ostypes.CONST.kCGEventRightMouseUp) | // ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventRightMouseUp) |
 							(1 << ostypes.CONST.kCGEventOtherMouseDown) | // ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventOtherMouseDown) |
 							(1 << ostypes.CONST.kCGEventOtherMouseUp) | //ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventOtherMouseUp) |
-							(1 << ostypes.CONST.kCGEventScrollWheel) //ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventScrollWheel);
+							(1 << ostypes.CONST.kCGEventScrollWheel); //ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventScrollWheel);
 				
 				mask = ostypes.TYPE.CGEventMask(mask);
 				// var mask = ostypes.CONST.kCGEventMaskForAllEvents;
@@ -802,33 +901,31 @@ function syncMonitorMouse() {
 				
 				console.log('psn:', psn, psn.toString());
 				
-				var mouseEventTap = ostypes.API('CGEventTapCreateForPSN')(psn.address(), ostypes.CONST.kCGHeadInsertEventTap, ostypes.CONST.kCGEventTapOptionDefault, mask, OSStuff.MouseTracker, null);
-				console.log('mouseEventTap:', mouseEventTap, mouseEventTap.toString());
+				OSStuff.mouseEventTap = ostypes.API('CGEventTapCreateForPSN')(psn.address(), ostypes.CONST.kCGHeadInsertEventTap, ostypes.CONST.kCGEventTapOptionDefault, mask, OSStuff.MouseTracker, null);
+				console.log('OSStuff.mouseEventTap:', OSStuff.mouseEventTap, OSStuff.mouseEventTap.toString());
 				
-				if (!mouseEventTap.isNull()) {
-					OSStuff.aRLS = ostypes.API('CFMachPortCreateRunLoopSource')(ostypes.CONST.kCFAllocatorDefault, mouseEventTap, 0);
+				if (!OSStuff.mouseEventTap.isNull()) {
+					OSStuff.aRLS = ostypes.API('CFMachPortCreateRunLoopSource')(ostypes.CONST.kCFAllocatorDefault, OSStuff.mouseEventTap, 0);
 					console.log('OSStuff.aRLS:', OSStuff.aRLS, OSStuff.aRLS.toString());
 					
-					ostypes.API('CFRelease')(mouseEventTap);
-					console.log('cfreleased mouseEventTap');
+					// i dont release it here, because i may need to enable it, if inside MouseTracker_js I get value of kCGEventTapDisabledByTimeout or kCGEventTapDisabledByUserInput
+					// ostypes.API('CFRelease')(OSStuff.mouseEventTap);
+					// console.log('cfreleased OSStuff.mouseEventTap');
 					
-					if (!OSStuff.aRLS.isNull()) {
-						var aLoop = ostypes.API('CFRunLoopGetCurrent')();
-						console.log('aLoop:', aLoop, aLoop.toString());
-						
+					if (!OSStuff.aRLS.isNull()) {						
 						OSStuff.runLoopMode = ostypes.HELPER.makeCFStr('com.mozilla.firefox.mousecontrol');
 						
-						ostypes.API('CFRunLoopAddSource')(aLoop, OSStuff.aRLS, OSStuff.runLoopMode); // returns void
+						ostypes.API('CFRunLoopAddSource')(OSStuff.aLoop, OSStuff.aRLS, OSStuff.runLoopMode); // returns void
 						console.log('did CFRunLoopAddSource');
 						
-						// ostypes.API('CGEventTapEnable')(mouseEventTap, true);
+						// ostypes.API('CGEventTapEnable')(OSStuff.mouseEventTap, true);
 						// console.log('did tap enable');
 						
 						// ostypes.API('CFRelease')(OSStuff.aRLS);
 						// console.log('cfreleased OSStuff.aRLS');
 						
-						// ostypes.API('CFRelease')(aLoop);
-						// console.log('cfreleased aLoop');
+						// ostypes.API('CFRelease')(OSStuff.aLoop);
+						// console.log('cfreleased OSStuff.aLoop');
 						
 						var rez_CFRunLoopRunInMode = ostypes.API('CFRunLoopRunInMode')(OSStuff.runLoopMode, 10, false);
 						console.log('rez_CFRunLoopRunInMode:', rez_CFRunLoopRunInMode, rez_CFRunLoopRunInMode.toString());
@@ -901,6 +998,9 @@ function stopMonitor() {
 					
 					ostypes.API('CFRelease')(OSStuff.aRLS);
 					console.log('cfreleased OSStuff.aRLS');
+					
+					ostypes.API('CFRelease')(OSStuff.mouseEventTap);
+					console.log('cfreleased OSStuff.mouseEventTap');
 					
 					OSStuff.aRLS = null;
 					OSStuff.MouseTracker = null;
