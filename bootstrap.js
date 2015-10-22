@@ -541,16 +541,7 @@ var MMWorkerFuncs = {
 		// Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
 			// console.error('stopping mouse monitor');
 			// CommWorker.postMessage(['tellMmWorker', 'stop-mouse-monitor']);
-		// }, 30000);
-	},
-	threadIdOnInit: function(aThreadId) {
-		// needed for windows
-		// worker tells me what its thread id is so i can store, then send it postemssages to break the loop
-		console.log('in threadIdOnInit, got aThreadId:', aThreadId);
-		MMWorkerThreadId = aThreadId;
-	},
-	testHit: function(aStr) {
-		console.error('testhit trigger with:', aStr);
+		// }, 5000);
 	},
 	mouseEvent: function(aMouseEvent) {
 		// this is triggered for every mouse event except mousemove, while mousemonitor is running

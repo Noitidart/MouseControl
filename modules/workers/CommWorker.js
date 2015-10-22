@@ -227,7 +227,7 @@ function tellMmWorker(aWhat, infoObjForWorker) {
 				
 				console.error('CommWorker sending stop msg to MMWorker now');
 				var rez_PostMessage = ostypes.API('PostThreadMessage')(OSStuff.winMmWorkerThreadId, ostypes.CONST.WM_INPUT, 2, 0); // i send wparam of 2, because for wm_input wmparam should be either 0 or 1, so i send invalid of 2, doesnt do anything if it was 0 or 1 though, but whatever
-				console.error('ok should have stopped. CommWorker rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString());
+				console.error('ok should have stopped. CommWorker rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString()); // in windows, it (MMWorker loop) stops before it gets to this message
 			
 			break;
 		case 'gtk':
@@ -237,8 +237,10 @@ function tellMmWorker(aWhat, infoObjForWorker) {
 			break;
 		case 'darwin':
 			
+				console.error('CommWorker sending stop msg to MMWorker now');
 				ostypes.API('CFRunLoopStop')(OSStuff.macMmWorkerThread_CFRunLoopRef);
-			
+				console.error('ok should have stopped.'); // in osx it (MMWorker loop) stops sometime after this message, i tried a loop of numbers and it got up to 50 and mmworker still didnt stop
+				
 			break;
 		default:
 			throw new Error({

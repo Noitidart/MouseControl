@@ -787,7 +787,7 @@ function syncMonitorMouse() {
 				};
 				
 				var MouseTracker_js = function(proxy, type, event, refcon) {
-					console.error('in MouseTracker_js!!!!');
+					// console.error('in MouseTracker_js!!!!');
 					
 					var eventType;
 					for (var p in OSStuff.mouseConsts) {
@@ -798,7 +798,7 @@ function syncMonitorMouse() {
 					}
 					
 					if (!eventType) {
-						if (cutils.jscEqual(event_type, ostypes.CONST.kCGEventTapDisabledByTimeout) || cutils.jscEqual(event_type, ostypes.CONST.kCGEventTapDisabledByUserInput)) {
+						if (cutils.jscEqual(type, ostypes.CONST.kCGEventTapDisabledByTimeout) || cutils.jscEqual(type, ostypes.CONST.kCGEventTapDisabledByUserInput)) {
 							console.error('RENABLING!!!!');
 							ostypes.API('CGEventTapEnable')(OSStuff.mouseEventTap, true);
 							return null;
@@ -836,7 +836,7 @@ function syncMonitorMouse() {
 									// its -1
 									wheelDir = 'DN';
 								}
-								console.info('wheelLetter:', wheelLetter, 'deltaHor:', deltaHor, 'deltaVert:', deltaVert);
+								// console.info('wheelLetter:', wheelLetter, 'deltaHor:', deltaHor, 'deltaVert:', deltaVert);
 								
 								mouseTracker.push({
 									stdConst: 'W' + wheelLetter + '_' + wheelDir,
@@ -872,15 +872,15 @@ function syncMonitorMouse() {
 					console.info('mouseTracker:', mouseTracker[mouseTracker.length-1].stdConst);
 					
 					if (sendMouseEventsToMT) {
-						// self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
-						// mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean. but not if they just hovered in and hovered out. only if they get in and do a recording
-						// return null;
+						self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
+						mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean. but not if they just hovered in and hovered out. only if they get in and do a recording
+						return null;
 					} else {
-						// checkMouseTracker();
-						// return event;
+						checkMouseTracker();
+						return event;
 					}
 					
-					return event; // ostypes.TYPE.CGEventRef
+					// return event; // ostypes.TYPE.CGEventRef
 				};
 				OSStuff.MouseTracker = ostypes.TYPE.CGEventTapCallBack(MouseTracker_js);
 				
@@ -927,8 +927,27 @@ function syncMonitorMouse() {
 						// ostypes.API('CFRelease')(OSStuff.aLoop);
 						// console.log('cfreleased OSStuff.aLoop');
 						
-						var rez_CFRunLoopRunInMode = ostypes.API('CFRunLoopRunInMode')(OSStuff.runLoopMode, 10, false);
-						console.log('rez_CFRunLoopRunInMode:', rez_CFRunLoopRunInMode, rez_CFRunLoopRunInMode.toString());
+						
+						// equivalent of winRunMessageLoop for mac
+						labelSoSwitchCanBreakWhile:
+						while (true) {
+							var rez_CFRunLoopRunInMode = ostypes.API('CFRunLoopRunInMode')(OSStuff.runLoopMode, 10, false);
+							console.log('rez_CFRunLoopRunInMode:', rez_CFRunLoopRunInMode, rez_CFRunLoopRunInMode.toString());
+							
+							if (cutils.jscEqual(rez_CFRunLoopRunInMode, ostypes.CONST.kCFRunLoopRunStopped)) { // because when i stop it from CommWorker
+								switch (actOnDoWhat()) {
+									case -4:
+											
+											// stop mouse monitor
+											console.error('got message to stop loop so stopping now');
+											break labelSoSwitchCanBreakWhile;
+											
+										break;
+									default:
+										// continue loop
+								}
+							}
+						}
 						
 					} else {
 						console.error('OSStuff.aRLS is null!');
