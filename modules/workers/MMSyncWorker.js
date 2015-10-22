@@ -785,14 +785,15 @@ function syncMonitorMouse() {
 				};
 				OSStuff.MouseTracker = ostypes.TYPE.CGEventTapCallBack(MouseTracker_js);
 				
-				var mask =  ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventLeftMouseDown) | 
-							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventLeftMouseUp) |	
-							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventRightMouseDown) |
-							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventRightMouseUp) |
-							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventOtherMouseDown) |
-							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventOtherMouseUp) |
-							ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventScrollWheel);
+				var mask =  (1 << ostypes.CONST.kCGEventLeftMouseDown) | // ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventLeftMouseDown) | 
+							(1 << ostypes.CONST.kCGEventLeftMouseUp) | // ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventLeftMouseUp) |	
+							(1 << ostypes.CONST.kCGEventRightMouseDown) | // ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventRightMouseDown) |
+							(1 << ostypes.CONST.kCGEventRightMouseUp) | // ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventRightMouseUp) |
+							(1 << ostypes.CONST.kCGEventOtherMouseDown) | // ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventOtherMouseDown) |
+							(1 << ostypes.CONST.kCGEventOtherMouseUp) | //ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventOtherMouseUp) |
+							(1 << ostypes.CONST.kCGEventScrollWheel) //ostypes.API('CGEventMaskBit')(ostypes.CONST.kCGEventScrollWheel);
 				
+				mask = ostypes.TYPE.CGEventMask(mask);
 				// var mask = ostypes.CONST.kCGEventMaskForAllEvents;
 				
 				var psn = ostypes.TYPE.ProcessSerialNumber();
@@ -815,7 +816,9 @@ function syncMonitorMouse() {
 						var aLoop = ostypes.API('CFRunLoopGetCurrent')();
 						console.log('aLoop:', aLoop, aLoop.toString());
 						
-						ostypes.API('CFRunLoopAddSource')(aLoop, OSStuff.aRLS, ostypes.CONST.kCFRunLoopCommonModes); // returns void
+						OSStuff.runLoopMode = ostypes.HELPER.makeCFStr('com.mozilla.firefox.mousecontrol');
+						
+						ostypes.API('CFRunLoopAddSource')(aLoop, OSStuff.aRLS, OSStuff.runLoopMode); // returns void
 						console.log('did CFRunLoopAddSource');
 						
 						// ostypes.API('CGEventTapEnable')(mouseEventTap, true);
@@ -824,10 +827,10 @@ function syncMonitorMouse() {
 						// ostypes.API('CFRelease')(OSStuff.aRLS);
 						// console.log('cfreleased OSStuff.aRLS');
 						
-						ostypes.API('CFRelease')(aLoop);
-						console.log('cfreleased aLoop');
+						// ostypes.API('CFRelease')(aLoop);
+						// console.log('cfreleased aLoop');
 						
-						var rez_CFRunLoopRunInMode = ostypes.API('CFRunLoopRunInMode')(ostypes.CONST.kCFRunLoopCommonModes, 10, false);
+						var rez_CFRunLoopRunInMode = ostypes.API('CFRunLoopRunInMode')(OSStuff.runLoopMode, 10, false);
 						console.log('rez_CFRunLoopRunInMode:', rez_CFRunLoopRunInMode, rez_CFRunLoopRunInMode.toString());
 						
 					} else {
@@ -901,6 +904,11 @@ function stopMonitor() {
 					
 					OSStuff.aRLS = null;
 					OSStuff.MouseTracker = null;
+					
+					if (OSStuff.runLoopMode) {
+						ostypes.API('CFRelease')(OSStuff.runLoopMode);
+						OSStuff.runLoopMode = null;
+					}
 				}
 			
 			break;
