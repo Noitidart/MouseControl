@@ -17,6 +17,7 @@ var xlibTypes = function() {
 	
 	// C TYPES
 	this.char = ctypes.char;
+	this.fd_set = ctypes.uint8_t; // This is supposed to be fd_set*, but on Linux at least fd_set is just an array of bitfields that we handle manually. this is for my fd_set_set helper functions link4765403
 	this.int = ctypes.int;
 	this.long = ctypes.long;
 	this.size_t = ctypes.size_t;
@@ -68,6 +69,37 @@ var xlibTypes = function() {
 	this.Depth = ctypes.StructType('Depth');
 	
 	// SIMPLE STRUCTS
+	this.timeval = ctypes.StructType('timeval', [
+		{ 'tv_sec': this.long },
+		{ 'tv_usec': this.long }
+	]);
+	this.XButtonEvent = ctypes.StructType('XButtonEvent', [ // http://tronche.com/gui/x/xlib/events/keyboard-pointer/keyboard-pointer.html#XButtonEvent
+		{ type: this.int },
+		{ serial: this.unsigned_long },
+		{ send_event: this.Bool },
+		{ display: this.Display.ptr },
+		{ window: this.Window },
+		{ root: this.Window },
+		{ subwindow: this.Window },
+		{ time: this.Time },
+		{ x: this.int },
+		{ y: this.int },
+		{ x_root: this.int },
+		{ y_root: this.int },
+		{ state: this.unsigned_int },
+		{ button: this.unsigned_int },
+		{ same_screen: this.Bool }
+	]);
+	this.XClientMessageEvent = ctypes.StructType('XClientMessageEvent', [ // http://www.man-online.org/page/3-XClientMessageEvent/
+		{ type: this.int },				// ClientMessage
+		{ serial: this.unsigned_long },	// # of last request processed by server
+		{ send_event: this.Bool },		// true if this came from a SendEvent request
+		{ display: this.Display.ptr },	// Display the event was read from
+		{ window: this.Window },
+		{ message_type: this.Atom },
+		{ format: this.int },
+		{ data: this.long.array(5) }	// union of either this.char.array(20), this.short.array(10), or this.long.array(5) // if go with long format must be set to 32, if short then 16 else if char then 8
+	]);
 	this.XImage = ctypes.StructType('_XImage', [	// https://github.com/pombreda/rpythonic/blob/23857bbeda30a4574b7ae3a3c47e88b87080ef3f/examples/xlib/__init__.py#L1593
 		{ width: this.int },
 		{ height: this.int },						// size of image
@@ -96,7 +128,12 @@ var xlibTypes = function() {
 			])
 		}
 	]);
-	
+	this.XTextProperty = ctypes.StructType('XTextProperty', [
+		{ value: this.unsigned_char.ptr },	// *value
+		{ encoding: this.Atom },			// encoding
+		{ format: this.int },				// format
+		{ nitems: this.unsigned_long }		// nitems
+	]);
 	this.XWindowAttributes = ctypes.StructType('XWindowAttributes', [
 		{ x: this.int },
 		{ y: this.int },							// location of window
@@ -123,17 +160,24 @@ var xlibTypes = function() {
 		{ screen: this.Screen.ptr }					// back pointer to correct screen
 	]);
 	
-	this.XTextProperty = ctypes.StructType('XTextProperty', [
-		{ value: this.unsigned_char.ptr },	// *value
-		{ encoding: this.Atom },			// encoding
-		{ format: this.int },				// format
-		{ nitems: this.unsigned_long }		// nitems
-	]);
-	
 	// start - xrandr stuff
 		// resources:
 		// http://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
 		// http://www.xfree86.org/current/Xrandr.3.html
+	this.XRRCrtcInfo = ctypes.StructType('_XRRCrtcInfo', [
+		{ timestamp: this.Time },
+		{ x: this.int },
+		{ y: this.int },
+		{ width: this.unsigned_int },
+		{ height: this.unsigned_int },
+		{ mode: this.RRMode },
+		{ rotation: this.Rotation },
+		{ noutput: this.int },
+		{ outputs: this.RROutput.ptr },
+		{ rotations: this.Rotation },
+		{ npossible: this.int },
+		{ possible: this.RROutput.ptr }
+	]);
 	this.XRRModeInfo = ctypes.StructType('_XRRModeInfo', [
 		{ id: this.RRMode },
 		{ width: this.unsigned_int },
@@ -150,18 +194,6 @@ var xlibTypes = function() {
 		{ nameLength: this.unsigned_int },
 		{ modeFlags: this.XRRModeFlags }
 	]);
-	
-	this.XRRScreenResources = ctypes.StructType('_XRRScreenResources', [
-		{ timestamp: this.Time },
-		{ configTimestamp: this.Time },
-		{ ncrtc: this.int },
-		{ crtcs: this.RRCrtc.ptr },
-		{ noutput: this.int },
-		{ outputs: this.RROutput.ptr },
-		{ nmode: this.int },
-		{ modes: this.XRRModeInfo.ptr }
-	]);
-	
 	this.XRROutputInfo = ctypes.StructType('_XRROutputInfo', [
 		{ timestamp: this.Time },
 		{ crtc: this.RRCrtc },
@@ -179,36 +211,22 @@ var xlibTypes = function() {
 		{ npreferred: this.int },
 		{ modes: this.RRMode.ptr }
 	]);
-	
-	this.XRRCrtcInfo = ctypes.StructType('_XRRCrtcInfo', [
+	this.XRRScreenResources = ctypes.StructType('_XRRScreenResources', [
 		{ timestamp: this.Time },
-		{ x: this.int },
-		{ y: this.int },
-		{ width: this.unsigned_int },
-		{ height: this.unsigned_int },
-		{ mode: this.RRMode },
-		{ rotation: this.Rotation },
+		{ configTimestamp: this.Time },
+		{ ncrtc: this.int },
+		{ crtcs: this.RRCrtc.ptr },
 		{ noutput: this.int },
 		{ outputs: this.RROutput.ptr },
-		{ rotations: this.Rotation },
-		{ npossible: this.int },
-		{ possible: this.RROutput.ptr }
+		{ nmode: this.int },
+		{ modes: this.XRRModeInfo.ptr }
 	]);
 	
-	this.XClientMessageEvent = ctypes.StructType('XClientMessageEvent', [ // http://www.man-online.org/page/3-XClientMessageEvent/
-		{ type: this.int },				// ClientMessage
-		{ serial: this.unsigned_long },	// # of last request processed by server
-		{ send_event: this.Bool },		// true if this came from a SendEvent request
-		{ display: this.Display.ptr },	// Display the event was read from
-		{ window: this.Window },
-		{ message_type: this.Atom },
-		{ format: this.int },
-		{ data: this.long.array(5) }	// union of either this.char.array(20), this.short.array(10), or this.long.array(5) // if go with long format must be set to 32, if short then 16 else if char then 8
-	]);
-	
+	// ADVANCED STRUCTS
 	// XEvent is one huge union, js-ctypes doesnt have union so i just set it to what I use for my addon
 	this.XEvent = ctypes.StructType('_XEvent', [ // http://tronche.com/gui/x/xlib/events/structures.html
-		{ xclient: this.XClientMessageEvent }
+		// { xclient: this.XClientMessageEvent }
+		{ xbutton: this.XButtonEvent }
 	])
 };
 
@@ -246,7 +264,11 @@ var x11Init = function() {
 		_NET_WM_STATE_ADD: 1,
 		_NET_WM_STATE_TOGGLE: 2,
 		SubstructureRedirectMask: 1048576,
-		SubstructureNotifyMask: 524288
+		SubstructureNotifyMask: 524288,
+		ButtonPressMask: 4,
+		ButtonReleaseMask: 8,
+		ButtonPress: 4,
+		ButtonRelease: 5
 	};
 	
 	var _lib = {}; // cache for lib
@@ -520,17 +542,19 @@ var x11Init = function() {
 		XCreateSimpleWindow: function() {
 			/* http://tronche.com/gui/x/xlib/window/XCreateWindow.html
 			 * Window XCreateSimpleWindow(
-			 *   Display *display;
-			 *   Window parent;
-			 *   int x, y;
-			 *   unsigned int width, height;
-			 *   unsigned int border_width;
-			 *   unsigned long border;
-			 *   unsigned long background;
+			 *   Display *display,
+			 *   Window parent,
+			 *   int x,
+			 *   int y,
+			 *   unsigned_int width, height,
+			 *   unsigned_int border_width,
+			 *   unsigned_long border,
+			 *   unsigned_long background
 			 * );
 			 */
 			return lib('x11').declare('XCreateSimpleWindow', self.TYPE.ABI,
-				self.TYPE.Display,			// *display
+				self.TYPE.Window,			// return
+				self.TYPE.Display.ptr,		// *display
 				self.TYPE.Window,			// parent
 				self.TYPE.int,				// x
 				self.TYPE.int,				// y
@@ -807,6 +831,32 @@ var x11Init = function() {
 				self.TYPE.int.ptr			// *num_prop_return
 			);
 		},
+		XMapWindow: function() {
+			/* http://www.x.org/releases/current/doc/man/man3/XMapWindow.3.xhtml
+			 * int XMapWindow (
+			 *   Display *display,
+			 *   Window w
+			 * );
+			 */
+			return lib('x11').declare('XMapWindow', self.TYPE.ABI,
+				self.TYPE.int,			// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.Window		// w
+			);
+		},
+		XNextEvent: function() {
+			/* http://www.x.org/releases/current/doc/man/man3/XNextEvent.3.xhtml
+			 * int XNextEvent (
+			 *   Display *display,
+			 *   XEvent *event_return
+			 * );
+			 */
+			return lib('x11').declare('XNextEvent', self.TYPE.ABI,
+				self.TYPE.int,			// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.XEvent.ptr	// *event_return
+			);
+		},
 		XOpenDisplay: function() {
 			/* http://www.xfree86.org/4.4.0/XOpenDisplay.3.html
 			 * Display *XOpenDisplay(
@@ -817,6 +867,17 @@ var x11Init = function() {
 				self.TYPE.Display.ptr,	// return
 				self.TYPE.char.ptr		// *display_name
 			); 
+		},
+		XPending: function() {
+			/* http://tronche.com/gui/x/xlib/event-handling/XPending.html
+			 * int XPending (
+			 *   Display *display
+			 * );
+			 */
+			return lib('x11').declare('XPending', self.TYPE.ABI,
+				self.TYPE.int,			// return
+				self.TYPE.Display.ptr	// *display
+			);
 		},
 		XQueryTree: function() {
 			/* http://tronche.com/gui/x/xlib/window-information/XQueryTree.html
@@ -838,6 +899,19 @@ var x11Init = function() {
 				self.TYPE.Window.ptr.ptr,	// **children_return
 				self.TYPE.unsigned_int.ptr	// *nchildren_return
 			);
+		},
+		XRootWindow: function() {
+			/* http://tronche.com/gui/x/xlib/display/display-macros.html
+			 * Window XRootWindow (
+			 *   Display *display,
+			 *   int screen_number
+			 * );
+			 */
+			return lib('x11').declare('XRootWindow', self.TYPE.ABI,
+				self.TYPE.Window,			// return
+				self.TYPE.Display.ptr,		// *display
+				self.TYPE.int				// screen_number
+			);			
 		},
 		XSelectInput: function() {
 			/* http://www.x.org/releases/X11R7.6/doc/man/man3/XSelectInput.3.xhtml
@@ -998,21 +1072,42 @@ var x11Init = function() {
 				self.TYPE.Display.ptr,					// *dpy
 				self.TYPE.Window						// window
 			);
-		}
+		},
 		// end - XRANDR
+		// start - libc
+		select: function() {
+			/* http://linux.die.net/man/2/select
+			 * int select (
+			 *   int nfds,
+			 *   fd_set *readfds,
+			 *   fd_set *writefds,
+			 *   fd_set *exceptfds,
+			 *   struct timeval *timeout
+			 * );
+			 */
+			return lib('libc').declare('select', self.TYPE.ABI,
+				self.TYPE.int,			// return
+				self.TYPE.int,			// nfds
+				self.TYPE.fd_set.ptr,	// *readfds  // This is supposed to be fd_set*, but on Linux at least fd_set is just an array of bitfields that we handle manually. link4765403
+				self.TYPE.fd_set.ptr,	// *writefds // This is supposed to be fd_set*, but on Linux at least fd_set is just an array of bitfields that we handle manually. link4765403
+				self.TYPE.fd_set.ptr,	// *exceptfds // This is supposed to be fd_set*, but on Linux at least fd_set is just an array of bitfields that we handle manually. link4765403
+				self.TYPE.timeval.ptr	// *timeout
+			);
+		}
+		// end - libc
 	};
 	// end - predefine your declares here
 	// end - function declares
 
 	this.MACRO = { // http://tronche.com/gui/x/xlib/display/display-macros.html
-		ConnectionNumber: function() {
+		ConnectionNumber: function(display) {
 			/* The ConnectionNumber macro returns a connection number for the specified display.
 			 * http://tronche.com/gui/x/xlib/display/display-macros.html
 			 * int ConnectionNumber(
 			 *   Display *display
 			 * ); 
 			 */
-			return self.API('XConnectionNumber');
+			return self.API('XConnectionNumber')(display);
 		},
 		BlackPixel: function() {
 			/* 
@@ -1199,6 +1294,86 @@ var x11Init = function() {
 			}  else {
 				throw new Error('should never get here')
 			}
+		},
+		// link4765403
+		fd_set_get_idx: function(fd) {
+			// https://github.com/pioneers/tenshi/blob/9b3273298c34b9615e02ac8f021550b8e8291b69/angel-player/src/chrome/content/common/serport_posix.js#L497
+			if (core.os.name == 'darwin' /*is_mac*/) {
+				// We have an array of int32. This should hopefully work on Darwin
+				// 32 and 64 bit.
+				let elem32 = Math.floor(fd / 32);
+				let bitpos32 = fd % 32;
+				let elem8 = elem32 * 8;
+				let bitpos8 = bitpos32;
+				if (bitpos8 >= 8) {     // 8
+					bitpos8 -= 8;
+					elem8++;
+				}
+				if (bitpos8 >= 8) {     // 16
+					bitpos8 -= 8;
+					elem8++;
+				}
+				if (bitpos8 >= 8) {     // 24
+					bitpos8 -= 8;
+					elem8++;
+				}
+			
+				return {'elem8': elem8, 'bitpos8': bitpos8};
+			} else { // else if (core.os.name == 'linux' /*is_linux*/) { // removed the else if so this supports bsd and solaris now
+				// :todo: add 32bit support
+				// Unfortunately, we actually have an array of long ints, which is
+				// a) platform dependent and b) not handled by typed arrays. We manually
+				// figure out which byte we should be in. We assume a 64-bit platform
+				// that is little endian (aka x86_64 linux).
+				let elem64 = Math.floor(fd / 64);
+				let bitpos64 = fd % 64;
+				let elem8 = elem64 * 8;
+				let bitpos8 = bitpos64;
+				if (bitpos8 >= 8) {     // 8
+					bitpos8 -= 8;
+					elem8++;
+				}
+				if (bitpos8 >= 8) {     // 16
+					bitpos8 -= 8;
+					elem8++;
+				}
+				if (bitpos8 >= 8) {     // 24
+					bitpos8 -= 8;
+					elem8++;
+				}
+				if (bitpos8 >= 8) {     // 32
+					bitpos8 -= 8;
+					elem8++;
+				}
+				if (bitpos8 >= 8) {     // 40
+					bitpos8 -= 8;
+					elem8++;
+				}
+				if (bitpos8 >= 8) {     // 48
+					bitpos8 -= 8;
+					elem8++;
+				}
+				if (bitpos8 >= 8) {     // 56
+					bitpos8 -= 8;
+					elem8++;
+				}
+
+				return {'elem8': elem8, 'bitpos8': bitpos8};
+			}
+		},
+		fd_set_set: function(fdset, fd) {
+			// https://github.com/pioneers/tenshi/blob/9b3273298c34b9615e02ac8f021550b8e8291b69/angel-player/src/chrome/content/common/serport_posix.js#L497
+			let { elem8, bitpos8 } = self.HELPER.fd_set_get_idx(fd);
+			console.info('elem8:', elem8.toString());
+			console.info('bitpos8:', bitpos8.toString());
+			fdset[elem8] = 1 << bitpos8;
+		},
+		fd_set_isset: function(fdset, fd) {
+			// https://github.com/pioneers/tenshi/blob/9b3273298c34b9615e02ac8f021550b8e8291b69/angel-player/src/chrome/content/common/serport_posix.js#L497
+			let { elem8, bitpos8 } = self.HELPER.fd_set_get_idx(fd);
+			console.info('elem8:', elem8.toString());
+			console.info('bitpos8:', bitpos8.toString());
+			return !!(fdset[elem8] & (1 << bitpos8));
 		}
 	};
 };

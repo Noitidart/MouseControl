@@ -725,8 +725,80 @@ function syncMonitorMouse() {
 			break
 		case 'gtk':
 			
+				var rootWinSc0 = ostypes.API('XRootWindow')(ostypes.HELPER.cachedXOpenDisplay(), 0);
+				var blackPxSc0 = ostypes.API('XBlackPixel')(ostypes.HELPER.cachedXOpenDisplay(), 0);
+				var msgWin = ostypes.API('XCreateSimpleWindow')(ostypes.HELPER.cachedXOpenDisplay(), rootWinSc0, 1, 1, 256, 256, 0, blackPxSc0, blackPxSc0);
+				console.log('msgWin:', msgWin, msgWin.toString());
 				
-			
+				var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), msgWin, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
+				console.log('rez_XSelectInput:', rez_XSelectInput);
+				
+				var rez_XMapWindow = ostypes.API('XMapWindow')(ostypes.HELPER.cachedXOpenDisplay(), msgWin);
+				console.log('rez_XMapWindow:', rez_XMapWindow);
+				
+				var rez_XFlush = ostypes.API('XFlush')(ostypes.HELPER.cachedXOpenDisplay());
+				console.log('rez_XFlush:', rez_XFlush);
+				
+				var x11_fd = ostypes.MACRO.ConnectionNumber(ostypes.HELPER.cachedXOpenDisplay());
+				console.log('x11_fd:', x11_fd, x11_fd.toString());
+				x11_fd = parseInt(cutils.jscGetDeepest(x11_fd));
+				
+				var in_fds = new Uint8Array(128);
+				// ostypes.HELPER.FD_ZERO(in_fds); // I dont have a FD_ZERO helper function because there is no need as in javascript it is initialized at all 0's
+				
+				ostypes.HELPER.fd_set_set(in_fds, x11_fd);
+				
+				var tv = ostypes.TYPE.timeval();
+				// Note: not the full range of timeouts works due to limited range of double.
+				tv.tv_sec = 10;
+				tv.tv_usec = 0;
+				
+				var ev = ostypes.TYPE.XEvent();
+				
+				var st = new Date().getTime();
+				var runFor = 10000; // ms
+				while (true) {
+					/*
+					var rez_select = ostypes.API('select')(x11_fd + 1, in_fds, null, null, tv.address());
+					console.log('rez_select:', rez_select);
+					
+					// select() may update the timeout argument to indicate how much time was left. so set them back to what we want
+					tv.tv_sec = 10;
+					tv.tv_usec = 0;
+					
+					if (cutils.jscEqual(rez_select, -1)) {
+						// first iteration always fails as I havent run XNextEvent yet
+						console.error({
+							name: 'os-api-error',
+							message: 'Failed to select during poll',
+							uniEerrno: ctypes.errno
+						});
+						// throw new Error('select failed');
+					} else if (cutils.jscEqual(rez_select, 0)) {
+						// timeout
+						// continue; // :debug: comented out for now
+					} else {
+						// it will be number of file descriptors that triggered it
+						console.log('fd triggered');
+					}
+					
+					var rez_XPending = ostypes.API('XPending')(ostypes.HELPER.cachedXOpenDisplay());
+					console.log('rez_XPending:', rez_XPending);
+					*/
+					
+					var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
+					console.log('rez_XNextEvent:', rez_XNextEvent);
+					console.info('ev:', ev.xbutton);
+					
+					// :debug:
+					if (new Date().getTime() - st > runFor) {
+						console.log('time up');
+						break;
+					}
+				}
+				
+				
+				
 			break;
 		case 'darwin':
 			
