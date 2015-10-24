@@ -47,11 +47,6 @@ var xlibTypes = function() {
 	this.GdkWindow = ctypes.StructType('GdkWindow');
 	this.GtkWindow = ctypes.StructType('GtkWindow');
 	
-	// gtk types temp
-	this.gint = ctypes.int;
-	this.gboolean = this.gint;
-	this.gpointer = ctypes.voidptr_t;
-	
 	// ADVANCED TYPES
 	this.Colormap = this.XID;
 	this.Cursor = this.XID;
@@ -228,6 +223,55 @@ var xlibTypes = function() {
 		// { xclient: this.XClientMessageEvent }
 		{ xbutton: this.XButtonEvent }
 	])
+	
+	
+	
+	/////////////// GTK stuff temporary for test, i want to use x11 for everything
+	// SIMPLE TYPES
+	this.CARD32 = /^(Alpha|hppa|ia64|ppc64|s390|x86_64)-/.test(core.os.xpcomabi) ? ctypes.unsigned_int : ctypes.unsigned_long;
+	this.gchar = ctypes.char;
+	this.GBytes = ctypes.StructType('_GBytes');
+	this.GCancellable = ctypes.StructType('_GCancellable');
+	this.GdkColormap = ctypes.StructType('GdkColormap');
+	this.GdkDisplay = ctypes.StructType('GdkDisplay');
+	this.GdkDisplayManager = ctypes.StructType('GdkDisplayManager');
+	this.GdkDrawable = ctypes.StructType('GdkDrawable');
+	this.GdkFullscreenMode = ctypes.int;
+	this.GdkGravity = ctypes.int;
+	this.GdkPixbuf = ctypes.StructType('GdkPixbuf');
+	this.GdkScreen = ctypes.StructType('GdkScreen');
+	this.GdkWindow = ctypes.StructType('GdkWindow');
+	this.GdkWindowHints = ctypes.int;
+	this.GdkWindowTypeHint = ctypes.int;
+	this.gdouble = ctypes.double;
+	this.GFile = ctypes.StructType('_GFile');
+	this.GFileMonitor = ctypes.StructType('_GFileMonitor');
+	this.gint = ctypes.int;
+	this.gpointer = ctypes.void_t.ptr;
+	this.GtkWidget = ctypes.StructType('GtkWidget');
+	this.GtkWindow = ctypes.StructType('GtkWindow');
+	this.GtkWindowPosition = ctypes.int;
+	this.guchar = ctypes.unsigned_char;
+	this.guint = ctypes.unsigned_int;
+	this.guint32 = ctypes.unsigned_int;
+	this.gulong = ctypes.unsigned_long;
+	this.GdkFilterReturn = ctypes.int; // enum, guessing enum is int
+	
+	// ADVANCED TYPES // defined by "simple types"
+	this.gboolean = this.gint;
+	this.GQuark = this.guint32;
+	
+	
+	/// 
+	this.GdkXEvent = this.XEvent;
+	//this.GdkEvent = ctypes.StructType('GdkEvent', [
+		
+	//]);
+	this.GdkEvent = ctypes.void_t;
+	
+	
+	// FUNCTION TYPES
+	this.GdkFilterFunc = ctypes.FunctionType(this.CALLBACK_ABI, this.GdkFilterReturn, [this.GdkXEvent.ptr, this.GdkEvent.ptr, this.gpointer]).ptr; // https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#GdkFilterFunc
 };
 
 var x11Init = function() {
@@ -268,7 +312,19 @@ var x11Init = function() {
 		ButtonPressMask: 4,
 		ButtonReleaseMask: 8,
 		ButtonPress: 4,
-		ButtonRelease: 5
+		ButtonRelease: 5,
+		GrabModeSync: 0,
+		GrabModeAsync: 1,
+		CurrentTime: 0,
+		GrabSuccess: 0,
+		AlreadyGrabbed: 1,
+		GrabInvalidTime: 2,
+		GrabNotViewable: 3,
+		GrabFrozen: 4,
+		// GTK CONSTS
+		GDK_FILTER_CONTINUE: 0,
+		GDK_FILTER_TRANSLATE: 1,
+		GDK_FILTER_REMOVE: 2
 	};
 	
 	var _lib = {}; // cache for lib
@@ -490,6 +546,23 @@ var x11Init = function() {
 				self.TYPE.unsigned_long,	// return
 				self.TYPE.Display.ptr,		// *display
 				self.TYPE.int				// screen_number
+			);
+		},
+		XChangeActivePointerGrab: function() {
+			/* http://www.x.org/releases/current/doc/man/man3/XGrabPointer.3.xhtml
+			 * int XChangeActivePointerGrab (
+			 *   Display *display,
+			 *   unsigned_int event_mask,
+			 *   Cursor cursor,
+			 *   Time time
+			 * );
+			*/
+			return lib('x11').declare('XChangeActivePointerGrab', self.TYPE.ABI,
+				self.TYPE.int,			// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.unsigned_int,	// event_mask
+				self.TYPE.Cursor,		// cursor
+				self.TYPE.Time 			// time
 			);
 		},
 		XChangeProperty: function() {
@@ -981,7 +1054,7 @@ var x11Init = function() {
 			*/
 			return lib('x11').declare('XUngrabPointer', self.TYPE.ABI,
 				self.TYPE.int,			// return
-				self.TYPE.Display, 		// *display
+				self.TYPE.Display.ptr,	// *display
 				self.TYPE.Time 			// time
 			);
 		},
@@ -1093,8 +1166,25 @@ var x11Init = function() {
 				self.TYPE.fd_set.ptr,	// *exceptfds // This is supposed to be fd_set*, but on Linux at least fd_set is just an array of bitfields that we handle manually. link4765403
 				self.TYPE.timeval.ptr	// *timeout
 			);
-		}
+		},
 		// end - libc
+		// start - gtk
+		gdk_window_add_filter: function() {
+			/* https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#gdk-window-add-filter
+			 * void gdk_window_add_filter (
+			 *   GdkWindow *window,
+			 *   GdkFilterFunc function,
+			 *   gpointer data
+			 * );
+			 */
+			return lib('gdk2').declare('gdk_window_add_filter', self.TYPE.ABI,
+				self.TYPE.void,				// return
+				self.TYPE.GdkWindow.ptr,	// *window
+				self.TYPE.GdkFilterFunc,	// function
+				self.TYPE.gpointer			// data
+			);
+		}
+		// end - gtk
 	};
 	// end - predefine your declares here
 	// end - function declares
