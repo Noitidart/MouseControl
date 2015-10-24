@@ -813,30 +813,56 @@ function syncMonitorMouse() {
 				
 				// var rez_XFlush = ostypes.API('XFlush')(ostypes.HELPER.cachedXOpenDisplay());
 				// console.log('rez_XFlush:', rez_XFlush);
-				
-				// var rez_XUngrab = ostypes.API('XUngrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.CurrentTime);
-				// console.log('rez_XUngrab:', rez_XUngrab);
 
-				var rez_XGrab = ostypes.API('XGrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow(), false, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.GrabModeSync, ostypes.CONST.GrabModeAsync, ostypes.CONST.None, ostypes.CONST.None, ostypes.CONST.CurrentTime);
+				var win = ostypes.TYPE.Window();
+				var revert_to = ostypes.TYPE.int();
+				var rez_XGetFocus = ostypes.API('XGetInputFocus')(ostypes.HELPER.cachedXOpenDisplay(), win.address(), revert_to.address());
+				console.log('rez_XGetFocus:', rez_XGetFocus);
+				
+				var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), win, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
+				console.log('rez_XSelectInput:', rez_XSelectInput);
+				
+				var rez_XGrab = ostypes.API('XGrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), win, false, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.GrabModeAsync, ostypes.CONST.GrabModeAsync, ostypes.CONST.None, ostypes.CONST.None, ostypes.CONST.CurrentTime);
 				console.log('rez_XGrab:', rez_XGrab);
-				
+				var rez_XGrab = 0;
 				if (!cutils.jscEqual(rez_XGrab, ostypes.CONST.GrabSuccess)) {
-					console.error('failed to XGrabPointer with value:', rez_XGrab);
-					// throw new Error('failed to XGrabPointer with value: ' + rez_XGrab);
+					if (cutils.jscEqual(rez_XGrab, ostypes.CONST.AlreadyGrabbed)) {
+						console.log('already grabbed so will ungrab then regrab');
+						
+						var rez_XUngrab = ostypes.API('XUngrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.CurrentTime);
+						console.log('rez_XUngrab:', rez_XUngrab);
+						
+						var rez_XFlush = ostypes.API('XFlush')(ostypes.HELPER.cachedXOpenDisplay());
+						console.log('rez_XFlush:', rez_XFlush);
+						
+						var rez_XGrab2 = ostypes.API('XGrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), win, false, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.GrabModeSync, ostypes.CONST.GrabModeAsync, ostypes.CONST.None, ostypes.CONST.None, ostypes.CONST.CurrentTime);
+						console.log('rez_XGrab2:', rez_XGrab2);
+					
+						if (!cutils.jscEqual(rez_XGrab2, ostypes.CONST.GrabSuccess)) {
+							console.error('failed to XGrabPointer a SECOND time with value:', rez_XGrab);
+							throw new Error('failed to XGrabPointer a SECOND time with value: ' + rez_XGrab);
+						}
+					} else {
+						console.error('failed to XGrabPointer with value:', rez_XGrab);
+						throw new Error('failed to XGrabPointer with value: ' + rez_XGrab);
+					}
 				}
-				
-				// var rez_XChangeGrab = ostypes.API('XChangeActivePointerGrab')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.CurrentTime);
-				// console.log('rez_XChangeGrab:', rez_XChangeGrab);
-				
-				// throw new Error('ok?');
-				// var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
-				// console.log('rez_XSelectInput:', rez_XSelectInput);
-				
+				// 
+				// // var rez_XChangeGrab = ostypes.API('XChangeActivePointerGrab')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.CurrentTime);
+				// // console.log('rez_XChangeGrab:', rez_XChangeGrab);
+				// 
+				// // throw new Error('ok?');
+				// // var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
+				// // console.log('rez_XSelectInput:', rez_XSelectInput);
+				// 
 				var ev = ostypes.TYPE.XEvent();
 				
 				var st = new Date().getTime();
 				var runFor = 10000; // ms
 				while (true) {
+					
+					var rez_XAllow = ostypes.API('XAllowEvents')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.AsyncBoth, ostypes.CONST.CurrentTime);
+					console.log('rez_XAllow:', rez_XAllow);
 					
 					var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
 					console.log('rez_XNextEvent:', rez_XNextEvent);
@@ -849,13 +875,20 @@ function syncMonitorMouse() {
 					}
 				}
 				
-				// var mouse_filter_js = function(xeventPtr, eventPtr, data) {
+						
+				var rez_XUngrab2 = ostypes.API('XUngrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.CurrentTime);
+				console.log('rez_XUngrab2:', rez_XUngrab2);
+				
+				
+				// OSStuff.mouse_filter_js = function(xeventPtr, eventPtr, data) {
 				// 	console.log('in mouse_filter_js!!');
 				// 	
 				// 	return ostypes.CONST.GDK_FILTER_CONTINUE;
 				// };
-				// OSStuff.mouse_filter = ostypes.TYPE.GdkFilterFunc(mouse_filter_js);
+				// OSStuff.mouse_filter = ostypes.TYPE.GdkFilterFunc(OSStuff.mouse_filter_js);
 				// ostypes.API('gdk_window_add_filter')(null, OSStuff.mouse_filter, null); // returns void
+				
+
 				
 				
 			break;

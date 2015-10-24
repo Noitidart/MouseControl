@@ -321,6 +321,14 @@ var x11Init = function() {
 		GrabInvalidTime: 2,
 		GrabNotViewable: 3,
 		GrabFrozen: 4,
+		AsyncPointer: 0,
+		SyncPointer: 1,
+		ReplayPointer: 2,
+		AsyncKeyboard: 3,
+		SyncKeyboard: 4,
+		ReplayKeyboard: 5,
+		AsyncBoth: 6,
+		SyncBoth: 7,
 		// GTK CONSTS
 		GDK_FILTER_CONTINUE: 0,
 		GDK_FILTER_TRANSLATE: 1,
@@ -533,6 +541,21 @@ var x11Init = function() {
 			 */
 			return lib('x11').declare('XAllPlanes', self.TYPE.ABI,
 				self.TYPE.unsigned_long	// return
+			);
+		},
+		XAllowEvents: function() {
+			/* http://www.x.org/releases/X11R7.6/doc/man/man3/XAllowEvents.3.xhtml
+			 * int XAllowEvents(
+			 *   Display *display,
+			 *   int event_mode,
+			 *   Time time
+			 * );
+			 */
+			return lib('x11').declare('XAllowEvents', self.TYPE.ABI,
+				self.TYPE.unsigned_long,	// return
+				self.TYPE.Display.ptr,		// *display
+				self.TYPE.int,				// event_mode
+				self.TYPE.Time				// time
 			);
 		},
 		XBlackPixel: function() {
@@ -787,6 +810,21 @@ var x11Init = function() {
 				self.TYPE.Window,				// w
 				self.TYPE.XWindowAttributes.ptr	// *window_attributes_return
 			); 
+		},
+		XGetInputFocus: function() {
+			/* http://www.x.org/releases/X11R7.6/doc/man/man3/XGetInputFocus.3.xhtml
+			 * int XGetInputFocus(
+			 *   Display *display,
+			 *   Window *focus_return,
+			 *   int *revert_to_return
+			 * );
+			 */
+			return lib('x11').declare('XGetInputFocus', self.TYPE.ABI,
+				self.TYPE.int,			// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.Window.ptr,	// *focus_return
+				self.TYPE.int.ptr		// *revert_to_return
+			);
 		},
 		XGetWindowProperty: function() {
 			/* http://www.xfree86.org/4.4.0/XGetWindowProperty.3.html
