@@ -955,6 +955,21 @@ var x11Init = function() {
 				self.TYPE.Window		// w
 			);
 		},
+		XMaskEvent: function() {
+			/* https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XMaskEvent.html
+			 * int XMaskEvent(
+			 *   Display *display,
+			 *   long event_mask,
+			 *   XEvent *event_return
+			 * );
+			 */
+			return lib('x11').declare('XMaskEvent', self.TYPE.ABI,
+				self.TYPE.int,			// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.long,			// event_mask
+				self.TYPE.XEvent.ptr	// *event_return
+			);
+		},
 		XNextEvent: function() {
 			/* http://www.x.org/releases/current/doc/man/man3/XNextEvent.3.xhtml
 			 * int XNextEvent (
@@ -988,6 +1003,19 @@ var x11Init = function() {
 			return lib('x11').declare('XPending', self.TYPE.ABI,
 				self.TYPE.int,			// return
 				self.TYPE.Display.ptr	// *display
+			);
+		},
+		XPutBackEvent: function() {
+			/* www.xfree86.org/4.4.0/XPutBackEvent.3.html
+			 * XPutBackEvent(
+			 *   Display *display,
+			 *   XEvent *event
+			 * );
+			 */
+			return lib('x11').declare('XPutBackEvent', self.TYPE.ABI,
+				self.TYPE.void,			// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.XEvent.ptr	// *event
 			);
 		},
 		XQueryTree: function() {

@@ -725,172 +725,185 @@ function syncMonitorMouse() {
 			break
 		case 'gtk':
 			
-				/*
-				var rootWinSc0 = ostypes.API('XRootWindow')(ostypes.HELPER.cachedXOpenDisplay(), 0);
-				var blackPxSc0 = ostypes.API('XBlackPixel')(ostypes.HELPER.cachedXOpenDisplay(), 0);
-				var msgWin = ostypes.HELPER.cachedDefaultRootWindow(); //ostypes.API('XCreateSimpleWindow')(ostypes.HELPER.cachedXOpenDisplay(), rootWinSc0, 1, 1, 256, 256, 0, blackPxSc0, blackPxSc0);
-				console.log('msgWin:', msgWin, msgWin.toString());
-				
-				var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), msgWin, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
-				console.log('rez_XSelectInput:', rez_XSelectInput);
-				
-				var rez_XMapWindow = ostypes.API('XMapWindow')(ostypes.HELPER.cachedXOpenDisplay(), msgWin);
-				console.log('rez_XMapWindow:', rez_XMapWindow);
-				
-				var rez_XFlush = ostypes.API('XFlush')(ostypes.HELPER.cachedXOpenDisplay());
-				console.log('rez_XFlush:', rez_XFlush);
-				
-				var x11_fd = ostypes.MACRO.ConnectionNumber(ostypes.HELPER.cachedXOpenDisplay());
-				console.log('x11_fd:', x11_fd, x11_fd.toString());
-				x11_fd = parseInt(cutils.jscGetDeepest(x11_fd));
-				
-				var in_fds = new Uint8Array(128);
-				// ostypes.HELPER.FD_ZERO(in_fds); // I dont have a FD_ZERO helper function because there is no need as in javascript it is initialized at all 0's
-				
-				ostypes.HELPER.fd_set_set(in_fds, x11_fd);
-				
-				var tv = ostypes.TYPE.timeval();
-				// Note: not the full range of timeouts works due to limited range of double.
-				tv.tv_sec = 10;
-				tv.tv_usec = 0;
-				
-				var ev = ostypes.TYPE.XEvent();
-				
-				var st = new Date().getTime();
-				var runFor = 10000; // ms
-				while (true) {
-					//
-					// var rez_select = ostypes.API('select')(x11_fd + 1, in_fds, null, null, tv.address());
-					// console.log('rez_select:', rez_select);
-					// 
-					// // select() may update the timeout argument to indicate how much time was left. so set them back to what we want
-					// tv.tv_sec = 10;
-					// tv.tv_usec = 0;
-					// 
-					// if (cutils.jscEqual(rez_select, -1)) {
-					// 	// first iteration always fails as I havent run XNextEvent yet
-					// 	console.error({
-					// 		name: 'os-api-error',
-					// 		message: 'Failed to select during poll',
-					// 		uniEerrno: ctypes.errno
-					// 	});
-					// 	// throw new Error('select failed');
-					// } else if (cutils.jscEqual(rez_select, 0)) {
-					// 	// timeout
-					// 	// continue; // :debug: comented out for now
-					// } else {
-					// 	// it will be number of file descriptors that triggered it
-					// 	console.log('fd triggered');
-					// }
-					// 
-					// var rez_XPending = ostypes.API('XPending')(ostypes.HELPER.cachedXOpenDisplay());
-					// console.log('rez_XPending:', rez_XPending);
-					//
-					
-					var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
-					console.log('rez_XNextEvent:', rez_XNextEvent);
-					console.info('ev:', ev.xbutton);
-					
-					// :debug:
-					if (new Date().getTime() - st > runFor) {
-						console.log('time up');
-						break;
-					}
-				}
-				*/
-				
-				
+				// /*
 				// var rootWinSc0 = ostypes.API('XRootWindow')(ostypes.HELPER.cachedXOpenDisplay(), 0);
 				// var blackPxSc0 = ostypes.API('XBlackPixel')(ostypes.HELPER.cachedXOpenDisplay(), 0);
-				// var msgWin = ostypes.API('XCreateSimpleWindow')(ostypes.HELPER.cachedXOpenDisplay(), rootWinSc0, 1, 1, 256, 256, 0, blackPxSc0, blackPxSc0);
+				// var msgWin = ostypes.HELPER.cachedDefaultRootWindow(); //ostypes.API('XCreateSimpleWindow')(ostypes.HELPER.cachedXOpenDisplay(), rootWinSc0, 1, 1, 256, 256, 0, blackPxSc0, blackPxSc0);
 				// console.log('msgWin:', msgWin, msgWin.toString());
-				
+				// 
 				// var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), msgWin, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
 				// console.log('rez_XSelectInput:', rez_XSelectInput);
-				
+				// 
 				// var rez_XMapWindow = ostypes.API('XMapWindow')(ostypes.HELPER.cachedXOpenDisplay(), msgWin);
 				// console.log('rez_XMapWindow:', rez_XMapWindow);
-				
+				// 
 				// var rez_XFlush = ostypes.API('XFlush')(ostypes.HELPER.cachedXOpenDisplay());
 				// console.log('rez_XFlush:', rez_XFlush);
-
-				var win = ostypes.TYPE.Window();
-				var revert_to = ostypes.TYPE.int();
-				var rez_XGetFocus = ostypes.API('XGetInputFocus')(ostypes.HELPER.cachedXOpenDisplay(), win.address(), revert_to.address());
-				console.log('rez_XGetFocus:', rez_XGetFocus);
-				
-				var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), win, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
-				console.log('rez_XSelectInput:', rez_XSelectInput);
-				
-				var rez_XGrab = ostypes.API('XGrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), win, false, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.GrabModeAsync, ostypes.CONST.GrabModeAsync, ostypes.CONST.None, ostypes.CONST.None, ostypes.CONST.CurrentTime);
-				console.log('rez_XGrab:', rez_XGrab);
-				var rez_XGrab = 0;
-				if (!cutils.jscEqual(rez_XGrab, ostypes.CONST.GrabSuccess)) {
-					if (cutils.jscEqual(rez_XGrab, ostypes.CONST.AlreadyGrabbed)) {
-						console.log('already grabbed so will ungrab then regrab');
-						
-						var rez_XUngrab = ostypes.API('XUngrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.CurrentTime);
-						console.log('rez_XUngrab:', rez_XUngrab);
-						
-						var rez_XFlush = ostypes.API('XFlush')(ostypes.HELPER.cachedXOpenDisplay());
-						console.log('rez_XFlush:', rez_XFlush);
-						
-						var rez_XGrab2 = ostypes.API('XGrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), win, false, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.GrabModeSync, ostypes.CONST.GrabModeAsync, ostypes.CONST.None, ostypes.CONST.None, ostypes.CONST.CurrentTime);
-						console.log('rez_XGrab2:', rez_XGrab2);
-					
-						if (!cutils.jscEqual(rez_XGrab2, ostypes.CONST.GrabSuccess)) {
-							console.error('failed to XGrabPointer a SECOND time with value:', rez_XGrab);
-							throw new Error('failed to XGrabPointer a SECOND time with value: ' + rez_XGrab);
-						}
-					} else {
-						console.error('failed to XGrabPointer with value:', rez_XGrab);
-						throw new Error('failed to XGrabPointer with value: ' + rez_XGrab);
-					}
-				}
 				// 
-				// // var rez_XChangeGrab = ostypes.API('XChangeActivePointerGrab')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.CurrentTime);
-				// // console.log('rez_XChangeGrab:', rez_XChangeGrab);
+				// var x11_fd = ostypes.MACRO.ConnectionNumber(ostypes.HELPER.cachedXOpenDisplay());
+				// console.log('x11_fd:', x11_fd, x11_fd.toString());
+				// x11_fd = parseInt(cutils.jscGetDeepest(x11_fd));
 				// 
-				// // throw new Error('ok?');
-				// // var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
+				// var in_fds = new Uint8Array(128);
+				// // ostypes.HELPER.FD_ZERO(in_fds); // I dont have a FD_ZERO helper function because there is no need as in javascript it is initialized at all 0's
+				// 
+				// ostypes.HELPER.fd_set_set(in_fds, x11_fd);
+				// 
+				// var tv = ostypes.TYPE.timeval();
+				// // Note: not the full range of timeouts works due to limited range of double.
+				// tv.tv_sec = 10;
+				// tv.tv_usec = 0;
+				// 
+				// var ev = ostypes.TYPE.XEvent();
+				// 
+				// var st = new Date().getTime();
+				// var runFor = 10000; // ms
+				// while (true) {
+				// 	//
+				// 	// var rez_select = ostypes.API('select')(x11_fd + 1, in_fds, null, null, tv.address());
+				// 	// console.log('rez_select:', rez_select);
+				// 	// 
+				// 	// // select() may update the timeout argument to indicate how much time was left. so set them back to what we want
+				// 	// tv.tv_sec = 10;
+				// 	// tv.tv_usec = 0;
+				// 	// 
+				// 	// if (cutils.jscEqual(rez_select, -1)) {
+				// 	// 	// first iteration always fails as I havent run XNextEvent yet
+				// 	// 	console.error({
+				// 	// 		name: 'os-api-error',
+				// 	// 		message: 'Failed to select during poll',
+				// 	// 		uniEerrno: ctypes.errno
+				// 	// 	});
+				// 	// 	// throw new Error('select failed');
+				// 	// } else if (cutils.jscEqual(rez_select, 0)) {
+				// 	// 	// timeout
+				// 	// 	// continue; // :debug: comented out for now
+				// 	// } else {
+				// 	// 	// it will be number of file descriptors that triggered it
+				// 	// 	console.log('fd triggered');
+				// 	// }
+				// 	// 
+				// 	// var rez_XPending = ostypes.API('XPending')(ostypes.HELPER.cachedXOpenDisplay());
+				// 	// console.log('rez_XPending:', rez_XPending);
+				// 	//
+				// 	
+				// 	var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
+				// 	console.log('rez_XNextEvent:', rez_XNextEvent);
+				// 	console.info('ev:', ev.xbutton);
+				// 	
+				// 	// :debug:
+				// 	if (new Date().getTime() - st > runFor) {
+				// 		console.log('time up');
+				// 		break;
+				// 	}
+				// }
+				// */
+				// 
+				// 
+				// // var rootWinSc0 = ostypes.API('XRootWindow')(ostypes.HELPER.cachedXOpenDisplay(), 0);
+				// // var blackPxSc0 = ostypes.API('XBlackPixel')(ostypes.HELPER.cachedXOpenDisplay(), 0);
+				// // var msgWin = ostypes.API('XCreateSimpleWindow')(ostypes.HELPER.cachedXOpenDisplay(), rootWinSc0, 1, 1, 256, 256, 0, blackPxSc0, blackPxSc0);
+				// // console.log('msgWin:', msgWin, msgWin.toString());
+				// 
+				// // var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), msgWin, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
 				// // console.log('rez_XSelectInput:', rez_XSelectInput);
 				// 
+				// // var rez_XMapWindow = ostypes.API('XMapWindow')(ostypes.HELPER.cachedXOpenDisplay(), msgWin);
+				// // console.log('rez_XMapWindow:', rez_XMapWindow);
+				// 
+				// // var rez_XFlush = ostypes.API('XFlush')(ostypes.HELPER.cachedXOpenDisplay());
+				// // console.log('rez_XFlush:', rez_XFlush);
+                // 
+				// var win = ostypes.TYPE.Window();
+				// var revert_to = ostypes.TYPE.int();
+				// var rez_XGetFocus = ostypes.API('XGetInputFocus')(ostypes.HELPER.cachedXOpenDisplay(), win.address(), revert_to.address());
+				// console.log('rez_XGetFocus:', rez_XGetFocus);
+				// 
+				// var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), win, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
+				// console.log('rez_XSelectInput:', rez_XSelectInput);
+				// 
+				// var rez_XGrab = ostypes.API('XGrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), win, false, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.GrabModeAsync, ostypes.CONST.GrabModeAsync, ostypes.CONST.None, ostypes.CONST.None, ostypes.CONST.CurrentTime);
+				// console.log('rez_XGrab:', rez_XGrab);
+				// 
+				// if (!cutils.jscEqual(rez_XGrab, ostypes.CONST.GrabSuccess)) {
+				// 	if (cutils.jscEqual(rez_XGrab, ostypes.CONST.AlreadyGrabbed)) {
+				// 		console.log('already grabbed so will ungrab then regrab');
+				// 		
+				// 		var rez_XUngrab = ostypes.API('XUngrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.CurrentTime);
+				// 		console.log('rez_XUngrab:', rez_XUngrab);
+				// 		
+				// 		var rez_XFlush = ostypes.API('XFlush')(ostypes.HELPER.cachedXOpenDisplay());
+				// 		console.log('rez_XFlush:', rez_XFlush);
+				// 		
+				// 		var rez_XGrab2 = ostypes.API('XGrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), win, false, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.GrabModeSync, ostypes.CONST.GrabModeAsync, ostypes.CONST.None, ostypes.CONST.None, ostypes.CONST.CurrentTime);
+				// 		console.log('rez_XGrab2:', rez_XGrab2);
+				// 	
+				// 		if (!cutils.jscEqual(rez_XGrab2, ostypes.CONST.GrabSuccess)) {
+				// 			console.error('failed to XGrabPointer a SECOND time with value:', rez_XGrab);
+				// 			throw new Error('failed to XGrabPointer a SECOND time with value: ' + rez_XGrab);
+				// 		}
+				// 	} else {
+				// 		console.error('failed to XGrabPointer with value:', rez_XGrab);
+				// 		throw new Error('failed to XGrabPointer with value: ' + rez_XGrab);
+				// 	}
+				// }
+				// // 
+				// // // var rez_XChangeGrab = ostypes.API('XChangeActivePointerGrab')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ostypes.CONST.CurrentTime);
+				// // // console.log('rez_XChangeGrab:', rez_XChangeGrab);
+				// // 
+				// // // throw new Error('ok?');
+				// // // var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
+				// // // console.log('rez_XSelectInput:', rez_XSelectInput);
+				// // 
+				// var ev = ostypes.TYPE.XEvent();
+				// 
+				// var st = new Date().getTime();
+				// var runFor = 10000; // ms
+				// while (true) {
+				// 	
+				// 	var rez_XAllow = ostypes.API('XAllowEvents')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.SyncPointer, ostypes.CONST.CurrentTime);
+				// 	console.log('rez_XAllow:', rez_XAllow);
+				// 	
+				// 	var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
+				// 	console.log('rez_XNextEvent:', rez_XNextEvent);
+				// 	console.info('ev:', ev.xbutton);
+				// 	
+				// 	// :debug:
+				// 	if (new Date().getTime() - st > runFor) {
+				// 		console.log('time up');
+				// 		break;
+				// 	}
+				// }
+				// 
+				// 		
+				// var rez_XUngrab2 = ostypes.API('XUngrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.CurrentTime);
+				// console.log('rez_XUngrab2:', rez_XUngrab2);
+				// 
+				// 
+				// // OSStuff.mouse_filter_js = function(xeventPtr, eventPtr, data) {
+				// // 	console.log('in mouse_filter_js!!');
+				// // 	
+				// // 	return ostypes.CONST.GDK_FILTER_CONTINUE;
+				// // };
+				// // OSStuff.mouse_filter = ostypes.TYPE.GdkFilterFunc(OSStuff.mouse_filter_js);
+				// // ostypes.API('gdk_window_add_filter')(null, OSStuff.mouse_filter, null); // returns void
+			
+				console.error('ok doing gtk');
+				
 				var ev = ostypes.TYPE.XEvent();
 				
-				var st = new Date().getTime();
-				var runFor = 10000; // ms
-				while (true) {
-					
-					var rez_XAllow = ostypes.API('XAllowEvents')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.AsyncBoth, ostypes.CONST.CurrentTime);
-					console.log('rez_XAllow:', rez_XAllow);
-					
-					var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
-					console.log('rez_XNextEvent:', rez_XNextEvent);
-					console.info('ev:', ev.xbutton);
-					
-					// :debug:
-					if (new Date().getTime() - st > runFor) {
-						console.log('time up');
-						break;
-					}
-				}
+				var rez_XMaskEvent = ostypes.API('XMaskEvent')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ev.address());
+				console.log('rez_XMaskEvent:', rez_XMaskEvent);
 				
-						
-				var rez_XUngrab2 = ostypes.API('XUngrabPointer')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.CurrentTime);
-				console.log('rez_XUngrab2:', rez_XUngrab2);
+				console.log('ev:', ev);
+				
+				var rez_XPutBackEvent = ostypes.API('XPutBackEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
+				console.log('rez_XPutBackEvent:', rez_XPutBackEvent);
 				
 				
-				// OSStuff.mouse_filter_js = function(xeventPtr, eventPtr, data) {
-				// 	console.log('in mouse_filter_js!!');
-				// 	
-				// 	return ostypes.CONST.GDK_FILTER_CONTINUE;
-				// };
-				// OSStuff.mouse_filter = ostypes.TYPE.GdkFilterFunc(OSStuff.mouse_filter_js);
-				// ostypes.API('gdk_window_add_filter')(null, OSStuff.mouse_filter, null); // returns void
 				
-
-				
-				
+				console.error('ok gtk DONE');
+			
 			break;
 		case 'darwin':
 			

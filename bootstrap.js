@@ -14,7 +14,6 @@ const core = {
 		name: 'MouseControl',
 		id: 'MouseControl@jetpack',
 		path: {
-			id: -1 * Math.random(),
 			name: 'mousecontrol',
 			content: 'chrome://mousecontrol/content/',
 			images: 'chrome://mousecontrol/content/resources/images/',
