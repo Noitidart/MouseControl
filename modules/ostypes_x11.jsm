@@ -329,6 +329,16 @@ var x11Init = function() {
 		ReplayKeyboard: 5,
 		AsyncBoth: 6,
 		SyncBoth: 7,
+		
+		NoEventMask: 0,
+		KeyPressMask: 1,
+		KeyReleaseMask: 2,
+		ButtonPressMask: 4,
+		ButtonReleaseMask: 8,
+		EnterWindowMask: 16,
+		LeaveWindowMask: 32,
+		PointerMotionMask: 64,
+		
 		// GTK CONSTS
 		GDK_FILTER_CONTINUE: 0,
 		GDK_FILTER_TRANSLATE: 1,
@@ -611,6 +621,21 @@ var x11Init = function() {
 				self.TYPE.int,				// mode
 				self.TYPE.unsigned_char.ptr,	// *data
 				self.TYPE.int					// nelements
+			);
+		},
+		XCheckMaskEvent: function() {
+			/* https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XCheckMaskEvent.html
+			 * Bool XCheckMaskEvent(
+			 *   Display *display,
+			 *   long event_mask,
+			 *   XEvent *event_return
+			 * );
+			 */
+			return lib('x11').declare('XCheckMaskEvent', self.TYPE.ABI,
+				self.TYPE.Bool,			// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.long,			// event_mask
+				self.TYPE.XEvent.ptr	// *event_return
 			);
 		},
 		XCloseDisplay: function() {

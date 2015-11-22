@@ -2,7 +2,6 @@
 
 // Imports
 importScripts('resource://gre/modules/osfile.jsm');
-importScripts('resource://gre/modules/workers/require.js');
 
 // Globals
 var core = { // have to set up the main keys that you want when aCore is merged from mainthread in init

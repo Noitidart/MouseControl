@@ -729,18 +729,25 @@ function syncMonitorMouse() {
 				// var rootWinSc0 = ostypes.API('XRootWindow')(ostypes.HELPER.cachedXOpenDisplay(), 0);
 				// var blackPxSc0 = ostypes.API('XBlackPixel')(ostypes.HELPER.cachedXOpenDisplay(), 0);
 				// var msgWin = ostypes.HELPER.cachedDefaultRootWindow(); //ostypes.API('XCreateSimpleWindow')(ostypes.HELPER.cachedXOpenDisplay(), rootWinSc0, 1, 1, 256, 256, 0, blackPxSc0, blackPxSc0);
+				// var msgWin = ostypes.API('XCreateSimpleWindow')(ostypes.HELPER.cachedXOpenDisplay(), rootWinSc0, 1, 1, 256, 256, 0, blackPxSc0, blackPxSc0);
 				// console.log('msgWin:', msgWin, msgWin.toString());
-				// 
-				// var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), msgWin, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
-				// console.log('rez_XSelectInput:', rez_XSelectInput);
-				// 
-				// var rez_XMapWindow = ostypes.API('XMapWindow')(ostypes.HELPER.cachedXOpenDisplay(), msgWin);
+				
+				console.log('in gtk and jsMmJsonParsed.gtk_handles:', jsMmJsonParsed.gtk_handles);
+				var msgWin = ostypes.HELPER.gdkWinPtrToXID(ostypes.TYPE.GdkWindow.ptr(ctypes.UInt64(jsMmJsonParsed.gtk_handles[0])));
+				console.log('msgWin:', msgWin, msgWin.toString());
+				
+				var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), msgWin, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
+				// var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), 0, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
+				console.log('rez_XSelectInput:', rez_XSelectInput);
+
+				// var rez_XMapWindow = ostypes.API('XMapWindow')(ostypes.HELPER.cachedXOpenDisplay(), msgWin); // var rez_XMapWindow = ostypes.API('XMapWindow')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow());
 				// console.log('rez_XMapWindow:', rez_XMapWindow);
-				// 
+				
 				// var rez_XFlush = ostypes.API('XFlush')(ostypes.HELPER.cachedXOpenDisplay());
 				// console.log('rez_XFlush:', rez_XFlush);
-				// 
-				// var x11_fd = ostypes.MACRO.ConnectionNumber(ostypes.HELPER.cachedXOpenDisplay());
+				
+
+				// var x11_fd = ostypes.MACRO.ConnectionNumber(ostypes.HELPER.cachedXOpenDisplay()); // if i comment out ConnectionNumber it crashes, no idea why
 				// console.log('x11_fd:', x11_fd, x11_fd.toString());
 				// x11_fd = parseInt(cutils.jscGetDeepest(x11_fd));
 				// 
@@ -787,9 +794,9 @@ function syncMonitorMouse() {
 				// 	// console.log('rez_XPending:', rez_XPending);
 				// 	//
 				// 	
-				// 	var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
-				// 	console.log('rez_XNextEvent:', rez_XNextEvent);
-				// 	console.info('ev:', ev.xbutton);
+				//	var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
+				//	console.log('rez_XNextEvent:', rez_XNextEvent);
+				//	console.info('ev:', ev.xbutton);
 				// 	
 				// 	// :debug:
 				// 	if (new Date().getTime() - st > runFor) {
@@ -888,17 +895,22 @@ function syncMonitorMouse() {
 				// // OSStuff.mouse_filter = ostypes.TYPE.GdkFilterFunc(OSStuff.mouse_filter_js);
 				// // ostypes.API('gdk_window_add_filter')(null, OSStuff.mouse_filter, null); // returns void
 			
-				console.error('ok doing gtk');
+			
+				////////// trying XMaskEvent methods
+			
+				// console.error('ok doing gtk');
 				
 				var ev = ostypes.TYPE.XEvent();
-				
+				// console.error('ok kicking');
 				var rez_XMaskEvent = ostypes.API('XMaskEvent')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ev.address());
+				// var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
 				console.log('rez_XMaskEvent:', rez_XMaskEvent);
+				// console.log('rez_XNextEvent:', rez_XNextEvent);
 				
 				console.log('ev:', ev);
-				
-				var rez_XPutBackEvent = ostypes.API('XPutBackEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
-				console.log('rez_XPutBackEvent:', rez_XPutBackEvent);
+				// 
+				// var rez_XPutBackEvent = ostypes.API('XPutBackEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
+				// console.log('rez_XPutBackEvent:', rez_XPutBackEvent);
 				
 				
 				

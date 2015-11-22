@@ -526,6 +526,32 @@ var MMWorkerFuncs = {
 			}
 		}
 		
+		if (core.os.toolkit.indexOf('gtk') == 0) {
+			
+			infoObjForWorker.gtk_handles = [];
+		
+			var DOMWindows = Services.wm.getEnumerator('navigator:browser');
+			while (DOMWindows.hasMoreElements()) {
+				var aDOMWindow = DOMWindows.getNext();
+				var aBaseWindow = aDOMWindow.QueryInterface(Ci.nsIInterfaceRequestor)
+											.getInterface(Ci.nsIWebNavigation)
+											.QueryInterface(Ci.nsIDocShellTreeItem)
+											.treeOwner
+											.QueryInterface(Ci.nsIInterfaceRequestor)
+											.getInterface(Ci.nsIBaseWindow);
+				var aGdkWindowPtr_str = aBaseWindow.nativeHandle;
+				infoObjForWorker.gtk_handles.push(aGdkWindowPtr_str);
+			}
+			
+			console.log('infoObjForWorker.gtk_handles:', infoObjForWorker.gtk_handles);
+			
+		}
+		
+		var browserWindow = Services.wm.getMostRecentWindow('navigator:browser');
+		if (!browserWindow) {
+			throw new Error('No browser window found');
+		}
+		infoObjForWorker.gtk_handles.push();
 		
 		CommWorker.postMessageWithCallback(['createShareables_andSecondaryInit', aInitInfoObj, infoObjForWorker], function(aShareableAddiesObj) {
 			// aShareableAddiesObj is what CommWorker sends to me, it is key holding ctypes.TYPE and value a string address
@@ -592,6 +618,7 @@ var CommWorkerFuncs = {
 			function(aVal) {
 				console.log('Fullfilled - promise_getMMWorker - ', aVal);
 				// start - do stuff here - promise_getMMWorker
+				// nothing here, i do it in the MMWorkerFuncs init function
 				// end - do stuff here - promise_getMMWorker
 			},
 			function(aReason) {
@@ -672,6 +699,7 @@ function startup(aData, aReason) {
 		function(aVal) {
 			console.log('Fullfilled - promise_initCommWorker - ', aVal);
 			// start - do stuff here - promise_initCommWorker
+			// i dont do anything here, i do it in the init function in CommWorkerFuncs
 			// end - do stuff here - promise_initCommWorker
 		},
 		function(aReason) {
