@@ -981,6 +981,8 @@ function syncMonitorMouse() {
 				var ev = ostypes.API('xcb_wait_for_event')(conn);
 				console.info('ev:', ev);
 				
+				ostypes.API('free')(ev);
+				
 				// Terminate the X connection.
 				ostypes.API('xcb_disconnect')(conn);
 					

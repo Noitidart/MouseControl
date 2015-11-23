@@ -1385,6 +1385,13 @@ var x11Init = function() {
 		},
 		// end - libc
 		// start - xcb
+		free: function() {
+			// ???
+			return lib('xcb').declare('free', self.TYPE.ABI,
+				self.TYPE.void,		// return
+				self.TYPE.void.ptr	// total guess, i cant find this guy declared anywhere
+			);
+		},
 		xcb_connect: function() {
 			// http://xcb.freedesktop.org/PublicApi/#index2h2
 			return lib('xcb').declare('xcb_connect', self.TYPE.ABI,
