@@ -19,11 +19,15 @@ var xlibTypes = function() {
 	this.char = ctypes.char;
 	this.fd_set = ctypes.uint8_t; // This is supposed to be fd_set*, but on Linux at least fd_set is just an array of bitfields that we handle manually. this is for my fd_set_set helper functions link4765403
 	this.int = ctypes.int;
+	this.int16_t = ctypes.int16_t;
 	this.long = ctypes.long;
 	this.size_t = ctypes.size_t;
 	this.unsigned_char = ctypes.unsigned_char;
 	this.unsigned_int = ctypes.unsigned_int;
 	this.unsigned_long = ctypes.unsigned_long;
+	this.uint16_t = ctypes.uint16_t;
+	this.uint32_t = ctypes.uint32_t;
+	this.uint8_t = ctypes.uint8_t;
 	this.void = ctypes.void_t;
 	
 	// SIMPLE TYPES // http://refspecs.linuxfoundation.org/LSB_1.3.0/gLSB/gLSB/libx11-ddefs.html
@@ -272,6 +276,75 @@ var xlibTypes = function() {
 	
 	// FUNCTION TYPES
 	this.GdkFilterFunc = ctypes.FunctionType(this.CALLBACK_ABI, this.GdkFilterReturn, [this.GdkXEvent.ptr, this.GdkEvent.ptr, this.gpointer]).ptr; // https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#GdkFilterFunc
+
+	
+	// XCB TYPES
+	// lots of types i cant find out there are found here file:///C:/Users/Vayeate/Downloads/xcb%20types/libxcb-1.9/doc/tutorial/index.html BUT this i am realizing is just from xproto.h - https://github.com/netzbasis/openbsd-xenocara/blob/e6500f41b55e38013ac9b489f66fe49df6b8b68c/lib/libxcb/src/xproto.h#L453
+	this.xcb_connection_t = ctypes.StructType('xcb_connection_t');
+	this.xcb_void_cookie_t = ctypes.StructType('xcb_void_cookie_t', [
+		{ sequence: this.unsigned_int }
+	]);
+	this.xcb_window_t = this.uint32_t;
+	this.xcb_visualid_t = this.uint32_t;
+	this.xcb_colormap_t = this.uint32_t;
+	this.xcb_keycode_t = this.uint8_t;
+	
+	// XCB STRUCTS
+	this.xcb_screen_t = ctypes.StructType('xcb_screen_t', [
+		{ root: this.xcb_window_t },
+		{ default_colormap: this.xcb_colormap_t },
+		{ white_pixel: this.uint32_t },
+		{ black_pixel: this.uint32_t },
+		{ current_input_masks: this.uint32_t },
+		{ width_in_pixels: this.uint16_t },
+		{ height_in_pixels: this.uint16_t },
+		{ width_in_millimeters: this.uint16_t },
+		{ height_in_millimeters: this.uint16_t },
+		{ min_installed_maps: this.uint16_t },
+		{ max_installed_maps: this.uint16_t },
+		{ root_visual: this.xcb_visualid_t },
+		{ backing_stores: this.uint8_t },
+		{ save_unders: this.uint8_t },
+		{ root_depth: this.uint8_t },
+		{ allowed_depths_len: this.uint8_t }
+	]);
+	
+	this.xcb_setup_t = ctypes.StructType('xcb_setup_t', [ // https://github.com/netzbasis/openbsd-xenocara/blob/e6500f41b55e38013ac9b489f66fe49df6b8b68c/lib/libxcb/src/xproto.h#L453
+		{ status: this.uint8_t },
+		{ pad0: this.uint8_t },
+		{ protocol_major_version: this.uint16_t },
+		{ protocol_minor_version: this.uint16_t },
+		{ length: this.uint16_t },
+		{ release_number: this.uint32_t },
+		{ resource_id_base: this.uint32_t },
+		{ resource_id_mask: this.uint32_t },
+		{ motion_buffer_size: this.uint32_t },
+		{ vendor_len: this.uint16_t },
+		{ maximum_request_length: this.uint16_t },
+		{ roots_len: this.uint8_t },
+		{ pixmap_formats_len: this.uint8_t },
+		{ image_byte_order: this.uint8_t },
+		{ bitmap_format_bit_order: this.uint8_t },
+		{ bitmap_format_scanline_unit: this.uint8_t },
+		{ bitmap_format_scanline_pad: this.uint8_t },
+		{ min_keycode: this.xcb_keycode_t },
+		{ max_keycode: this.xcb_keycode_t },
+		{ pad1: this.uint8_t.array(4) }
+	]);
+	
+	this.xcb_screen_iterator_t = ctypes.StructType('xcb_screen_iterator_t', [
+		{ data: this.xcb_screen_t.ptr },
+		{ rem: this.int },
+		{ index: this.int }
+	]);
+	
+	this.xcb_generic_event_t = ctypes.StructType('xcb_generic_event_t', [
+		{ response_type: this.uint8_t },
+		{ pad0: this.uint8_t },
+		{ sequence: this.uint16_t },
+		{ pad: this.uint32_t.array(7) },
+		{ full_sequence: this.uint32_t }
+	]);
 };
 
 var x11Init = function() {
@@ -342,7 +415,15 @@ var x11Init = function() {
 		// GTK CONSTS
 		GDK_FILTER_CONTINUE: 0,
 		GDK_FILTER_TRANSLATE: 1,
-		GDK_FILTER_REMOVE: 2
+		GDK_FILTER_REMOVE: 2,
+		
+		// XCB CONSTS
+		XCB_CW_BACK_PIXEL: 2,
+		XCB_WINDOW_CLASS_INPUT_OUTPUT: 1,
+		XCB_COPY_FROM_PARENT: 0,
+		XCB_EVENT_MASK_BUTTON_PRESS: 4,
+		XCB_EVENT_MASK_BUTTON_RELEASE: 8,
+		XCB_CW_EVENT_MASK: 2048
 	};
 	
 	var _lib = {}; // cache for lib
@@ -369,6 +450,50 @@ var x11Init = function() {
 				
 						_lib[path] = ctypes.open('libgtk-x11-2.0.so.0');
 				
+					break;
+				case 'xcb':
+
+						var possibles = ['libxcb.so'];
+						
+						var preferred;
+						// all values of preferred MUST exist in possibles reason is link123543939
+						switch (core.os.name) {
+							case 'freebsd': // physically unverified
+							case 'openbsd': // physically unverified
+							case 'android': // physically unverified
+							case 'sunos': // physically unverified
+							case 'netbsd': // physically unverified
+							case 'dragonfly': // physcially unverified
+							case 'gnu/kfreebsd': // physically unverified
+							case 'linux':
+								preferred = 'libxcb.so';
+								break;
+							default:
+								// do nothing
+						}
+						
+						// place preferred at front of possibles
+						if (preferred) {
+							possibles.splice(possibles.indexOf(preferred), 1); // link123543939
+							possibles.splice(0, 0, preferred);
+						}
+						
+						for (var i=0; i<possibles.length; i++) {
+							try {
+								_lib[path] = ctypes.open(possibles[i]);
+								break;
+							} catch (ignore) {
+								// on windows ignore.message == "couldn't open library rawr: error 126"
+								// on ubuntu ignore.message == ""couldn't open library rawr: rawr: cannot open shared object file: No such file or directory""
+							}
+						}
+						if (!_lib[path]) {
+							throw new Error({
+								name: 'platform-error',
+								message: 'Path to ' + path + ' on operating system of , "' + OS.Constants.Sys.Name + '" was not found. This does not mean it is not supported, it means that the author of this addon did not specify the proper name. Report this to author.'
+							});
+						}
+						
 					break;
 				case 'libc':
 
@@ -1259,6 +1384,86 @@ var x11Init = function() {
 			);
 		},
 		// end - libc
+		// start - xcb
+		xcb_connect: function() {
+			// http://xcb.freedesktop.org/PublicApi/#index2h2
+			return lib('xcb').declare('xcb_connect', self.TYPE.ABI,
+				self.TYPE.xcb_connection_t.ptr,	// return
+				self.TYPE.char.ptr,				// *display
+				self.TYPE.int.ptr				// *screen
+			);
+		},
+		xcb_create_window: function() {
+			// http://damnsmallbsd.org/man/?query=xcb_create_window&sektion=3&manpath=OSF1+V5.1%2Falpha
+			return lib('xcb').declare('xcb_create_window', self.TYPE.ABI,
+				self.TYPE.xcb_void_cookie_t,	// return
+				self.TYPE.xcb_connection_t.ptr,	// *conn
+				self.TYPE.uint8_t,				// depth
+				self.TYPE.xcb_window_t,			// wid
+				self.TYPE.xcb_window_t,			// parent
+				self.TYPE.int16_t,				// x
+				self.TYPE.int16_t,				// y
+				self.TYPE.uint16_t,				// width
+				self.TYPE.uint16_t,				// height
+				self.TYPE.uint16_t,				// border_width
+				self.TYPE.uint16_t,				// _class
+				self.TYPE.xcb_visualid_t,		// visual
+				self.TYPE.uint32_t,				// value_mask
+				self.TYPE.uint32_t.ptr			// *value_list
+			);
+		},
+		xcb_disconnect: function() {
+			// http://xcb.freedesktop.org/PublicApi/#index5h2
+			return lib('xcb').declare('xcb_disconnect', self.TYPE.ABI,
+				self.TYPE.void,					// return
+				self.TYPE.xcb_connection_t.ptr	// *c
+			);
+		},
+		xcb_flush: function() {
+			// http://xcb.freedesktop.org/PublicApi/#index13h2
+			return lib('xcb').declare('xcb_flush', self.TYPE.ABI,
+				self.TYPE.int,					// return
+				self.TYPE.xcb_connection_t.ptr	// *c
+			);
+		},
+		xcb_generate_id: function() {
+			// http://xcb.freedesktop.org/PublicApi/#index16h2
+			return lib('xcb').declare('xcb_generate_id', self.TYPE.ABI,
+				self.TYPE.uint32_t,				// return
+				self.TYPE.xcb_connection_t.ptr	// *c
+			);
+		},
+		xcb_get_setup: function() {
+			// http://xcb.freedesktop.org/PublicApi/#index7h2
+			return lib('xcb').declare('xcb_get_setup', self.TYPE.ABI,
+				self.TYPE.xcb_setup_t.ptr,		// return
+				self.TYPE.xcb_connection_t.ptr	// *c
+			);
+		},
+		xcb_map_window: function() {
+			// http://damnsmallbsd.org/man?query=xcb_map_window&apropos=0&sektion=3&manpath=OSF1+V5.1%2Falpha&arch=default&format=html
+			return lib('xcb').declare('xcb_map_window', self.TYPE.ABI,
+				self.TYPE.xcb_void_cookie_t,	// return
+				self.TYPE.xcb_connection_t.ptr,		// *conn
+				self.TYPE.xcb_window_t				// window
+			);
+		},
+		xcb_setup_roots_iterator: function() {
+			// https://github.com/netzbasis/openbsd-xenocara/blob/e6500f41b55e38013ac9b489f66fe49df6b8b68c/lib/libxcb/src/xproto.h#L5409
+			// xcb_screen_iterator_t xcb_setup_roots_iterator (xcb_setup_t *R);
+			return lib('xcb').declare('xcb_setup_roots_iterator', self.TYPE.ABI,
+				self.TYPE.xcb_screen_iterator_t,	// return
+				self.TYPE.xcb_setup_t.ptr			// *R
+			);
+		},
+		xcb_wait_for_event: function() {
+			// http://xcb.freedesktop.org/PublicApi/#index10h2
+			return lib('xcb').declare('xcb_wait_for_event', self.TYPE.ABI,
+				self.TYPE.xcb_generic_event_t.ptr,	// return
+				self.TYPE.xcb_connection_t.ptr		// *c
+			);
+		},
+		// end - xcb
 		// start - gtk
 		gdk_window_add_filter: function() {
 			/* https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#gdk-window-add-filter

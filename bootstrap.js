@@ -551,7 +551,6 @@ var MMWorkerFuncs = {
 		if (!browserWindow) {
 			throw new Error('No browser window found');
 		}
-		infoObjForWorker.gtk_handles.push();
 		
 		CommWorker.postMessageWithCallback(['createShareables_andSecondaryInit', aInitInfoObj, infoObjForWorker], function(aShareableAddiesObj) {
 			// aShareableAddiesObj is what CommWorker sends to me, it is key holding ctypes.TYPE and value a string address

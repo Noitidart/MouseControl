@@ -732,13 +732,13 @@ function syncMonitorMouse() {
 				// var msgWin = ostypes.API('XCreateSimpleWindow')(ostypes.HELPER.cachedXOpenDisplay(), rootWinSc0, 1, 1, 256, 256, 0, blackPxSc0, blackPxSc0);
 				// console.log('msgWin:', msgWin, msgWin.toString());
 				
-				console.log('in gtk and jsMmJsonParsed.gtk_handles:', jsMmJsonParsed.gtk_handles);
-				var msgWin = ostypes.HELPER.gdkWinPtrToXID(ostypes.TYPE.GdkWindow.ptr(ctypes.UInt64(jsMmJsonParsed.gtk_handles[0])));
-				console.log('msgWin:', msgWin, msgWin.toString());
+				// console.log('in gtk and jsMmJsonParsed.gtk_handles:', jsMmJsonParsed.gtk_handles);
+				// var msgWin = ostypes.HELPER.gdkWinPtrToXID(ostypes.TYPE.GdkWindow.ptr(ctypes.UInt64(jsMmJsonParsed.gtk_handles[0])));
+				// console.log('msgWin:', msgWin, msgWin.toString());
 				
-				var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), msgWin, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
+				// var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), msgWin, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
 				// var rez_XSelectInput = ostypes.API('XSelectInput')(ostypes.HELPER.cachedXOpenDisplay(), 0, ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask);
-				console.log('rez_XSelectInput:', rez_XSelectInput);
+				// console.log('rez_XSelectInput:', rez_XSelectInput);
 
 				// var rez_XMapWindow = ostypes.API('XMapWindow')(ostypes.HELPER.cachedXOpenDisplay(), msgWin); // var rez_XMapWindow = ostypes.API('XMapWindow')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.HELPER.cachedDefaultRootWindow());
 				// console.log('rez_XMapWindow:', rez_XMapWindow);
@@ -900,21 +900,91 @@ function syncMonitorMouse() {
 			
 				// console.error('ok doing gtk');
 				
-				var ev = ostypes.TYPE.XEvent();
+				// var ev = ostypes.TYPE.XEvent();
 				// console.error('ok kicking');
-				var rez_XMaskEvent = ostypes.API('XMaskEvent')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ev.address());
+				// var rez_XMaskEvent = ostypes.API('XMaskEvent')(ostypes.HELPER.cachedXOpenDisplay(), ostypes.CONST.ButtonPressMask | ostypes.CONST.ButtonReleaseMask, ev.address());
 				// var rez_XNextEvent = ostypes.API('XNextEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
-				console.log('rez_XMaskEvent:', rez_XMaskEvent);
+				// console.log('rez_XMaskEvent:', rez_XMaskEvent);
 				// console.log('rez_XNextEvent:', rez_XNextEvent);
 				
-				console.log('ev:', ev);
+				// console.log('ev:', ev);
 				// 
 				// var rez_XPutBackEvent = ostypes.API('XPutBackEvent')(ostypes.HELPER.cachedXOpenDisplay(), ev.address());
 				// console.log('rez_XPutBackEvent:', rez_XPutBackEvent);
 				
 				
 				
-				console.error('ok gtk DONE');
+				// console.error('ok gtk DONE');
+				
+				
+				console.error('start xcb');
+				
+				// Connect to the X server.
+				var conn = ostypes.API('xcb_connect')(null, null);
+				console.log('conn:', conn);
+				
+				var rezSetup = ostypes.API('xcb_get_setup')(conn);
+				console.log('rezSetup:', rezSetup);
+				
+				// Get the screen.
+				var aXcbScreenIterator = ostypes.API('xcb_setup_roots_iterator')(rezSetup);
+				console.log('aXcbScreenIterator:', aXcbScreenIterator);
+				
+				var screen = aXcbScreenIterator.data;
+				console.log('screen:', screen);
+				console.log('screen.contents.black_pixel:', screen.contents.black_pixel);
+				console.log('screen.contents.root:', screen.contents.root);
+				console.log('screen.contents.root_visual:', screen.contents.root_visual);
+				
+				// Create the window.
+				
+					// The mask that details which properties are specified for window creation.
+					var mask = ostypes.CONST.XCB_CW_BACK_PIXEL | ostypes.CONST.XCB_CW_EVENT_MASK;
+
+					// IMPORTANT: the properties declared below must follow the order of the xcb_cw_t enumeration.
+					// See http://xcb.freedesktop.org/tutorial/events/#mousemovementevents for more info.
+					var value_list = ostypes.TYPE.uint32_t.array()([
+						screen.contents.black_pixel, // Background color of the window (XCB_CW_BACK_PIXEL)
+						ostypes.CONST.XCB_EVENT_MASK_BUTTON_PRESS | ostypes.CONST.XCB_EVENT_MASK_BUTTON_RELEASE // Event masks (XCB_CW_EVENT_MASK)
+					]);
+					
+					var w = ostypes.API('xcb_generate_id')(conn);
+					console.log('w:', w);
+					
+					var rezXcbCreateWindow = ostypes.API('xcb_create_window')(
+						conn,											// Connection
+						ostypes.CONST.XCB_COPY_FROM_PARENT,				// Depth
+						w,												// Window ID
+						screen.contents.root,							// Parent window
+						0,												// x
+						0,												// y
+						150,											// width
+						150,											// height
+						10,												// Border width in pixels
+						ostypes.CONST.XCB_WINDOW_CLASS_INPUT_OUTPUT,	// Window class
+						screen.contents.root_visual,								// Visual
+						mask,
+						value_list										// Window properties mask and values.
+					);
+					console.log('rezXcbCreateWindow:', rezXcbCreateWindow);
+					
+					// Map the window and ensure the server receives the map request.
+					var rezMap = ostypes.API('xcb_map_window')(conn, w);
+					console.log('rezMap:', rezMap);
+					
+					var rezFlush = ostypes.API('xcb_flush')(conn);
+					console.log('rezFlush:', rezFlush);
+				
+				// Creating window proc complete
+				
+				// Main event loop.
+				var ev = ostypes.API('xcb_wait_for_event')(conn);
+				console.info('ev:', ev);
+				
+				// Terminate the X connection.
+				ostypes.API('xcb_disconnect')(conn);
+					
+				console.error('ok xcb done');
 			
 			break;
 		case 'darwin':
