@@ -47,6 +47,7 @@ var xlibTypes = function() {
 	this.RRMode = this.XID;
 	this.XRRModeFlags = ctypes.unsigned_long;
 	this.Rotation = ctypes.uint16_t; // not exactly sure about this one but its working
+	// gtk - required for those baseWindow nativeHandle conversion functions as in firefox - finding window handles nativeHandle is a GdkWindow*
 	this.GdkDrawable = ctypes.StructType('GdkDrawable');
 	this.GdkWindow = ctypes.StructType('GdkWindow');
 	this.GtkWindow = ctypes.StructType('GtkWindow');
@@ -227,8 +228,6 @@ var xlibTypes = function() {
 		// { xclient: this.XClientMessageEvent }
 		{ xbutton: this.XButtonEvent }
 	])
-	
-	
 	
 	/////////////// GTK stuff temporary for test, i want to use x11 for everything
 	// SIMPLE TYPES
@@ -1481,6 +1480,21 @@ var x11Init = function() {
 			 * );
 			 */
 			return lib('gdk2').declare('gdk_window_add_filter', self.TYPE.ABI,
+				self.TYPE.void,				// return
+				self.TYPE.GdkWindow.ptr,	// *window
+				self.TYPE.GdkFilterFunc,	// function
+				self.TYPE.gpointer			// data
+			);
+		},
+		gdk_window_remove_filter: function() {
+			/* https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#gdk-window-remove-filter
+			 * void gdk_window_add_filter (
+			 *   GdkWindow *window,
+			 *   GdkFilterFunc function,
+			 *   gpointer data
+			 * );
+			 */
+			return lib('gdk2').declare('gdk_window_remove_filter', self.TYPE.ABI,
 				self.TYPE.void,				// return
 				self.TYPE.GdkWindow.ptr,	// *window
 				self.TYPE.GdkFilterFunc,	// function

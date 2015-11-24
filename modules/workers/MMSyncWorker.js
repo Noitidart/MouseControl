@@ -120,7 +120,7 @@ function init(objCore) {
 			importScripts(core.addon.path.content + 'modules/ostypes_win.jsm');
 			break
 		case 'gtk':
-			importScripts(core.addon.path.content + 'modules/ostypes_x11.jsm');
+			// importScripts(core.addon.path.content + 'modules/ostypes_x11.jsm');
 			break;
 		case 'darwin':
 			importScripts(core.addon.path.content + 'modules/ostypes_mac.jsm');
@@ -248,6 +248,10 @@ function actOnDoWhat() {
 			
 				// stop mouse monitor
 				cInt_doWhat.contents = -4;
+				
+				if (core.os.toolkit.indexOf('gtk') == 0) {
+					stopMonitor();
+				}
 				
 				console.log('MMWorker ok STOPPING MOUSE MON');
 				
@@ -917,76 +921,82 @@ function syncMonitorMouse() {
 				// console.error('ok gtk DONE');
 				
 				
-				console.error('start xcb');
+				// console.error('start xcb');
+				// 
+				// // Connect to the X server.
+				// var conn = ostypes.API('xcb_connect')(null, null);
+				// console.log('conn:', conn);
+				// 
+				// var rezSetup = ostypes.API('xcb_get_setup')(conn);
+				// console.log('rezSetup:', rezSetup);
+				// 
+				// // Get the screen.
+				// var aXcbScreenIterator = ostypes.API('xcb_setup_roots_iterator')(rezSetup);
+				// console.log('aXcbScreenIterator:', aXcbScreenIterator);
+				// 
+				// var screen = aXcbScreenIterator.data;
+				// console.log('screen:', screen);
+				// console.log('screen.contents.black_pixel:', screen.contents.black_pixel);
+				// console.log('screen.contents.root:', screen.contents.root);
+				// console.log('screen.contents.root_visual:', screen.contents.root_visual);
+				// 
+				// // Create the window.
+				// 
+				// 	// The mask that details which properties are specified for window creation.
+				// 	var mask = ostypes.CONST.XCB_CW_BACK_PIXEL | ostypes.CONST.XCB_CW_EVENT_MASK;
+                // 
+				// 	// IMPORTANT: the properties declared below must follow the order of the xcb_cw_t enumeration.
+				// 	// See http://xcb.freedesktop.org/tutorial/events/#mousemovementevents for more info.
+				// 	var value_list = ostypes.TYPE.uint32_t.array()([
+				// 		screen.contents.black_pixel, // Background color of the window (XCB_CW_BACK_PIXEL)
+				// 		ostypes.CONST.XCB_EVENT_MASK_BUTTON_PRESS | ostypes.CONST.XCB_EVENT_MASK_BUTTON_RELEASE // Event masks (XCB_CW_EVENT_MASK)
+				// 	]);
+				// 	
+				// 	var w = ostypes.API('xcb_generate_id')(conn);
+				// 	console.log('w:', w);
+				// 	
+				// 	var rezXcbCreateWindow = ostypes.API('xcb_create_window')(
+				// 		conn,											// Connection
+				// 		ostypes.CONST.XCB_COPY_FROM_PARENT,				// Depth
+				// 		w,												// Window ID
+				// 		screen.contents.root,							// Parent window
+				// 		0,												// x
+				// 		0,												// y
+				// 		150,											// width
+				// 		150,											// height
+				// 		10,												// Border width in pixels
+				// 		ostypes.CONST.XCB_WINDOW_CLASS_INPUT_OUTPUT,	// Window class
+				// 		screen.contents.root_visual,								// Visual
+				// 		mask,
+				// 		value_list										// Window properties mask and values.
+				// 	);
+				// 	console.log('rezXcbCreateWindow:', rezXcbCreateWindow);
+				// 	
+				// 	// Map the window and ensure the server receives the map request.
+				// 	var rezMap = ostypes.API('xcb_map_window')(conn, w);
+				// 	console.log('rezMap:', rezMap);
+				// 	
+				// 	var rezFlush = ostypes.API('xcb_flush')(conn);
+				// 	console.log('rezFlush:', rezFlush);
+				// 
+				// // Creating window proc complete
+				// 
+				// // Main event loop.
+				// var ev = ostypes.API('xcb_wait_for_event')(conn);
+				// console.info('ev:', ev);
+				// 
+				// ostypes.API('free')(ev);
+				// 
+				// // Terminate the X connection.
+				// ostypes.API('xcb_disconnect')(conn);
+				// 	
+				// console.error('ok xcb done');
+			
+				// start - mainthread technique
 				
-				// Connect to the X server.
-				var conn = ostypes.API('xcb_connect')(null, null);
-				console.log('conn:', conn);
+				self.postMessage(['gtkStartMonitor']);
 				
-				var rezSetup = ostypes.API('xcb_get_setup')(conn);
-				console.log('rezSetup:', rezSetup);
-				
-				// Get the screen.
-				var aXcbScreenIterator = ostypes.API('xcb_setup_roots_iterator')(rezSetup);
-				console.log('aXcbScreenIterator:', aXcbScreenIterator);
-				
-				var screen = aXcbScreenIterator.data;
-				console.log('screen:', screen);
-				console.log('screen.contents.black_pixel:', screen.contents.black_pixel);
-				console.log('screen.contents.root:', screen.contents.root);
-				console.log('screen.contents.root_visual:', screen.contents.root_visual);
-				
-				// Create the window.
-				
-					// The mask that details which properties are specified for window creation.
-					var mask = ostypes.CONST.XCB_CW_BACK_PIXEL | ostypes.CONST.XCB_CW_EVENT_MASK;
-
-					// IMPORTANT: the properties declared below must follow the order of the xcb_cw_t enumeration.
-					// See http://xcb.freedesktop.org/tutorial/events/#mousemovementevents for more info.
-					var value_list = ostypes.TYPE.uint32_t.array()([
-						screen.contents.black_pixel, // Background color of the window (XCB_CW_BACK_PIXEL)
-						ostypes.CONST.XCB_EVENT_MASK_BUTTON_PRESS | ostypes.CONST.XCB_EVENT_MASK_BUTTON_RELEASE // Event masks (XCB_CW_EVENT_MASK)
-					]);
-					
-					var w = ostypes.API('xcb_generate_id')(conn);
-					console.log('w:', w);
-					
-					var rezXcbCreateWindow = ostypes.API('xcb_create_window')(
-						conn,											// Connection
-						ostypes.CONST.XCB_COPY_FROM_PARENT,				// Depth
-						w,												// Window ID
-						screen.contents.root,							// Parent window
-						0,												// x
-						0,												// y
-						150,											// width
-						150,											// height
-						10,												// Border width in pixels
-						ostypes.CONST.XCB_WINDOW_CLASS_INPUT_OUTPUT,	// Window class
-						screen.contents.root_visual,								// Visual
-						mask,
-						value_list										// Window properties mask and values.
-					);
-					console.log('rezXcbCreateWindow:', rezXcbCreateWindow);
-					
-					// Map the window and ensure the server receives the map request.
-					var rezMap = ostypes.API('xcb_map_window')(conn, w);
-					console.log('rezMap:', rezMap);
-					
-					var rezFlush = ostypes.API('xcb_flush')(conn);
-					console.log('rezFlush:', rezFlush);
-				
-				// Creating window proc complete
-				
-				// Main event loop.
-				var ev = ostypes.API('xcb_wait_for_event')(conn);
-				console.info('ev:', ev);
-				
-				ostypes.API('free')(ev);
-				
-				// Terminate the X connection.
-				ostypes.API('xcb_disconnect')(conn);
-					
-				console.error('ok xcb done');
+				// end - mainthread technique
 			
 			break;
 		case 'darwin':
@@ -1228,6 +1238,25 @@ function syncMonitorMouse() {
 	}
 }
 
+function gtkMainthreadMouseCallback(stdConst) {
+		mouseTracker.push({
+			stdConst: stdConst,
+			multi: 1,
+			hold: false
+		});
+		
+		console.info('mouseTracker:', mouseTracker[mouseTracker.length-1].stdConst);
+		
+		if (sendMouseEventsToMT) {
+			self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
+			mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean. but not if they just hovered in and hovered out. only if they get in and do a recording
+		} else {
+			checkMouseTracker();
+		}
+		
+		return [];
+}
+
 function stopMonitor() {
 	// cancels the monitoring if its in progress
 	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
@@ -1256,7 +1285,9 @@ function stopMonitor() {
 			break
 		case 'gtk':
 			
-				
+				// mainthread technique
+				self.postMessage(['gtkStopMonitor']);
+				// mainthread technique
 			
 			break;
 		case 'darwin':

@@ -232,7 +232,7 @@ function tellMmWorker(aWhat, infoObjForWorker) {
 			break;
 		case 'gtk':
 			
-				// 
+				self.postMessage(['gtkTellMmWorker']);
 			
 			break;
 		case 'darwin':

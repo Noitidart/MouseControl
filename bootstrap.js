@@ -503,6 +503,8 @@ function AboutFactory(component) {
 }
 // end - about module
 
+var OSStuff = {};
+
 var MMWorkerThreadId;
 var MMWorkerFuncs = {
 	init: function(aInitInfoObj) {
@@ -526,31 +528,26 @@ var MMWorkerFuncs = {
 			}
 		}
 		
-		if (core.os.toolkit.indexOf('gtk') == 0) {
-			
-			infoObjForWorker.gtk_handles = [];
-		
-			var DOMWindows = Services.wm.getEnumerator('navigator:browser');
-			while (DOMWindows.hasMoreElements()) {
-				var aDOMWindow = DOMWindows.getNext();
-				var aBaseWindow = aDOMWindow.QueryInterface(Ci.nsIInterfaceRequestor)
-											.getInterface(Ci.nsIWebNavigation)
-											.QueryInterface(Ci.nsIDocShellTreeItem)
-											.treeOwner
-											.QueryInterface(Ci.nsIInterfaceRequestor)
-											.getInterface(Ci.nsIBaseWindow);
-				var aGdkWindowPtr_str = aBaseWindow.nativeHandle;
-				infoObjForWorker.gtk_handles.push(aGdkWindowPtr_str);
-			}
-			
-			console.log('infoObjForWorker.gtk_handles:', infoObjForWorker.gtk_handles);
-			
-		}
-		
-		var browserWindow = Services.wm.getMostRecentWindow('navigator:browser');
-		if (!browserWindow) {
-			throw new Error('No browser window found');
-		}
+		// if (core.os.toolkit.indexOf('gtk') == 0) {
+		// 	
+		// 	infoObjForWorker.gtk_handles = [];
+		// 
+		// 	var DOMWindows = Services.wm.getEnumerator('navigator:browser');
+		// 	while (DOMWindows.hasMoreElements()) {
+		// 		var aDOMWindow = DOMWindows.getNext();
+		// 		var aBaseWindow = aDOMWindow.QueryInterface(Ci.nsIInterfaceRequestor)
+		// 									.getInterface(Ci.nsIWebNavigation)
+		// 									.QueryInterface(Ci.nsIDocShellTreeItem)
+		// 									.treeOwner
+		// 									.QueryInterface(Ci.nsIInterfaceRequestor)
+		// 									.getInterface(Ci.nsIBaseWindow);
+		// 		var aGdkWindowPtr_str = aBaseWindow.nativeHandle;
+		// 		infoObjForWorker.gtk_handles.push(aGdkWindowPtr_str);
+		// 	}
+		// 	
+		// 	console.log('infoObjForWorker.gtk_handles:', infoObjForWorker.gtk_handles);
+		// 	
+		// }
 		
 		CommWorker.postMessageWithCallback(['createShareables_andSecondaryInit', aInitInfoObj, infoObjForWorker], function(aShareableAddiesObj) {
 			// aShareableAddiesObj is what CommWorker sends to me, it is key holding ctypes.TYPE and value a string address
@@ -582,7 +579,97 @@ var MMWorkerFuncs = {
 				return;
 			}
 		}
+	},
+	// start - gtk mainthread technique functions
+	gtkStartMonitor: function() {
+		if (!OSStuff.ostypes_x11_imported) {
+			Cu.import('resource://gre/modules/ctypes.jsm');
+			Services.scriptloader.loadSubScript(core.addon.path.content + 'modules/cutils.jsm', bootstrap);
+			Services.scriptloader.loadSubScript(core.addon.path.content + 'modules/ostypes_x11.jsm', bootstrap);
+			OSStuff.ostypes_x11_imported = true;
+			
+			OSStuff.mouseConsts = {
+				kCGEventLeftMouseDown: 1,
+				kCGEventLeftMouseUp: 2,
+				kCGEventRightMouseDown: 3,
+				kCGEventRightMouseUp: 4,
+				kCGEventOtherMouseDown: 25,
+				kCGEventOtherMouseUp: 26,
+				kCGEventScrollWheel: 22
+			};
+			
+			// because all the os'es have different constants, i "standardize" them
+			OSStuff.mouseConstToStdConst = {
+				kCGEventLeftMouseDown: 'B1_DN',
+				kCGEventLeftMouseUp: 'B1_UP',
+				kCGEventRightMouseDown: 'B2_DN',
+				kCGEventRightMouseUp: 'B2_UP',
+				kCGEventOtherMouseDown: '_DN',
+				kCGEventOtherMouseUp: '_UP',
+				kCGEventScrollWheel: 'W?_??'
+				// WM_XBUTTONUP: ['B4_UP', 'B5_UP'],
+				// WM_MOUSEHWHEEL: ['WH_RT', 'WH_LT']
+			};
+		}
+
+		OSStuff.mouse_filter_js = function(xeventPtr, eventPtr, data) {
+			// console.log('in mouse_filter_js!! xeventPtr:', xeventPtr);
+
+			var stdConst;
+			var wheelRelease = false;
+			if (cutils.jscEqual(xeventPtr.contents.xbutton.type, ostypes.CONST.ButtonPress)) {
+				var button = cutils.jscGetDeepest(xeventPtr.contents.xbutton.button);
+				if (button == '4') {
+					stdConst = 'WH_UP';
+				} else if (button == '5') {
+					stdConst = 'WH_DN';
+				} else if (button == '6') {
+					stdConst = 'WH_LT'; // :todo: verify. for some reason ubuntu is not reading my sculpt horizontal wheel events
+				} else if (button == '7') {
+					stdConst = 'WH_RT'; // :todo: verify. for some reason ubuntu is not reading my sculpt horizontal wheel events
+				} else {
+					stdConst = 'B' + button + '_DN';
+				}
+			} else if (cutils.jscEqual(xeventPtr.contents.xbutton.type, ostypes.CONST.ButtonRelease)) {
+				var button = cutils.jscGetDeepest(xeventPtr.contents.xbutton.button);
+				if (['4', '5', '6', '7'].indexOf(button) > -1) {
+					// wheel events send an immediate ButtonRelease, so we ignore this
+					wheelRelease = true;
+				} else {
+					stdConst = 'B' + button + '_UP';
+				}
+			} else {
+				// ignore as it is not a button press/release, probably mouse move or something like that
+			}
+			
+			if (stdConst) {
+				MMWorker.postMessage(['gtkMainthreadMouseCallback', stdConst]);
+			}
+			
+			if (bowserFsWantingMouseEvents) { // || mouseTracker found a match - need to devise how to detect this, because the mouseTracker is over in the worker
+				return ostypes.CONST.GDK_FILTER_REMOVE;
+			} else {
+				return ostypes.CONST.GDK_FILTER_CONTINUE;
+			}
+		};
+		OSStuff.mouse_filter_c = ostypes.TYPE.GdkFilterFunc(OSStuff.mouse_filter_js);
+		ostypes.API('gdk_window_add_filter')(null, OSStuff.mouse_filter_c, null);
+
+	},
+	gtkStopMonitor: function() {
+		if (!OSStuff.mouse_filter_c) {
+			throw new Error('nothing to stop');
+		}
+
+		ostypes.API('gdk_window_remove_filter')(null, OSStuff.mouse_filter_c, null);
+
+		OSStuff.mouse_filter_js = null;
+		OSStuff.mouse_filter_c = null;
+		OSStuff.mouse_filter_c = null;
+		
+		console.log('ok gtk monitor stopped');
 	}
+	// end - gtk mainthread technique functions
 };
 
 function tellMMWorkerPrefsAndConfig() {
@@ -636,7 +723,12 @@ var CommWorkerFuncs = {
 				console.error('Caught - promise_getMMWorker - ', rejObj);
 			}
 		);
+	},
+	// start - gtk mainthread technique functions
+	gtkTellMmWorker: function() {
+		MMWorker.postMessage(['actOnDoWhat']);
 	}
+	// end - gtk mainthread technique functions
 };
 function readConfigFromFile() {
 	// reads file and sets global
