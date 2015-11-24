@@ -644,13 +644,16 @@ var MMWorkerFuncs = {
 			
 			if (stdConst) {
 				MMWorker.postMessage(['gtkMainthreadMouseCallback', stdConst]);
-			}
-			
-			if (bowserFsWantingMouseEvents) { // || mouseTracker found a match - need to devise how to detect this, because the mouseTracker is over in the worker
-				return ostypes.CONST.GDK_FILTER_REMOVE;
+				if (bowserFsWantingMouseEvents) { // || mouseTracker found a match - need to devise how to detect this, because the mouseTracker is over in the worker
+					return ostypes.CONST.GDK_FILTER_REMOVE;
+				} else {
+					return ostypes.CONST.GDK_FILTER_CONTINUE;
+				}
 			} else {
 				return ostypes.CONST.GDK_FILTER_CONTINUE;
 			}
+			
+
 		};
 		OSStuff.mouse_filter_c = ostypes.TYPE.GdkFilterFunc(OSStuff.mouse_filter_js);
 		ostypes.API('gdk_window_add_filter')(null, OSStuff.mouse_filter_c, null);
