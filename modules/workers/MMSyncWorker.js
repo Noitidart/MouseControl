@@ -505,7 +505,7 @@ function syncMonitorMouse() {
 						WM_RBUTTONUP: 'B2_UP',
 						WM_MBUTTONDOWN: 'B3_DN',
 						WM_MBUTTONUP: 'B3_UP',
-						WM_MOUSEWHEEL: ['WV_UP', 'WV_DN'],
+						WM_MOUSEWHEEL: ['WH_UP', 'WH_DN'],
 						WM_XBUTTONDOWN: ['B4_DN', 'B5_DN'],
 						WM_XBUTTONUP: ['B4_UP', 'B5_UP'],
 						WM_MOUSEHWHEEL: ['WH_RT', 'WH_LT']
@@ -1051,7 +1051,7 @@ function syncMonitorMouse() {
 						kCGEventRightMouseUp: 'B2_UP',
 						kCGEventOtherMouseDown: '_DN',
 						kCGEventOtherMouseUp: '_UP',
-						kCGEventScrollWheel: 'W?_??'
+						kCGEventScrollWheel: 'WH_??'
 						// WM_XBUTTONUP: ['B4_UP', 'B5_UP'],
 						// WM_MOUSEHWHEEL: ['WH_RT', 'WH_LT']
 					};
@@ -1090,27 +1090,27 @@ function syncMonitorMouse() {
 								
 								if (cutils.jscEqual(deltaVert, 0)) {
 									// then user di horizontal
-									wheelLetter = 'H';
+									wheelLetter = 'H'; // horizontal
 									// assuming if deltaVert is 0, then user must have scrolled horizontal wheel. i think this is safe assumption as kCGScrollWheelEventDeltaAxis3 is unused per docs
 									var deltaHor = ostypes.API('CGEventGetIntegerValueField')(event, ostypes.CONST.kCGScrollWheelEventDeltaAxis2);
 									if (cutils.jscEqual(deltaHor, 0)) {
 										console.error('what on earth this should never happen, vert and hor delats are 0? then how did i get a kCGEventScrollWheel type event');
 									}
 								} else {
-									wheelLetter = 'V';
+									wheelLetter = 'V'; //vertical
 								}
 								
 								var wheelDir;
 								if (cutils.jscEqual(deltaVert, 1)) {
-									wheelDir = 'UP';
+									wheelDir = wheelLetter == 'V' ? 'UP' : 'LT';
 								} else {
 									// its -1
-									wheelDir = 'DN';
+									wheelDir = wheelLetter == 'V' ? 'DN' : 'RT';
 								}
 								// console.info('wheelLetter:', wheelLetter, 'deltaHor:', deltaHor, 'deltaVert:', deltaVert);
 								
 								mouseTracker.push({
-									stdConst: 'W' + wheelLetter + '_' + wheelDir,
+									stdConst: 'WH_' + wheelDir,
 									multi: 1,
 									hold: false
 								});
