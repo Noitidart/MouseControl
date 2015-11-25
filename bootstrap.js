@@ -372,12 +372,20 @@ var prefs = {
 			// 1 - site specific
 			// 2 - text only
 	},
-	'dbl-click-speed': {
+	'multi-speed': {
 		default: 200,
 		type: Ci.nsIPrefBranch.PREF_INT
 	},
 	'hold-duration': {
 		default: 200,
+		type: Ci.nsIPrefBranch.PREF_INT
+	},
+	'click-speed': {
+		default: 50,
+		type: Ci.nsIPrefBranch.PREF_INT
+	},
+	'ignore-autorepeat-duration': {
+		default: 0,
 		type: Ci.nsIPrefBranch.PREF_INT
 	},
 	'new-tab-pos': {
@@ -517,8 +525,10 @@ var MMWorkerFuncs = {
 		
 		// steup prefs for worker
 		infoObjForWorker.prefs = {};
-		infoObjForWorker.prefs.multiClickSpeed = prefs['dbl-click-speed'].value;
-		infoObjForWorker.prefs.holdDuration = prefs['hold-duration'].value;
+		infoObjForWorker.prefs['multi-speed'] = prefs['multi-speed'].value;
+		infoObjForWorker.prefs['hold-duration'] = prefs['hold-duration'].value;
+		infoObjForWorker.prefs['click-speed'] = prefs['click-speed'].value;
+		infoObjForWorker.prefs['ignore-autorepeat-duration'] = prefs['ignore-autorepeat-duration'].value;
 		
 		// setup config for worker
 		infoObjForWorker.config = {};
@@ -685,8 +695,10 @@ function tellMMWorkerPrefsAndConfig() {
 	
 	// steup prefs for worker
 	infoObjForWorker.prefs = {};
-	infoObjForWorker.prefs.multiClickSpeed = prefs['dbl-click-speed'].value;
-	infoObjForWorker.prefs.holdDuration = prefs['hold-duration'].value;
+	infoObjForWorker.prefs['multi-speed'] = prefs['multi-speed'].value;
+	infoObjForWorker.prefs['hold-duration'] = prefs['hold-duration'].value;
+	infoObjForWorker.prefs['click-speed'] = prefs['click-speed'].value;
+	infoObjForWorker.prefs['ignore-autorepeat-duration'] = prefs['ignore-autorepeat-duration'].value;
 	
 	// setup config for worker
 	infoObjForWorker.config = {};
@@ -777,6 +789,17 @@ function install() {}
 function uninstall(aData, aReason) {
 	if (aReason == ADDON_UNINSTALL) {
 		// delete prefs
+		for (var aPrefName in prefs) {
+			if (prefs[aPrefName].type == Ci.nsIPrefBranch.PREF_INT || prefs[aPrefName].type == Ci.nsIPrefBranch.PREF_BOOL || prefs[aPrefName].type == Ci.nsIPrefBranch.PREF_STRING) {
+				Services.prefs.clearUserPref(myPrefBranch + aPrefName)
+			} else if (prefs[aPrefName].type == -1) {
+				// -1 is custom type
+				if (prefs[aPrefName].clearUserPref) {
+					// dev has to set this on the pref
+					prefs[aPrefName].clearUserPref();
+				}
+			}
+		}
 	}
 }
 

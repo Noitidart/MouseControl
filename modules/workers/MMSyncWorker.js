@@ -464,7 +464,7 @@ function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 function syncMonitorMouse() {
 	// this will get events and can block them
 	
-	console.log('in syncMonitorMouse jsMmJsonParsed.prefs.holdDuration:', jsMmJsonParsed.prefs.holdDuration, 'jsMmJsonParsed.prefs.multiClickSpeed:', jsMmJsonParsed.prefs.multiClickSpeed, 'jsMmJsonParsed.config:', jsMmJsonParsed.config);
+	console.log('in syncMonitorMouse jsMmJsonParsed.prefs[\'hold-duration\']:', jsMmJsonParsed.prefs['hold-duration'], 'jsMmJsonParsed.prefs[\'multi-speed\']:', jsMmJsonParsed.prefs['multi-speed'], 'jsMmJsonParsed.config:', jsMmJsonParsed.config);
 	
 	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
 		case 'winnt':

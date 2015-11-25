@@ -180,19 +180,35 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			},
 			{
 				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-time'),
-				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-dblspeed'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-multispeed'),
 				type: 'text',
-				pref_name: 'dbl-click-speed',
+				pref_name: 'multi-speed',
 				pref_type: 'int',
-				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-dblspeed')
+				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-multispeed')
 			},
 			{
 				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-time'),
-				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-holdspeed'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-holdduration'),
 				type: 'text',
 				pref_name: 'hold-duration',
 				pref_type: 'int',
-				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-holdspeed')
+				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-holdduration')
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-time'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-clickspeed'),
+				type: 'text',
+				pref_name: 'click-speed',
+				pref_type: 'int',
+				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-clickspeed')
+			},
+			{
+				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-time'),
+				label: myServices.sb.GetStringFromName('mousecontrol.prefs.item_name-ignoreautorepeatduration'),
+				type: 'text',
+				pref_name: 'ignore-autorepeat-duration',
+				pref_type: 'int',
+				desc: myServices.sb.GetStringFromName('mousecontrol.prefs.item_desc-ignoreautorepeatduration')
 			},
 			{
 				groupName: myServices.sb.GetStringFromName('mousecontrol.prefs.group-tabs'),
