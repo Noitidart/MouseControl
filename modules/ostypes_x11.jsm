@@ -15,7 +15,8 @@ var xlibTypes = function() {
 	this.CALLBACK_ABI = ctypes.default_abi;
 	this.ABI = ctypes.default_abi;
 	
-	// C TYPES
+	///// C TYPES
+	// SIMPLE TYPES
 	this.char = ctypes.char;
 	this.fd_set = ctypes.uint8_t; // This is supposed to be fd_set*, but on Linux at least fd_set is just an array of bitfields that we handle manually. this is for my fd_set_set helper functions link4765403
 	this.int = ctypes.int;
@@ -30,6 +31,13 @@ var xlibTypes = function() {
 	this.uint8_t = ctypes.uint8_t;
 	this.void = ctypes.void_t;
 	
+	// SIMPLE STRUCTS
+	this.timeval = ctypes.StructType('timeval', [
+		{ 'tv_sec': this.long },
+		{ 'tv_usec': this.long }
+	]);
+	
+	///// X11 TYPES
 	// SIMPLE TYPES // http://refspecs.linuxfoundation.org/LSB_1.3.0/gLSB/gLSB/libx11-ddefs.html
 	this.Atom = ctypes.unsigned_long;
 	this.Bool = ctypes.int;
@@ -47,11 +55,7 @@ var xlibTypes = function() {
 	this.RRMode = this.XID;
 	this.XRRModeFlags = ctypes.unsigned_long;
 	this.Rotation = ctypes.uint16_t; // not exactly sure about this one but its working
-	// gtk - required for those baseWindow nativeHandle conversion functions as in firefox - finding window handles nativeHandle is a GdkWindow*
-	this.GdkDrawable = ctypes.StructType('GdkDrawable');
-	this.GdkWindow = ctypes.StructType('GdkWindow');
-	this.GtkWindow = ctypes.StructType('GtkWindow');
-	
+
 	// ADVANCED TYPES
 	this.Colormap = this.XID;
 	this.Cursor = this.XID;
@@ -69,10 +73,6 @@ var xlibTypes = function() {
 	this.Depth = ctypes.StructType('Depth');
 	
 	// SIMPLE STRUCTS
-	this.timeval = ctypes.StructType('timeval', [
-		{ 'tv_sec': this.long },
-		{ 'tv_usec': this.long }
-	]);
 	this.XButtonEvent = ctypes.StructType('XButtonEvent', [ // http://tronche.com/gui/x/xlib/events/keyboard-pointer/keyboard-pointer.html#XButtonEvent
 		{ type: this.int },
 		{ serial: this.unsigned_long },
@@ -128,6 +128,23 @@ var xlibTypes = function() {
 			])
 		}
 	]);
+	this.XKeyEvent = ctypes.StructType('XKeyEvent', [ // https://tronche.com/gui/x/xlib/events/keyboard-pointer/keyboard-pointer.html#XKeyEvent
+		{ type: this.int },
+		{ serial: this.unsigned_long },
+		{ send_event: this.Bool },
+		{ display: this.Display.ptr },
+		{ window: this.Window },
+		{ root: this.Window },
+		{ subwindow: this.Window },
+		{ time: this.Time },
+		{ x: this.int },
+		{ y: this.int },
+		{ x_root: this.int },
+		{ y_root: this.int },
+		{ state: this.unsigned_int },
+		{ keycode: this.unsigned_int },
+		{ same_screen: this.Bool }
+	]);
 	this.XTextProperty = ctypes.StructType('XTextProperty', [
 		{ value: this.unsigned_char.ptr },	// *value
 		{ encoding: this.Atom },			// encoding
@@ -160,24 +177,18 @@ var xlibTypes = function() {
 		{ screen: this.Screen.ptr }					// back pointer to correct screen
 	]);
 	
+	// ADVANCED STRUCTS
+	// XEvent is one huge union, js-ctypes doesnt have union so i just set it to what I use for my addon
+	this.XEvent = ctypes.StructType('_XEvent', [ // http://tronche.com/gui/x/xlib/events/structures.html
+		// { xclient: this.XClientMessageEvent }
+		{ xbutton: this.XButtonEvent }
+		// { xkey: this.XKeyEvent }
+	]);
+	
 	// start - xrandr stuff
 		// resources:
 		// http://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
 		// http://www.xfree86.org/current/Xrandr.3.html
-	this.XRRCrtcInfo = ctypes.StructType('_XRRCrtcInfo', [
-		{ timestamp: this.Time },
-		{ x: this.int },
-		{ y: this.int },
-		{ width: this.unsigned_int },
-		{ height: this.unsigned_int },
-		{ mode: this.RRMode },
-		{ rotation: this.Rotation },
-		{ noutput: this.int },
-		{ outputs: this.RROutput.ptr },
-		{ rotations: this.Rotation },
-		{ npossible: this.int },
-		{ possible: this.RROutput.ptr }
-	]);
 	this.XRRModeInfo = ctypes.StructType('_XRRModeInfo', [
 		{ id: this.RRMode },
 		{ width: this.unsigned_int },
@@ -194,6 +205,18 @@ var xlibTypes = function() {
 		{ nameLength: this.unsigned_int },
 		{ modeFlags: this.XRRModeFlags }
 	]);
+	
+	this.XRRScreenResources = ctypes.StructType('_XRRScreenResources', [
+		{ timestamp: this.Time },
+		{ configTimestamp: this.Time },
+		{ ncrtc: this.int },
+		{ crtcs: this.RRCrtc.ptr },
+		{ noutput: this.int },
+		{ outputs: this.RROutput.ptr },
+		{ nmode: this.int },
+		{ modes: this.XRRModeInfo.ptr }
+	]);
+	
 	this.XRROutputInfo = ctypes.StructType('_XRROutputInfo', [
 		{ timestamp: this.Time },
 		{ crtc: this.RRCrtc },
@@ -211,34 +234,36 @@ var xlibTypes = function() {
 		{ npreferred: this.int },
 		{ modes: this.RRMode.ptr }
 	]);
-	this.XRRScreenResources = ctypes.StructType('_XRRScreenResources', [
+	
+	this.XRRCrtcInfo = ctypes.StructType('_XRRCrtcInfo', [
 		{ timestamp: this.Time },
-		{ configTimestamp: this.Time },
-		{ ncrtc: this.int },
-		{ crtcs: this.RRCrtc.ptr },
+		{ x: this.int },
+		{ y: this.int },
+		{ width: this.unsigned_int },
+		{ height: this.unsigned_int },
+		{ mode: this.RRMode },
+		{ rotation: this.Rotation },
 		{ noutput: this.int },
 		{ outputs: this.RROutput.ptr },
-		{ nmode: this.int },
-		{ modes: this.XRRModeInfo.ptr }
+		{ rotations: this.Rotation },
+		{ npossible: this.int },
+		{ possible: this.RROutput.ptr }
 	]);
-	
-	// ADVANCED STRUCTS
-	// XEvent is one huge union, js-ctypes doesnt have union so i just set it to what I use for my addon
-	this.XEvent = ctypes.StructType('_XEvent', [ // http://tronche.com/gui/x/xlib/events/structures.html
-		// { xclient: this.XClientMessageEvent }
-		{ xbutton: this.XButtonEvent }
-	])
 	
 	/////////////// GTK stuff temporary for test, i want to use x11 for everything
 	// SIMPLE TYPES
 	this.CARD32 = /^(Alpha|hppa|ia64|ppc64|s390|x86_64)-/.test(core.os.xpcomabi) ? ctypes.unsigned_int : ctypes.unsigned_long;
 	this.gchar = ctypes.char;
+	this.GAppInfo = ctypes.StructType('GAppInfo');
+	this.GAppLaunchContext = ctypes.StructType('GAppLaunchContext');
 	this.GBytes = ctypes.StructType('_GBytes');
 	this.GCancellable = ctypes.StructType('_GCancellable');
 	this.GdkColormap = ctypes.StructType('GdkColormap');
+	this.GDesktopAppInfo = ctypes.StructType('GDesktopAppInfo');
 	this.GdkDisplay = ctypes.StructType('GdkDisplay');
 	this.GdkDisplayManager = ctypes.StructType('GdkDisplayManager');
 	this.GdkDrawable = ctypes.StructType('GdkDrawable');
+	this.GdkFilterReturn = ctypes.int; // enum, guessing enum is int
 	this.GdkFullscreenMode = ctypes.int;
 	this.GdkGravity = ctypes.int;
 	this.GdkPixbuf = ctypes.StructType('GdkPixbuf');
@@ -258,12 +283,10 @@ var xlibTypes = function() {
 	this.guint = ctypes.unsigned_int;
 	this.guint32 = ctypes.unsigned_int;
 	this.gulong = ctypes.unsigned_long;
-	this.GdkFilterReturn = ctypes.int; // enum, guessing enum is int
 	
 	// ADVANCED TYPES // defined by "simple types"
 	this.gboolean = this.gint;
 	this.GQuark = this.guint32;
-	
 	
 	/// 
 	this.GdkXEvent = this.XEvent;
@@ -272,23 +295,38 @@ var xlibTypes = function() {
 	//]);
 	this.GdkEvent = ctypes.void_t;
 	
+	// SIMPLE STRUCTS
+	this.GError = new ctypes.StructType('GError', [
+		{'domain': this.GQuark},
+		{'code': ctypes.int},
+		{'message': ctypes.char.ptr}
+	]);
+	this.GList = new ctypes.StructType('GList', [
+		{'data': ctypes.voidptr_t},
+		{'next': ctypes.voidptr_t},
+		{'prev': ctypes.voidptr_t}
+	]);
 	
 	// FUNCTION TYPES
 	this.GdkFilterFunc = ctypes.FunctionType(this.CALLBACK_ABI, this.GdkFilterReturn, [this.GdkXEvent.ptr, this.GdkEvent.ptr, this.gpointer]).ptr; // https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#GdkFilterFunc
-
+	// end - gtk
 	
-	// XCB TYPES
+	/////////////// XCB stuff
+	// SIMPLE TYPES
 	// lots of types i cant find out there are found here file:///C:/Users/Vayeate/Downloads/xcb%20types/libxcb-1.9/doc/tutorial/index.html BUT this i am realizing is just from xproto.h - https://github.com/netzbasis/openbsd-xenocara/blob/e6500f41b55e38013ac9b489f66fe49df6b8b68c/lib/libxcb/src/xproto.h#L453
+	this.xcb_colormap_t = this.uint32_t;
+	this.xcb_keycode_t = this.uint8_t;
+	this.xcb_keysym_t = this.uint32_t; // https://github.com/netzbasis/openbsd-xenocara/blob/e6500f41b55e38013ac9b489f66fe49df6b8b68c/lib/libxcb/src/xproto.h#L159
+	this.xcb_timestamp_t = this.uint32_t;
+	this.xcb_visualid_t = this.uint32_t;
+	this.xcb_window_t = this.uint32_t;
+	
+	// SIMPLE STRUCTS
 	this.xcb_connection_t = ctypes.StructType('xcb_connection_t');
+	this.xcb_key_symbols_t = ctypes.StructType('_XCBKeySymbols');
 	this.xcb_void_cookie_t = ctypes.StructType('xcb_void_cookie_t', [
 		{ sequence: this.unsigned_int }
 	]);
-	this.xcb_window_t = this.uint32_t;
-	this.xcb_visualid_t = this.uint32_t;
-	this.xcb_colormap_t = this.uint32_t;
-	this.xcb_keycode_t = this.uint8_t;
-	
-	// XCB STRUCTS
 	this.xcb_screen_t = ctypes.StructType('xcb_screen_t', [
 		{ root: this.xcb_window_t },
 		{ default_colormap: this.xcb_colormap_t },
@@ -344,6 +382,36 @@ var xlibTypes = function() {
 		{ pad: this.uint32_t.array(7) },
 		{ full_sequence: this.uint32_t }
 	]);
+	
+	this.xcb_key_press_event_t = ctypes.StructType('xcb_key_press_event_t', [ // https://github.com/netzbasis/openbsd-xenocara/blob/e6500f41b55e38013ac9b489f66fe49df6b8b68c/lib/libxcb/src/xproto.h#L523
+		{ response_type: this.uint8_t },
+		{ detail: this.xcb_keycode_t },
+		{ sequence: this.uint16_t },
+		{ time: this.xcb_timestamp_t },
+		{ root: this.xcb_window_t },
+		{ event: this.xcb_window_t },
+		{ child: this.xcb_window_t },
+		{ root_x: this.int16_t },
+		{ root_y: this.int16_t },
+		{ event_x: this.int16_t },
+		{ event_y: this.int16_t },
+		{ state: this.uint16_t },
+		{ same_screen: this.uint8_t },
+		{ pad0: this.uint8_t }
+	]);
+	
+	this.xcb_generic_error_t = ctypes.StructType('xcb_generic_error_t', [
+		{ response_type: this.uint8_t },
+		{ error_code: this.uint8_t },
+		{ sequence: this.uint16_t },
+		{ resource_id: this.uint32_t },
+		{ minor_code: this.uint16_t },
+		{ major_code: this.uint8_t },
+		{ pad0: this.uint8_t },
+		{ pad: this.uint32_t.array(5) },
+		{ full_sequence: this.uint32_t }
+	]);
+	// end - xcb
 };
 
 var x11Init = function() {
@@ -385,14 +453,16 @@ var x11Init = function() {
 		ButtonReleaseMask: 8,
 		ButtonPress: 4,
 		ButtonRelease: 5,
+		CurrentTime: 0,
+		
 		GrabModeSync: 0,
 		GrabModeAsync: 1,
-		CurrentTime: 0,
 		GrabSuccess: 0,
 		AlreadyGrabbed: 1,
 		GrabInvalidTime: 2,
 		GrabNotViewable: 3,
 		GrabFrozen: 4,
+		
 		AsyncPointer: 0,
 		SyncPointer: 1,
 		ReplayPointer: 2,
@@ -411,6 +481,15 @@ var x11Init = function() {
 		LeaveWindowMask: 32,
 		PointerMotionMask: 64,
 		
+		KeyPress: 2,
+		KeyRelease: 3,
+		AsyncKeyboard: 3,
+		SyncKeyboard: 4,
+		
+		XK_A: 0x0041, // lower case "a" // https://github.com/semonalbertyeah/noVNC_custom/blob/60daa01208a7e25712d17f67282497626de5704d/include/keysym.js#L216
+		XK_Print: 0xff61,
+		XK_Space: 0x0020,
+		
 		// GTK CONSTS
 		GDK_FILTER_CONTINUE: 0,
 		GDK_FILTER_TRANSLATE: 1,
@@ -422,10 +501,114 @@ var x11Init = function() {
 		XCB_COPY_FROM_PARENT: 0,
 		XCB_EVENT_MASK_BUTTON_PRESS: 4,
 		XCB_EVENT_MASK_BUTTON_RELEASE: 8,
-		XCB_CW_EVENT_MASK: 2048
+		XCB_CW_EVENT_MASK: 2048,
+		
+		XCB_NONE: 0,
+		XCB_CURRENT_TIME: 0,
+		XCB_NO_SYMBOL: 0, // C:\Users\Mercurius\Downloads\libxcb-1.11.1\src\xcb.h line 206 ```#define XCB_NO_SYMBOL 0L```
+		
+		XCB_MOD_MASK_SHIFT: 1,
+		XCB_MOD_MASK_LOCK: 2,
+		XCB_MOD_MASK_CONTROL: 4,
+		XCB_MOD_MASK_1: 8,
+		XCB_MOD_MASK_2: 16,
+		XCB_MOD_MASK_3: 32,
+		XCB_MOD_MASK_4: 64,
+		XCB_MOD_MASK_5: 128,
+		XCB_MOD_MASK_ANY: 32768,
+		
+		XCB_GRAB_MODE_SYNC: 0,
+		XCB_GRAB_MODE_ASYNC: 1,
+		
+		XCB_GRAB_STATUS_SUCCESS: 0,
+		XCB_GRAB_STATUS_ALREADY_GRABBED: 1,
+		XCB_GRAB_STATUS_INVALID_TIME: 2,
+		XCB_GRAB_STATUS_NOT_VIEWABLE: 3,
+		XCB_GRAB_STATUS_FROZEN: 4,
+		
+		XCB_ALLOW_ASYNC_POINTER: 0,
+		XCB_ALLOW_SYNC_POINTER: 1,
+		XCB_ALLOW_REPLAY_POINTER: 2,
+		XCB_ALLOW_ASYNC_KEYBOARD: 3,
+		XCB_ALLOW_SYNC_KEYBOARD: 4,
+		XCB_ALLOW_REPLAY_KEYBOARD: 5,
+		XCB_ALLOW_ASYNC_BOTH: 6,
+		XCB_ALLOW_SYNC_BOTH: 7,
+			
+		XCB_KEY_PRESS: 2,
+		XCB_KEY_RELEASE: 3,
+		XCB_BUTTON_PRESS: 4,
+		XCB_BUTTON_RELEASE: 5,
+		XCB_MOTION_NOTIFY: 6,
+		XCB_ENTER_NOTIFY: 7,
+		XCB_LEAVE_NOTIFY: 8,
+		XCB_FOCUS_IN: 9,
+		XCB_FOCUS_OUT: 10,
+		XCB_KEYMAP_NOTIFY: 11,
+		XCB_EXPOSE: 12,
+		XCB_GRAPHICS_EXPOSURE: 13,
+		XCB_NO_EXPOSURE: 14,
+		XCB_VISIBILITY_NOTIFY: 15,
+		XCB_CREATE_NOTIFY: 16,
+		XCB_DESTROY_NOTIFY: 17,
+		XCB_UNMAP_NOTIFY: 18,
+		XCB_MAP_NOTIFY: 19,
+		XCB_MAP_REQUEST: 20,
+		XCB_REPARENT_NOTIFY: 21,
+		XCB_CONFIGURE_NOTIFY: 22,
+		XCB_CONFIGURE_REQUEST: 23,
+		XCB_GRAVITY_NOTIFY: 24,
+		
+		XCB_EVENT_MASK_NO_EVENT: 0,
+		XCB_EVENT_MASK_KEY_PRESS: 1,
+		XCB_EVENT_MASK_KEY_RELEASE: 2,
+		XCB_EVENT_MASK_BUTTON_PRESS: 4,
+		XCB_EVENT_MASK_BUTTON_RELEASE: 8,
+		XCB_EVENT_MASK_ENTER_WINDOW: 16,
+		XCB_EVENT_MASK_LEAVE_WINDOW: 32,
+		XCB_EVENT_MASK_POINTER_MOTION: 64,
+		XCB_EVENT_MASK_POINTER_MOTION_HINT: 128,
+		XCB_EVENT_MASK_BUTTON_1_MOTION: 256,
+		XCB_EVENT_MASK_BUTTON_2_MOTION: 512,
+		XCB_EVENT_MASK_BUTTON_3_MOTION: 1024,
+		XCB_EVENT_MASK_BUTTON_4_MOTION: 2048,
+		XCB_EVENT_MASK_BUTTON_5_MOTION: 4096,
+		XCB_EVENT_MASK_BUTTON_MOTION: 8192,
+		XCB_EVENT_MASK_KEYMAP_STATE: 16384,
+		XCB_EVENT_MASK_EXPOSURE: 32768,
+		XCB_EVENT_MASK_VISIBILITY_CHANGE: 65536,
+		XCB_EVENT_MASK_STRUCTURE_NOTIFY: 131072,
+		XCB_EVENT_MASK_RESIZE_REDIRECT: 262144,
+		XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY: 524288,
+		XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT: 1048576,
+		XCB_EVENT_MASK_FOCUS_CHANGE: 2097152,
+		XCB_EVENT_MASK_PROPERTY_CHANGE: 4194304,
+		XCB_EVENT_MASK_COLOR_MAP_CHANGE: 8388608,
+		XCB_EVENT_MASK_OWNER_GRAB_BUTTON: 16777216
+		
 	};
 	
 	var _lib = {}; // cache for lib
+	var libAttempter = function(aPath, aPrefered, aPossibles) {
+		// place aPrefered at front of aPossibles
+		if (aPrefered) {
+			aPossibles.splice(aPossibles.indexOf(aPrefered), 1); // link123543939
+			aPossibles.splice(0, 0, aPrefered);
+		}
+		
+		for (var i=0; i<aPossibles.length; i++) {
+			try {
+				_lib[aPath] = ctypes.open(aPossibles[i]);
+				break;
+			} catch (ignore) {
+				// on windows ignore.message == "couldn't open library rawr: error 126"
+				// on ubuntu ignore.message == ""couldn't open library rawr: rawr: cannot open shared object file: No such file or directory""
+			}
+		}
+		if (!_lib[aPath]) {
+			throw new Error('Path to ' + aPath + ' on operating system of , "' + OS.Constants.Sys.Name + '" was not found. This does not mean it is not supported, it means that the author of this addon did not specify the proper name. Report this to author.');
+		}
+	};
 	var lib = function(path) {
 		//ensures path is in lib, if its in lib then its open, if its not then it adds it to lib and opens it. returns lib
 		//path is path to open library
@@ -437,22 +620,75 @@ var x11Init = function() {
 			switch (path) {
 				case 'gdk2':
 				
-						_lib[path] = ctypes.open('libgdk-x11-2.0.so.0');
+						var possibles = ['libgdk-x11-2.0.so.0'];
+						
+						var preferred;
+						// all values of preferred MUST exist in possibles reason is link123543939
+						switch (core.os.name) {
+							case 'linux':
+								preferred = 'libgdk-x11-2.0.so.0';
+								break;
+							default:
+								// do nothing
+						}
+						
+						libAttempter(path, preferred, possibles);
 				
 					break;
 				case 'gdk3':
 				
-						_lib[path] = ctypes.open('libgdk-3.so.0');
+						var possibles = ['libgdk-3.so.0'];
+						
+						var preferred;
+						// all values of preferred MUST exist in possibles reason is link123543939
+						switch (core.os.name) {
+							case 'linux':
+								preferred = 'libgdk-3.so.0';
+								break;
+							default:
+								// do nothing
+						}
+						
+						libAttempter(path, preferred, possibles);
+				
+					break;
+				case 'gio':
+				
+						var possibles = ['libgio-2.0.so.0'];
+						
+						var preferred;
+						// all values of preferred MUST exist in possibles reason is link123543939
+						switch (core.os.name) {
+							case 'linux':
+								preferred = 'libgio-2.0.so.0';
+								break;
+							default:
+								// do nothing
+						}
+						
+						libAttempter(path, preferred, possibles);
 				
 					break;
 				case 'gtk2':
 				
-						_lib[path] = ctypes.open('libgtk-x11-2.0.so.0');
+						var possibles = ['libgtk-x11-2.0.so.0'];
+						
+						var preferred;
+						// all values of preferred MUST exist in possibles reason is link123543939
+						switch (core.os.name) {
+							case 'linux':
+								preferred = 'libgtk-x11-2.0.so.0';
+								break;
+							default:
+								// do nothing
+						}
+						
+						libAttempter(path, preferred, possibles);
 				
 					break;
 				case 'xcb':
 
-						var possibles = ['libxcb.so'];
+						var possibles = ['libxcb.so', 'libxcb.so.1'];
 						
 						var preferred;
 						// all values of preferred MUST exist in possibles reason is link123543939
@@ -471,94 +707,105 @@ var x11Init = function() {
 								// do nothing
 						}
 						
-						// place preferred at front of possibles
-						if (preferred) {
-							possibles.splice(possibles.indexOf(preferred), 1); // link123543939
-							possibles.splice(0, 0, preferred);
+						libAttempter(path, preferred, possibles);
+						
+					break;
+				case 'xcbkey':
+
+						var possibles = ['libxcb-keysyms.so', 'libxcb-keysyms.so.1'];
+						
+						var preferred;
+						// all values of preferred MUST exist in possibles reason is link123543939
+						switch (core.os.name) {
+							case 'freebsd': // physically unverified
+							case 'openbsd': // physically unverified
+							case 'android': // physically unverified
+							case 'sunos': // physically unverified
+							case 'netbsd': // physically unverified
+							case 'dragonfly': // physcially unverified
+							case 'gnu/kfreebsd': // physically unverified
+							case 'linux':
+								preferred = 'libxcb-keysyms.so';
+								break;
+							default:
+								// do nothing
 						}
 						
-						for (var i=0; i<possibles.length; i++) {
-							try {
-								_lib[path] = ctypes.open(possibles[i]);
-								break;
-							} catch (ignore) {
-								// on windows ignore.message == "couldn't open library rawr: error 126"
-								// on ubuntu ignore.message == ""couldn't open library rawr: rawr: cannot open shared object file: No such file or directory""
-							}
-						}
-						if (!_lib[path]) {
-							throw new Error({
-								name: 'platform-error',
-								message: 'Path to ' + path + ' on operating system of , "' + OS.Constants.Sys.Name + '" was not found. This does not mean it is not supported, it means that the author of this addon did not specify the proper name. Report this to author.'
-							});
-						}
+						libAttempter(path, preferred, possibles);
 						
 					break;
 				case 'libc':
 
+						var possibles = ['libc.dylib', 'libc.so.7', 'libc.so.61.0', 'libc.so', 'libc.so.6', 'libc.so.0.1'];
+						var preferred;
+						// all values of preferred MUST exist in possibles reason is link123543939
 						switch (core.os.name) {
 							case 'darwin':
-								_lib[path] = ctypes.open('libc.dylib');
+								preferred = 'libc.dylib';
 								break;
 							case 'freebsd':
-								_lib[path] = ctypes.open('libc.so.7');
+								preferred = 'libc.so.7';
 								break;
 							case 'openbsd':
-								_lib[path] = ctypes.open('libc.so.61.0');
+								preferred = 'libc.so.61.0';
 								break;
 							case 'android':
 							case 'sunos':
 							case 'netbsd': // physically unverified
 							case 'dragonfly': // physcially unverified
-								_lib[path] = ctypes.open('libc.so');
+								preferred = 'libc.so';
 								break;
 							case 'linux':
-								_lib[path] = ctypes.open('libc.so.6');
+								preferred = 'libc.so.6';
 								break;
 							case 'gnu/kfreebsd': // physically unverified
-								_lib[path] = ctypes.open('libc.so.0.1');
+								preferred = 'libc.so.0.1';
 								break;
 							default:
-								throw new Error({
-									name: 'api-error',
-									message: 'Path to libc on operating system of , "' + OS.Constants.Sys.Name + '" is not supported'
-								});
+								// do nothing
 						}
+						
+						libAttempter(path, preferred, possibles);
 
 					break;
 				case 'x11':
-
+				
+						var possibles = ['libX11.dylib', 'libX11.so.7', 'libX11.so.61.0', 'libX11.so', 'libX11.so.6', 'libX11.so.0.1'];
+						var preferred;
+						// all values of preferred MUST exist in possibles reason is link123543939
 						switch (core.os.name) {
 							case 'darwin': // physically unverified
-								_lib[path] = ctypes.open('libX11.dylib');
+								preferred = 'libX11.dylib';
 								break;
 							case 'freebsd': // physically unverified
-								_lib[path] = ctypes.open('libX11.so.7');
+								preferred = 'libX11.so.7';
 								break;
 							case 'openbsd': // physically unverified
-								_lib[path] = ctypes.open('libX11.so.61.0');
+								preferred = 'libX11.so.61.0';
 								break;
 							case 'sunos': // physically unverified
 							case 'netbsd': // physically unverified
 							case 'dragonfly': // physcially unverified
-								_lib[path] = ctypes.open('libX11.so');
+								preferred = 'libX11.so';
 								break;
 							case 'linux':
-								_lib[path] = ctypes.open('libX11.so.6');
+								preferred = 'libX11.so.6';
 								break;
 							case 'gnu/kfreebsd': // physically unverified
-								_lib[path] = ctypes.open('libX11.so.0.1');
+								preferred = 'libX11.so.0.1';
 								break;
 							default:
-								throw new Error({
-									name: 'api-error',
-									message: 'Path to libX11 on operating system of , "' + OS.Constants.Sys.Name + '" is not supported'
-								});
+								// do nothing
 						}
+						
+						libAttempter(path, preferred, possibles);
 
 					break;
-					case 'xrandr':
-
+				case 'xrandr':
+					
+						var possibles = ['libXrandr.so.2'];
+						var preferred;
+						// all values of preferred MUST exist in possibles reason is link123543939
 						switch (core.os.name) {
 							case 'freebsd': // physically unverified
 							case 'openbsd': // physically unverified
@@ -567,14 +814,13 @@ var x11Init = function() {
 							case 'dragonfly': // physcially unverified
 							case 'linux':
 							case 'gnu/kfreebsd': // physically unverified
-								_lib[path] = ctypes.open('libXrandr.so.2');
+								preferred = 'libXrandr.so.2';
 								break;
 							default:
-								throw new Error({
-									name: 'api-error',
-									message: 'Path to libX11 on operating system of , "' + OS.Constants.Sys.Name + '" is not supported'
-								});
+								// do nothing
 						}
+						
+						libAttempter(path, preferred, possibles);
 
 					break;
 				default:
@@ -603,72 +849,6 @@ var x11Init = function() {
 	
 	// start - predefine your declares here
 	var preDec = { //stands for pre-declare (so its just lazy stuff) //this must be pre-populated by dev // do it alphabateized by key so its ez to look through
-		// functions to go between gdk and x11
-		gdk_window_get_user_data: function() {
-			/* https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#gdk-window-get-user-data
-			 * void gdk_window_get_user_data (
-			 *   GdkWindow *window,
-			 *   gpointer *data
-			 * );
-			 */
-			return lib('gdk2').declare('gdk_window_get_user_data', self.TYPE.ABI,
-				self.TYPE.void,				// return
-				self.TYPE.GdkWindow.ptr,	// *window
-				self.TYPE.gpointer.ptr		// *data
-			);
-		},
-		gdk_x11_drawable_get_xid: function() {
-			/* https://developer.gnome.org/gdk2/stable/gdk2-X-Window-System-Interaction.html#gdk-x11-drawable-get-xid
-			 * XID gdk_x11_drawable_get_xid (
-			 *   GdkDrawable *drawable
-			 * );
-			 */
-			return lib('gdk2').declare('gdk_x11_drawable_get_xid', self.TYPE.ABI,
-				self.TYPE.XID,				// return
-				self.TYPE.GdkDrawable.ptr	// *drawable
-			);
-		},
-		gdk_x11_window_lookup_for_display: function() {
-			/* https://developer.gnome.org/gdk2/stable/gdk2-X-Window-System-Interaction.html#gdk-x11-window-lookup-for-display
-			 * GdkWindow *gdk_x11_window_lookup_for_display (
-			 *   GdkDisplay *display,
-			 *   Window window
-			 * );
-			 */
-			return lib('gdk2').declare('gdk_x11_window_lookup_for_display', self.TYPE.ABI,
-				self.TYPE.GdkWindow.ptr,	// *return
-				self.TYPE.GdkDisplay.ptr,	// *display
-				self.TYPE.Window			// window
-			);
-		},
-		gtk_widget_get_window: function() {
-			/* https://developer.gnome.org/gtk3/stable/GtkWidget.html#gtk-widget-get-window
-			 * GdkWindow *gtk_widget_get_window (
-			 *   GtkWidget *widget
-			 * );
-			 */
-			return lib('gtk2').declare('gtk_widget_get_window', self.TYPE.ABI,
-				self.TYPE.GdkWindow.ptr,	// *return
-				self.TYPE.GtkWidget.ptr		// *widget
-			);
-		},
-		// libc
-		memcpy: function() {
-			/* http://linux.die.net/man/3/memcpy
-			 * void *memcpy (
-			 *   void *dest,
-			 *   const void *src,
-			 *   size_t n
-			 * );
-			 */
-			return lib('libc').declare('memcpy', self.TYPE.ABI,
-				self.TYPE.void,		// return
-				self.TYPE.void.ptr,	// *dest
-				self.TYPE.void.ptr,	// *src
-				self.TYPE.size_t	// count
-			);
-		},
-		// x11
 		XAllPlanes: function() {
 			/* http://tronche.com/gui/x/xlib/display/display-macros.html
 			 * unsigned long XAllPlanes()
@@ -945,21 +1125,6 @@ var x11Init = function() {
 				self.TYPE.int				// format
 			);
 		},
-		XGetWindowAttributes: function() {
-			/* http://www.xfree86.org/4.4.0/XGetWindowAttributes.3.html
-			 * Status XGetWindowAttributes(
-			 *   Display			*display,
-			 *   Window 			w,
-			 *   XWindowAttributes	*window_attributes_return
-			 * );
-			 */
-			return lib('x11').declare('XGetWindowAttributes', self.TYPE.ABI,
-				self.TYPE.Status,				// return
-				self.TYPE.Display.ptr,			// *display
-				self.TYPE.Window,				// w
-				self.TYPE.XWindowAttributes.ptr	// *window_attributes_return
-			); 
-		},
 		XGetInputFocus: function() {
 			/* http://www.x.org/releases/X11R7.6/doc/man/man3/XGetInputFocus.3.xhtml
 			 * int XGetInputFocus(
@@ -974,6 +1139,21 @@ var x11Init = function() {
 				self.TYPE.Window.ptr,	// *focus_return
 				self.TYPE.int.ptr		// *revert_to_return
 			);
+		},
+		XGetWindowAttributes: function() {
+			/* http://www.xfree86.org/4.4.0/XGetWindowAttributes.3.html
+			 * Status XGetWindowAttributes(
+			 *   Display			*display,
+			 *   Window 			w,
+			 *   XWindowAttributes	*window_attributes_return
+			 * );
+			 */
+			return lib('x11').declare('XGetWindowAttributes', self.TYPE.ABI,
+				self.TYPE.Status,				// return
+				self.TYPE.Display.ptr,			// *display
+				self.TYPE.Window,				// w
+				self.TYPE.XWindowAttributes.ptr	// *window_attributes_return
+			); 
 		},
 		XGetWindowProperty: function() {
 			/* http://www.xfree86.org/4.4.0/XGetWindowProperty.3.html
@@ -1023,6 +1203,30 @@ var x11Init = function() {
 				self.TYPE.XTextProperty.ptr		// *text_prop_return
 			);
 		},
+		XGrabKey: function() {
+			/* http://www.x.org/releases/current/doc/man/man3/XGrabKey.3.xhtml
+			 * https://tronche.com/gui/x/xlib/input/XGrabKey.html
+			 * int XGrabKey(
+			 * Display *display,
+			 * int keycode,
+			 * unsigned int modifiers,
+			 * Window grab_window,
+			 * Bool owner_events,
+			 * int pointer_mode,
+			 * int keyboard_mode
+			 * )
+			 */
+			return lib('x11').declare('XGrabKey', self.TYPE.ABI,
+				self.TYPE.int,			// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.int,			// keycode
+				self.TYPE.unsigned_int,	// modifiers
+				self.TYPE.Window,		// grab_window
+				self.TYPE.Bool,			// owner_events
+				self.TYPE.int,			// pointer_mode
+				self.TYPE.int			// keyboard_mode
+			);
+		},
 		XGrabPointer: function() {
 			/* http://www.x.org/releases/current/doc/man/man3/XGrabPointer.3.xhtml
 			 * int XGrabPointer(
@@ -1061,6 +1265,16 @@ var x11Init = function() {
 				self.TYPE.Screen.ptr	// *screen
 			);
 		},
+		XInitThreads: function() {
+			/* http://www.x.org/archive/X11R6.8.1/doc/XInitThreads.3.html
+			 * Status XInitThreads (
+			 *   void
+			 * )
+			 */
+			return lib('x11').declare('XInitThreads', self.TYPE.ABI,
+				self.TYPE.Status
+			);
+		},
 		XInternAtom: function() {
 			/* http://www.xfree86.org/4.4.0/XInternAtom.3.html
 			 * Atom XInternAtom(
@@ -1074,6 +1288,19 @@ var x11Init = function() {
 				self.TYPE.Display.ptr,	// *display
 				self.TYPE.char.ptr,		// *atom_name
 				self.TYPE.Bool			// only_if_exists
+			);
+		},
+		XKeysymToKeycode: function() {
+			/* http://domesjö.se/xlib/utilities/keyboard/XKeysymToKeycode.html
+			 * KeyCode XKeysymToKeycode(
+			 *   Display *display,
+			 *   KeySym keysym
+			 * )
+			 */
+			return lib('x11').declare('XKeysymToKeycode', self.TYPE.ABI,
+				self.TYPE.KeyCode,		// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.KeySym		// keysym
 			);
 		},
 		XListProperties: function() {
@@ -1201,6 +1428,25 @@ var x11Init = function() {
 				self.TYPE.int				// screen_number
 			);			
 		},
+		XSendEvent: function() {
+			/* http://www.xfree86.org/4.4.0/XSendEvent.3.html
+			 * Status XSendEvent(
+			 *   Display *display,
+			 *   Window w,
+			 *   Bool propagate,
+			 *   long event_mask,
+			 *   XEvent *event_send
+			 * ); 
+			 */
+			return lib('x11').declare('XSendEvent', self.TYPE.ABI,
+				self.TYPE.Status,		// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.Window,		// w
+				self.TYPE.Bool,			// propagate
+				self.TYPE.long,			// event_mask
+				self.TYPE.XEvent.ptr	// *event_sent
+			); 
+		},
 		XSelectInput: function() {
 			/* http://www.x.org/releases/X11R7.6/doc/man/man3/XSelectInput.3.xhtml
 			 * int XSelectInput(
@@ -1260,6 +1506,23 @@ var x11Init = function() {
 				self.TYPE.Window.ptr		// *child_return
 			); 
 		},
+		XUngrabKey: function() {
+			/* http://www.x.org/releases/current/doc/man/man3/XGrabKey.3.xhtml
+			 * int XUngrabKey(
+			 *   Display *display,
+			 *   int keycode,
+			 *   unsigned int modifiers,
+			 *   Window grab_window
+			 * );
+			 */
+			return lib('x11').declare('XUngrabKey', self.TYPE.ABI,
+				self.TYPE.int,			// return
+				self.TYPE.Display.ptr,	// *display
+				self.TYPE.int,			// keycode
+				self.TYPE.unsigned_int,	// modifiers
+				self.TYPE.Window		// grab_window
+			);
+		},
 		XUngrabPointer: function() {
 			/* http://www.x.org/releases/current/doc/man/man3/XUngrabPointer.3.xhtml
 			 * int XUngrabPointer(
@@ -1285,6 +1548,34 @@ var x11Init = function() {
 			);
 		},
 		// start - XRANDR
+		XRRGetScreenResources: function() {
+			/* http://cgit.freedesktop.org/xorg/lib/libXrandr/tree/src/XrrScreen.c
+			 * XRRScreenResources *XRRGetScreenResources(
+			 *   Display *dpy,
+			 *   Window window
+			 * )
+			 */
+			return lib('xrandr').declare('XRRGetScreenResources', self.TYPE.ABI,
+				self.TYPE.XRRScreenResources.ptr,		// return
+				self.TYPE.Display.ptr,					// *dpy
+				self.TYPE.Window						// window
+			);
+		},
+		XRRGetOutputInfo: function() {
+			/* http://cgit.freedesktop.org/xorg/lib/libXrandr/tree/src/XrrOutput.c
+			 * XRROutputInfo *XRRGetOutputInfo (
+			 *   Display *dpy,
+			 *   XRRScreenResources *resources,
+			 *   RROutput output
+			 * )
+			 */
+			return lib('xrandr').declare('XRRGetOutputInfo', self.TYPE.ABI,
+				self.TYPE.XRROutputInfo.ptr,		// return
+				self.TYPE.Display.ptr,				// *dpy
+				self.TYPE.XRRScreenResources.ptr,	// *resources
+				self.TYPE.RROutput					// output
+			);
+		},
 		XRRGetCrtcInfo: function() {
 			/* http://cgit.freedesktop.org/xorg/lib/libXrandr/tree/src/XrrCrtc.c
 			 * XRRCrtcInfo *XRRGetCrtcInfo (
@@ -1333,36 +1624,170 @@ var x11Init = function() {
 				self.TYPE.XRRScreenResources.ptr	// *resources
 			);
 		},
-		XRRGetOutputInfo: function() {
-			/* http://cgit.freedesktop.org/xorg/lib/libXrandr/tree/src/XrrOutput.c
-			 * XRROutputInfo *XRRGetOutputInfo (
-			 *   Display *dpy,
-			 *   XRRScreenResources *resources,
-			 *   RROutput output
-			 * )
-			 */
-			return lib('xrandr').declare('XRRGetOutputInfo', self.TYPE.ABI,
-				self.TYPE.XRROutputInfo.ptr,		// return
-				self.TYPE.Display.ptr,				// *dpy
-				self.TYPE.XRRScreenResources.ptr,	// *resources
-				self.TYPE.RROutput					// output
-			);
-		},
-		XRRGetScreenResources: function() {
-			/* http://cgit.freedesktop.org/xorg/lib/libXrandr/tree/src/XrrScreen.c
-			 * XRRScreenResources *XRRGetScreenResources(
-			 *   Display *dpy,
-			 *   Window window
-			 * )
-			 */
-			return lib('xrandr').declare('XRRGetScreenResources', self.TYPE.ABI,
-				self.TYPE.XRRScreenResources.ptr,		// return
-				self.TYPE.Display.ptr,					// *dpy
-				self.TYPE.Window						// window
-			);
-		},
 		// end - XRANDR
+		// start - gtk
+		g_app_info_launch_uris: function() {
+			/* https://developer.gnome.org/gio/unstable/GAppInfo.html#g-app-info-launch-uris
+			 * gboolean g_app_info_launch_uris (
+			 *   GAppInfo *appinfo,
+			 *   GList *uris,
+			 *   GAppLaunchContext *launch_context,
+			 *   GError **error
+			 * );
+			 */
+			return lib('gio').declare('g_app_info_launch_uris', self.TYPE.ABI,
+				self.TYPE.gboolean,					// return
+				self.TYPE.GAppInfo.ptr,				// *appinfo
+				self.TYPE.GList.ptr,				// *uris
+				self.TYPE.GAppLaunchContext.ptr,	// *launch_context
+				self.TYPE.GError.ptr.ptr			// **error
+			);
+		},
+		g_desktop_app_info_new_from_filename: function() {
+			/* https://developer.gnome.org/gio/unstable/gio-Desktop-file-based-GAppInfo.html#g-desktop-app-info-new-from-filename
+			 * GDesktopAppInfo * g_desktop_app_info_new_from_filename(
+			 *   const char *filename
+			 * );
+			 */
+			return lib('gio').declare('g_desktop_app_info_new_from_filename', self.TYPE.ABI,
+				self.TYPE.GDesktopAppInfo.ptr,	// return
+				self.TYPE.gchar.ptr				// *filename
+			);
+		},
+		g_file_new_for_path: function() {
+			/* https://developer.gnome.org/gio/stable/GFile.html#g-file-new-for-path
+			 * GFile *g_file_new_for_path (
+			 *   const char *path
+			 * );
+			 */
+			return lib('gio').declare('g_file_new_for_path', self.TYPE.ABI,
+				self.TYPE.GFile.ptr,	// return
+				self.TYPE.char.ptr		// *char
+			);
+		},
+		g_file_trash: function() {
+			/* https://developer.gnome.org/gio/stable/GFile.html#g-file-trash
+			 * gboolean g_file_trash (
+			 *   GFile *file,
+			 *   GCancellable *cancellable,
+			 *   GError **error
+			 * );
+			 */
+			return lib('gio').declare('g_file_trash', self.TYPE.ABI,
+				self.TYPE.gboolean,				// return
+				self.TYPE.GFile.ptr,			// *file
+				self.TYPE.GCancellable.ptr,		// *cancellable
+				self.TYPE.GError.ptr.ptr		// **error
+			);
+		},
+		gdk_window_add_filter: function() {
+			/* https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#gdk-window-add-filter
+			 * void gdk_window_add_filter (
+			 *   GdkWindow *window,
+			 *   GdkFilterFunc function,
+			 *   gpointer data
+			 * );
+			 */
+			return lib('gdk2').declare('gdk_window_add_filter', self.TYPE.ABI,
+				self.TYPE.void,				// return
+				self.TYPE.GdkWindow.ptr,	// *window
+				self.TYPE.GdkFilterFunc,	// function
+				self.TYPE.gpointer			// data
+			);
+		},
+		gdk_window_get_user_data: function() {
+			/* https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#gdk-window-get-user-data
+			 * void gdk_window_get_user_data (
+			 *   GdkWindow *window,
+			 *   gpointer *data
+			 * );
+			 */
+			return lib('gdk2').declare('gdk_window_get_user_data', self.TYPE.ABI,
+				self.TYPE.void,				// return
+				self.TYPE.GdkWindow.ptr,	// *window
+				self.TYPE.gpointer.ptr		// *data
+			);
+		},
+		gdk_window_remove_filter: function() {
+			/* https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#gdk-window-remove-filter
+			 * void gdk_window_add_filter (
+			 *   GdkWindow *window,
+			 *   GdkFilterFunc function,
+			 *   gpointer data
+			 * );
+			 */
+			return lib('gdk2').declare('gdk_window_remove_filter', self.TYPE.ABI,
+				self.TYPE.void,				// return
+				self.TYPE.GdkWindow.ptr,	// *window
+				self.TYPE.GdkFilterFunc,	// function
+				self.TYPE.gpointer			// data
+			);
+		},
+		gdk_x11_drawable_get_xid: function() {
+			/* https://developer.gnome.org/gdk2/stable/gdk2-X-Window-System-Interaction.html#gdk-x11-drawable-get-xid
+			 * XID gdk_x11_drawable_get_xid (
+			 *   GdkDrawable *drawable
+			 * );
+			 */
+			return lib('gdk2').declare('gdk_x11_drawable_get_xid', self.TYPE.ABI,
+				self.TYPE.XID,				// return
+				self.TYPE.GdkDrawable.ptr	// *drawable
+			);
+		},
+		gdk_x11_window_lookup_for_display: function() {
+			/* https://developer.gnome.org/gdk2/stable/gdk2-X-Window-System-Interaction.html#gdk-x11-window-lookup-for-display
+			 * GdkWindow *gdk_x11_window_lookup_for_display (
+			 *   GdkDisplay *display,
+			 *   Window window
+			 * );
+			 */
+			return lib('gdk2').declare('gdk_x11_window_lookup_for_display', self.TYPE.ABI,
+				self.TYPE.GdkWindow.ptr,	// *return
+				self.TYPE.GdkDisplay.ptr,	// *display
+				self.TYPE.Window			// window
+			);
+		},
+		gtk_widget_get_window: function() {
+			/* https://developer.gnome.org/gtk3/stable/GtkWidget.html#gtk-widget-get-window
+			 * GdkWindow *gtk_widget_get_window (
+			 *   GtkWidget *widget
+			 * );
+			 */
+			return lib('gtk2').declare('gtk_widget_get_window', self.TYPE.ABI,
+				self.TYPE.GdkWindow.ptr,	// *return
+				self.TYPE.GtkWidget.ptr		// *widget
+			);
+		},
+		gtk_window_set_keep_above: function() {
+			/* https://developer.gnome.org/gtk3/stable/GtkWindow.html#gtk-window-set-keep-above
+			 * void gtk_window_set_keep_above (
+			 *   GtkWindow *window,
+			 *   gboolean setting
+			 * );
+			 */
+			return lib('gtk2').declare('gtk_window_set_keep_above', self.TYPE.ABI,
+				self.TYPE.void,				// return
+				self.TYPE.GtkWindow.ptr,	// *window
+				self.TYPE.gboolean			// setting
+			);
+		},
+		// end - gtk
 		// start - libc
+		memcpy: function() {
+			/* http://linux.die.net/man/3/memcpy
+			 * void *memcpy (
+			 *   void *dest,
+			 *   const void *src,
+			 *   size_t n
+			 * );
+			 */
+			return lib('libc').declare('memcpy', self.TYPE.ABI,
+				self.TYPE.void,		// return
+				self.TYPE.void.ptr,	// *dest
+				self.TYPE.void.ptr,	// *src
+				self.TYPE.size_t	// count
+			);
+		},
 		select: function() {
 			/* http://linux.die.net/man/2/select
 			 * int select (
@@ -1389,6 +1814,21 @@ var x11Init = function() {
 			return lib('xcb').declare('free', self.TYPE.ABI,
 				self.TYPE.void,		// return
 				self.TYPE.void.ptr	// total guess, i cant find this guy declared anywhere
+			);
+		},
+		xcb_allow_events: function() {
+			/* http://www.x.org/releases/X11R7.7/doc/man/man3/xcb_allow_events.3.xhtml
+			 * xcb_void_cookie_t xcb_allow_events(
+			 *   xcb_connection_t *conn,
+			 *   uint8_t mode,
+			 *   xcb_timestamp_t time
+			 * );
+			 */
+			return lib('xcb').declare('xcb_allow_events', self.TYPE.ABI,
+				self.TYPE.xcb_void_cookie_t,		// return
+				self.TYPE.xcb_connection_t.ptr,		// *conn
+				self.TYPE.uint8_t,					// mode
+				self.TYPE.xcb_timestamp_t			// time
 			);
 		},
 		xcb_connect: function() {
@@ -1446,12 +1886,90 @@ var x11Init = function() {
 				self.TYPE.xcb_connection_t.ptr	// *c
 			);
 		},
+		xcb_grab_key: function() {
+			// https://github.com/emmanueldenloye/firefox-pentadactyl/blob/52bcaf3a49f81350110210a90552690b2db332a0/unused_plugins/fix-focus.js#L240
+			/* http://www.x.org/releases/X11R7.7/doc/man/man3/xcb_grab_key.3.xhtml
+			 * xcb_void_cookie_t xcb_grab_key(
+			 *   xcb_connection_t *conn,
+			 *   uint8_t owner_events,
+			 *   xcb_window_t grab_window,
+			 *   uint16_t modifiers,
+			 *   xcb_keycode_t key,
+			 *   uint8_t pointer_mode,
+			 *   uint8_t keyboard_mode
+			 * );
+			 */
+			return lib('xcb').declare('xcb_grab_key', self.TYPE.ABI,
+				self.TYPE.xcb_void_cookie_t,		// return
+				self.TYPE.xcb_connection_t.ptr,		// *conn
+				self.TYPE.uint8_t,					// owner_events
+				self.TYPE.xcb_window_t,				// grab_window
+				self.TYPE.uint16_t,					// modifiers
+				self.TYPE.xcb_keycode_t,			// key
+				self.TYPE.uint8_t,					// pointer_mode
+				self.TYPE.uint8_t					// keyboard_mode
+			);
+		},
+		xcb_key_symbols_alloc: function() {
+			/* http://www.opensource.apple.com/source/X11libs/X11libs-60/xcb-util/xcb-util-0.3.6/keysyms/xcb_keysyms.h
+			 * xcb_key_symbols_t *xcb_key_symbols_alloc        (xcb_connection_t         *c);
+			 */
+			return lib('xcbkey').declare('xcb_key_symbols_alloc', self.TYPE.ABI,
+				self.TYPE.xcb_key_symbols_t.ptr,	// return
+				self.TYPE.xcb_connection_t.ptr		// *c
+			);
+		},
+		xcb_key_symbols_free: function() {
+			/* http://www.opensource.apple.com/source/X11libs/X11libs-60/xcb-util/xcb-util-0.3.6/keysyms/xcb_keysyms.h
+			 * void           xcb_key_symbols_free         (xcb_key_symbols_t         *syms);
+			 */
+			return lib('xcbkey').declare('xcb_key_symbols_free', self.TYPE.ABI,
+				self.TYPE.void,					// return
+				self.TYPE.xcb_key_symbols_t.ptr	// *syms
+			);
+		},
+		xcb_key_symbols_get_keycode: function() {
+			/* http://www.opensource.apple.com/source/X11libs/X11libs-60/xcb-util/xcb-util-0.3.6/keysyms/xcb_keysyms.h
+			 * xcb_keycode_t * xcb_key_symbols_get_keycode(xcb_key_symbols_t *syms, xcb_keysym_t keysym);
+			 */
+			return lib('xcbkey').declare('xcb_key_symbols_get_keycode', self.TYPE.ABI,
+				self.TYPE.xcb_keycode_t.ptr,		// return
+				self.TYPE.xcb_key_symbols_t.ptr,	// *syms
+				self.TYPE.xcb_keysym_t				// keysym
+			);
+		},
 		xcb_map_window: function() {
 			// http://damnsmallbsd.org/man?query=xcb_map_window&apropos=0&sektion=3&manpath=OSF1+V5.1%2Falpha&arch=default&format=html
 			return lib('xcb').declare('xcb_map_window', self.TYPE.ABI,
 				self.TYPE.xcb_void_cookie_t,	// return
 				self.TYPE.xcb_connection_t.ptr,		// *conn
 				self.TYPE.xcb_window_t				// window
+			);
+		},
+		xcb_poll_for_event: function() {
+			/* https://xcb.freedesktop.org/PublicApi/#index11h2
+			 * xcb_generic_event_t *xcb_poll_for_event (xcb_connection_t *c);
+			 */
+			return lib('xcb').declare('xcb_poll_for_event', self.TYPE.ABI,
+				self.TYPE.xcb_generic_event_t.ptr,		// return
+				self.TYPE.xcb_connection_t.ptr			// *c 
+			);
+		},
+		xcb_screen_next: function() {
+			// https://github.com/emmanueldenloye/firefox-pentadactyl/blob/52bcaf3a49f81350110210a90552690b2db332a0/unused_plugins/fix-focus.js#L244
+			return lib('xcb').declare('xcb_screen_next', self.TYPE.ABI,
+				self.TYPE.void,							// return
+				self.TYPE.xcb_screen_iterator_t.ptr
+			);
+		},
+		xcb_request_check: function() {
+			/* https://xcb.freedesktop.org/manual/group__XCB__Core__API.html#ga3ee7f1ad9cf0a9f1716d5c22405598fc
+			 * xcb_generic_error_t* xcb_request_check 	( 	xcb_connection_t *  	c, xcb_void_cookie_t  	cookie );
+			 */
+			return lib('xcb').declare('xcb_request_check', self.TYPE.ABI,
+				self.TYPE.xcb_generic_error_t.ptr,	// return
+				self.TYPE.xcb_connection_t.ptr,		// *c
+				self.TYPE.xcb_void_cookie_t			// cookie
 			);
 		},
 		xcb_setup_roots_iterator: function() {
@@ -1462,46 +1980,31 @@ var x11Init = function() {
 				self.TYPE.xcb_setup_t.ptr			// *R
 			);
 		},
+		xcb_ungrab_key: function() {
+			/* http://www.x.org/archive/current/doc/man/man3/xcb_ungrab_key.3.xhtml
+			 * xcb_void_cookie_t xcb_ungrab_key(
+			 *   xcb_connection_t *conn,
+			 *   xcb_keycode_t key,
+			 *   xcb_window_t grab_window,
+			 *   uint16_t modifiers
+			 * );
+			 */
+			return lib('xcb').declare('xcb_ungrab_key', self.TYPE.ABI,
+				self.TYPE.xcb_void_cookie_t,	// return
+				self.TYPE.xcb_connection_t.ptr,	// *conn
+				self.TYPE.xcb_keycode_t,		// key
+				self.TYPE.xcb_window_t,			// xcb_window_t
+				self.TYPE.uint16_t				// modifiers
+			);
+		},
 		xcb_wait_for_event: function() {
 			// http://xcb.freedesktop.org/PublicApi/#index10h2
 			return lib('xcb').declare('xcb_wait_for_event', self.TYPE.ABI,
 				self.TYPE.xcb_generic_event_t.ptr,	// return
 				self.TYPE.xcb_connection_t.ptr		// *c
 			);
-		},
-		// end - xcb
-		// start - gtk
-		gdk_window_add_filter: function() {
-			/* https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#gdk-window-add-filter
-			 * void gdk_window_add_filter (
-			 *   GdkWindow *window,
-			 *   GdkFilterFunc function,
-			 *   gpointer data
-			 * );
-			 */
-			return lib('gdk2').declare('gdk_window_add_filter', self.TYPE.ABI,
-				self.TYPE.void,				// return
-				self.TYPE.GdkWindow.ptr,	// *window
-				self.TYPE.GdkFilterFunc,	// function
-				self.TYPE.gpointer			// data
-			);
-		},
-		gdk_window_remove_filter: function() {
-			/* https://developer.gnome.org/gdk3/stable/gdk3-Windows.html#gdk-window-remove-filter
-			 * void gdk_window_add_filter (
-			 *   GdkWindow *window,
-			 *   GdkFilterFunc function,
-			 *   gpointer data
-			 * );
-			 */
-			return lib('gdk2').declare('gdk_window_remove_filter', self.TYPE.ABI,
-				self.TYPE.void,				// return
-				self.TYPE.GdkWindow.ptr,	// *window
-				self.TYPE.GdkFilterFunc,	// function
-				self.TYPE.gpointer			// data
-			);
 		}
-		// end - gtk
+		// end - xcb
 	};
 	// end - predefine your declares here
 	// end - function declares
@@ -1536,6 +2039,14 @@ var x11Init = function() {
 			 */
 			return self.API('XDefaultRootWindow');
 		},
+		DefaultScreenOfDisplay: function() {
+			/* http://www.xfree86.org/4.4.0/DefaultScreenOfDisplay.3.html
+			 * Screen *DefaultScreenOfDisplay(
+			 *   Display	*display
+			 * );
+			 */
+			return self.API('XDefaultScreenOfDisplay');
+		},
 		DefaultScreen: function() {
 			/* The DefaultScreen macro returns the default screen number referenced in the XOpenDisplay routine.
 			 * Argument `display` specifies the connection to the X server. 
@@ -1546,14 +2057,6 @@ var x11Init = function() {
 			 * );
 			 */
 			return self.API('XDefaultScreen');
-		},
-		DefaultScreenOfDisplay: function() {
-			/* http://www.xfree86.org/4.4.0/DefaultScreenOfDisplay.3.html
-			 * Screen *DefaultScreenOfDisplay(
-			 *   Display	*display
-			 * );
-			 */
-			return self.API('XDefaultScreenOfDisplay');
 		},
 		HeightOfScreen: function() {
 			/* http://www.xfree86.org/4.4.0/HeightOfScreen.3.html
@@ -1654,6 +2157,7 @@ var x11Init = function() {
 		},
 		ifOpenedXCloseDisplay: function() {
 			if (self._cache.XOpenDisplay) {
+				console.log('yes it was open, terminiating it');
 				self.API('XCloseDisplay')(self._cache.XOpenDisplay);
 			}
 		},
