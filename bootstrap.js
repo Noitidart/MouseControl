@@ -7,14 +7,6 @@ const {TextDecoder, TextEncoder, OS} = Cu.import('resource://gre/modules/osfile.
 Cu.import('resource://gre/modules/Promise.jsm');
 Cu.import('resource://gre/modules/Services.jsm');
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
-var devtools;
-try {
-  var { devtools } = Cu.import('resource://devtools/shared/Loader.jsm', {});
-} catch(ex if ex.result == Cr.NS_ERROR_NOT_AVAILABLE) {
-  // console.error('ex:', ex);
-  var { devtools } = Cu.import('resource://gre/modules/devtools/Loader.jsm', {});
-}
-devtools.lazyRequireGetter(this, "beautify", "devtools/jsbeautify");
 
 // Globals
 const core = {
@@ -52,6 +44,31 @@ const myPrefBranch = 'extensions.' + core.addon.id + '.';
 
 var ADDON_MANAGER_ENTRY;
 
+// start - beutify stuff
+
+var devtools;
+try {
+	var { devtools } = Cu.import('resource://devtools/shared/Loader.jsm', {});
+} catch(ex) {
+	var { devtools } = Cu.import('resource://gre/modules/devtools/Loader.jsm', {});
+}
+var beautify1 = {};
+var beautify2 = {};
+devtools.lazyRequireGetter(beautify1, 'beautify', 'devtools/jsbeautify');
+devtools.lazyRequireGetter(beautify2, 'beautify', 'devtools/shared/jsbeautify/beautify');
+
+function BEAUTIFY() {
+	try {
+		beautify1.beautify.js('""');
+		return beautify1.beautify;
+	} catch (ignore) {}
+	try {
+		beautify2.beautify.js('""');
+		return beautify2.beautify;
+	} catch (ignore) {}
+}
+// end - beutify stuff
+
 // Global config stuff
 
 var gConfigJson;
@@ -66,7 +83,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 
 			}))
 		},
@@ -76,7 +93,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					var gBrowser = DOMWindow.gBrowser;
@@ -104,7 +121,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
@@ -126,7 +143,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
@@ -141,7 +158,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
@@ -156,7 +173,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					DOMWindow.BrowserCloseTabOrWindow();
@@ -169,7 +186,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 
 			}))
 		},
@@ -179,7 +196,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 
 			}))
 		},
@@ -189,7 +206,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 
 			}))
 		},
@@ -199,7 +216,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 
 			}))
 		},
@@ -209,7 +226,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 
 			}))
 		},
@@ -219,7 +236,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 
 			}))
 		},
@@ -229,7 +246,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 
 			}))
 		},
@@ -239,7 +256,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-undoclosetab'),
 			config:[],
-			func: beautify.js(uneval({
+			func: BEAUTIFY(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
