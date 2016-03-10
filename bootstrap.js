@@ -83,7 +83,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 
 			}))
 		},
@@ -93,7 +93,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					var gBrowser = DOMWindow.gBrowser;
@@ -121,7 +121,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
@@ -143,7 +143,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
@@ -158,7 +158,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
@@ -173,7 +173,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					DOMWindow.BrowserCloseTabOrWindow();
@@ -186,7 +186,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 
 			}))
 		},
@@ -196,7 +196,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 
 			}))
 		},
@@ -206,7 +206,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 
 			}))
 		},
@@ -216,7 +216,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 
 			}))
 		},
@@ -226,7 +226,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 
 			}))
 		},
@@ -236,7 +236,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 
 			}))
 		},
@@ -246,7 +246,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 
 			}))
 		},
@@ -256,7 +256,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-undoclosetab'),
 			config:[],
-			func: BEAUTIFY(uneval({
+			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
