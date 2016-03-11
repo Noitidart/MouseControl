@@ -14,28 +14,38 @@ if (ctypes.voidptr_t.size == 4 /* 32-bit */) {
 
 function utilsInit() {
 	// start - comparison stuff
-	this.jscGetDeepest = function(obj) {
+	// https://gist.github.com/Noitidart/1ae3ff204dbe5c46befa - rev1
+	this.jscGetDeepest = function(obj, castVoidptrAsDecOrAsHex) {
+		// set castVoidptrAsDecOrAsHex to 10 (AsDec) or 16 (AsHex). 10 is same as doing .toString() -- see link118489111
+			// by default it will not. so if you do jscGetDeepest on ```ctypes.voidptr_t(ctypes.UInt64("0x1148"))``` it will give you ```ctypes.voidptr_t(ctypes.UInt64("0x1148")).toString``` which is "ctypes.voidptr_t(ctypes.UInt64("0x1148"))"
+			// this argument means if at deepest level, it finds it has .contents but cannot access .contents on it, then it will get the number that pointer is pointing to (of course if its a ctype [meaning a cdata], meaning if its just an object with a .contents it wont do it on that)
 		/*
 		if (obj !== null && obj !== undefined) {
 			console.log('trying on:', obj.toString())
 		}
 		*/
-		while (obj && Object.prototype.toString.call(obj) == '[object Object]' && ('contents' in obj || 'value' in obj)) {
+		var lastTypeof = typeof(obj);
+		while ((lastTypeof == 'function' || lastTypeof == 'object') && ('contents' in obj || 'value' in obj)) { // the first part tests if i can use `in obj`
 			if ('contents' in obj) {
 				if (obj.constructor.targetType && obj.constructor.targetType.size === undefined) {
-					//console.error('breaking as no targetType.size on obj level:', obj.toString());
+					// this avoids the error of like ctypes.voidptr_t(ctypes.UInt64("0x204")).contents as this will throw "Error: cannot get contents of undefined size" ---- link118489111
+					if (castVoidptrAsDecOrAsHex && obj instanceof ctypes.CData) { // because if it has a .contents it got there, so its something like ```ctypes.voidptr_t(ctypes.UInt64("0x1148"))```, so we want  that number so we do this. ```ctypes.cast(a, ctypes.uintptr_t).value.toString()``` gives us ```4424``` while ```ctypes.cast(a, ctypes.uintptr_t).value.toString(16)``` gives us the exact same hex number we see in a.toString() so it gives us ```1148``` (notice the no prefix of 0x). so by default it is toString(10)
+						obj = ctypes.cast(obj, ctypes.uintptr_t).value.toString(castVoidptrAsDecOrAsHex);
+					}
 					break;
 				} else {
 					obj = obj.contents;
 				}
 			} else if ('value' in obj) {
-				if (obj.constructor.targetType && obj.constructor.targetType.size === undefined) {
-					//console.error('breaking as no targetType.size on obj level:', obj.toString());
-					break;
-				} else {
+				try {
+					// this avoids the error of like ctypes.voidptr_t(ctypes.UInt64("0x204")).value as this will throw "TypeError: .value only works on character and numeric types, not `ctypes.voidptr_t`"
 					obj = obj.value;
+				} catch(ignore) {
+					break;
 				}
 			}
+			// this style assumes that if it has .contents (either undefined or not) it is impoosible that it has a .value
+			lastTypeof = typeof(obj)
 		}
 		if (obj && obj.toString) {
 			obj = obj.toString();
@@ -263,6 +273,7 @@ function utilsInit() {
 		
 		//console.info('post mod readString():', ctypesCharArr.readString().toString());
 	};
+	
 	this.typeOfField = function(structDef, fieldName) {
 		for (var i=0; i<structDef.fields.length; i++) {
 			for (var f in structDef.fields[i]) {
@@ -272,7 +283,159 @@ function utilsInit() {
 				break; // there is only one
 			}
 		}
+	};
+	
+	// HollowStructure - taken from - https://dxr.mozilla.org/mozilla-central/source/toolkit/components/osfile/modules/osfile_shared_allthreads.jsm#812 - on 010816
+	function osfile_shared_allthreads_Type(name, implementation) {
+	  if (!(typeof name == "string")) {
+		throw new TypeError("Type expects as first argument a name, got: "
+							+ name);
+	  }
+	  if (!(implementation instanceof ctypes.CType)) {
+		throw new TypeError("Type expects as second argument a ctypes.CType"+
+							", got: " + implementation);
+	  }
+	  Object.defineProperty(this, "name", { value: name });
+	  Object.defineProperty(this, "implementation", { value: implementation });
 	}
+	/**
+	 * Utility class, used to build a |struct| type
+	 * from a set of field names, types and offsets.
+	 *
+	 * @param {string} name The name of the |struct| type.
+	 * @param {number} size The total size of the |struct| type in bytes.
+	 */
+	this.HollowStructure = function(name, size) {
+	  if (!name) {
+		throw new TypeError("HollowStructure expects a name");
+	  }
+	  if (!size || size < 0) {
+		throw new TypeError("HollowStructure expects a (positive) size");
+	  }
+
+	  // A mapping from offsets in the struct to name/type pairs
+	  // (or nothing if no field starts at that offset).
+	  this.offset_to_field_info = [];
+
+	  // The name of the struct
+	  this.name = name;
+
+	  // The size of the struct, in bytes
+	  this.size = size;
+
+	  // The number of paddings inserted so far.
+	  // Used to give distinct names to padding fields.
+	  this._paddings = 0;
+	}
+	this.HollowStructure.prototype = {
+	  /**
+	   * Add a field at a given offset.
+	   *
+	   * @param {number} offset The offset at which to insert the field.
+	   * @param {string} name The name of the field.
+	   * @param {CType|Type} type The type of the field.
+	   */
+	  add_field_at: function add_field_at(offset, name, type) {
+		if (offset == null) {
+		  throw new TypeError("add_field_at requires a non-null offset");
+		}
+		if (!name) {
+		  throw new TypeError("add_field_at requires a non-null name");
+		}
+		if (!type) {
+		  throw new TypeError("add_field_at requires a non-null type");
+		}
+		if (type instanceof osfile_shared_allthreads_Type) { // :note: noitidart i have to change this from `Type` to `osfile_shared_allthreads_Type` because i havent imported osfile_shared_allthreads.jsm so Type is undefined link73027490740
+		  type = type.implementation;
+		}
+		if (this.offset_to_field_info[offset]) {
+		  throw new Error("HollowStructure " + this.name +
+						  " already has a field at offset " + offset);
+		}
+		if (offset + type.size > this.size) {
+		  throw new Error("HollowStructure " + this.name +
+						  " cannot place a value of type " + type +
+						  " at offset " + offset +
+						  " without exceeding its size of " + this.size);
+		}
+		let field = {name: name, type:type};
+		this.offset_to_field_info[offset] = field;
+	  },
+
+	  /**
+	   * Create a pseudo-field that will only serve as padding.
+	   *
+	   * @param {number} size The number of bytes in the field.
+	   * @return {Object} An association field-name => field-type,
+	   * as expected by |ctypes.StructType|.
+	   */
+	  _makePaddingField: function makePaddingField(size) {
+		let field = ({});
+		field["padding_" + this._paddings] =
+		  ctypes.ArrayType(ctypes.uint8_t, size);
+		this._paddings++;
+		return field;
+	  },
+
+	  /**
+	   * Convert this |HollowStructure| into a |Type|.
+	   */
+	  getType: function getType() {
+		// Contents of the structure, in the format expected
+		// by ctypes.StructType.
+		let struct = [];
+
+		let i = 0;
+		while (i < this.size) {
+		  let currentField = this.offset_to_field_info[i];
+		  if (!currentField) {
+			// No field was specified at this offset, we need to
+			// introduce some padding.
+
+			// Firstly, determine how many bytes of padding
+			let padding_length = 1;
+			while (i + padding_length < this.size
+				&& !this.offset_to_field_info[i + padding_length]) {
+			  ++padding_length;
+			}
+
+			// Then add the padding
+			struct.push(this._makePaddingField(padding_length));
+
+			// And proceed
+			i += padding_length;
+		  } else {
+			// We have a field at this offset.
+
+			// Firstly, ensure that we do not have two overlapping fields
+			for (let j = 1; j < currentField.type.size; ++j) {
+			  let candidateField = this.offset_to_field_info[i + j];
+			  if (candidateField) {
+				throw new Error("Fields " + currentField.name +
+				  " and " + candidateField.name +
+				  " overlap at position " + (i + j));
+			  }
+			}
+
+			// Then add the field
+			let field = ({});
+			field[currentField.name] = currentField.type;
+			struct.push(field);
+
+			// And proceed
+			i += currentField.type.size;
+		  }
+		}
+		let result = new osfile_shared_allthreads_Type(this.name, ctypes.StructType(this.name, struct)); // :note: noitidart i have to change this from `Type` to `osfile_shared_allthreads_Type` because i havent imported osfile_shared_allthreads.jsm so Type is undefined link73027490740
+		if (result.implementation.size != this.size) {
+		  throw new Error("Wrong size for type " + this.name +
+			  ": expected " + this.size +
+			  ", found " + result.implementation.size +
+			  " (" + result.implementation.toSource() + ")");
+		}
+		return result;
+	  }
+	};
 }
 
 var cutils = new utilsInit();

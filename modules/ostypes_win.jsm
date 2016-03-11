@@ -418,7 +418,15 @@ var winInit = function() {
 		RI_MOUSE_WHEEL: 0x0400,
 		RI_MOUSE_HORIZONTAL_WHEEL: 0x0800,
 		XBUTTON1: 0x0001,
-		XBUTTON2: 0x0002
+		XBUTTON2: 0x0002,
+		
+		QS_ALLEVENTS: 0x04BF,
+		QS_ALLINPUT: 0x04FF,
+		WAIT_ABANDONED_0: 0x00000080, // 128
+		WAIT_FAILED: self.TYPE.DWORD('0xFFFFFFFF'),
+		WAIT_IO_COMPLETION: 0x000000C0, // 192
+		WAIT_OBJECT_0: 0,
+		WAIT_TIMEOUT: 0x00000102 // 258
 	};
 
 	var _lib = {}; // cache for lib
@@ -996,6 +1004,25 @@ var winInit = function() {
 				self.TYPE.HMONITOR,	// HMONITOR
 				self.TYPE.POINT,	// pt
 				self.TYPE.DWORD		// dwFlags
+			);
+		},
+		MsgWaitForMultipleObjects: function() {
+			/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms684242%28v=vs.85%29.aspx
+			 * DWORD WINAPI MsgWaitForMultipleObjects(
+			 *   __in_       DWORD  nCount,
+			 *   __in_ const HANDLE *pHandles,
+			 *   __in_       BOOL   bWaitAll,
+			 *   __in_       DWORD  dwMilliseconds,
+			 *   __in_       DWORD  dwWakeMask
+			 * );
+			 */
+			return lib('user32').declare('MsgWaitForMultipleObjects', self.TYPE.ABI,
+				self.TYPE.DWORD,		// return
+				self.TYPE.DWORD,		// nCount
+				self.TYPE.HANDLE.ptr,	// *pHandles
+				self.TYPE.BOOL,			// bWaitAll
+				self.TYPE.DWORD,		// dwMilliseconds
+				self.TYPE.DWORD			// dwWakeMask
 			);
 		},
 		PeekMessage: function() {
