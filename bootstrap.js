@@ -539,7 +539,7 @@ function AboutFactory(component) {
 // end - about module
 
 var OSStuff = {};
-
+var infoObjForWorker = {};
 var MMWorkerThreadId;
 var MMWorkerFuncs = {
 	init: function(aInitInfoObj) {
@@ -548,7 +548,7 @@ var MMWorkerFuncs = {
 		// send init info obj of MMWorker to CommWorker, along with multiClickSpeed, holdDuration, and config
 			// CommWorker will create a shareable int which will be dowhat int. and a 4th which will be shareable string of 40 characters. this will hold the address of the json that MMWorker should read then upate its json. then it should set dowhat saying its done.
 			// also needs shareable int for length of string arr
-		var infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
+		infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
 		
 		// steup prefs for worker
 		infoObjForWorker.prefs = {};
@@ -630,29 +630,6 @@ var MMWorkerFuncs = {
 			Services.scriptloader.loadSubScript(core.addon.path.content + 'modules/cutils.jsm', bootstrap);
 			Services.scriptloader.loadSubScript(core.addon.path.content + 'modules/ostypes_x11.jsm', bootstrap);
 			OSStuff.ostypes_x11_imported = true;
-			
-			OSStuff.mouseConsts = {
-				kCGEventLeftMouseDown: 1,
-				kCGEventLeftMouseUp: 2,
-				kCGEventRightMouseDown: 3,
-				kCGEventRightMouseUp: 4,
-				kCGEventOtherMouseDown: 25,
-				kCGEventOtherMouseUp: 26,
-				kCGEventScrollWheel: 22
-			};
-			
-			// because all the os'es have different constants, i "standardize" them
-			OSStuff.mouseConstToStdConst = {
-				kCGEventLeftMouseDown: 'B1_DN',
-				kCGEventLeftMouseUp: 'B1_UP',
-				kCGEventRightMouseDown: 'B2_DN',
-				kCGEventRightMouseUp: 'B2_UP',
-				kCGEventOtherMouseDown: '_DN',
-				kCGEventOtherMouseUp: '_UP',
-				kCGEventScrollWheel: 'W?_??'
-				// WM_XBUTTONUP: ['B4_UP', 'B5_UP'],
-				// WM_MOUSEHWHEEL: ['WH_RT', 'WH_LT']
-			};
 		}
 
 		OSStuff.mouse_filter_js = function(xeventPtr, eventPtr, data) {
@@ -726,74 +703,13 @@ var MMWorkerFuncs = {
 	// end - gtk mainthread technique functions
 };
 
-// mainthread mouse tracker for gtk
-var gMEHistory = []; // history up till user releases all mouse buttons, and the multi-speed and click-speed times have passed
-var gMEDown = []; // what is currently down
-/* valid values for stdConst
-B?_DN
-B?_UP
-WV_UP
-WV_DN
-WH_LT
-WH_RT
-
-// composited
-B?_CK - click
-B?_HD - hold
-
-
-*/
-
-function handleMouseEvent(aMEStdConst) {
-	// return true if handled else false (handled means block it)
-	var cME = {
-		std: aMEStdConst,
-		time: (new Date()).getTime(),
-		multi: 1
-	}
-	
-	var lME; // lastMouseEvent
-	if (gMEHistory.length) {
-		lME = gMEHistory[gMEHistory.length-1];
-	}
-	
-	if (lME) {
-		/*
-		// test should we ignore cME
-		if (prefs['ignore-autorepeat-duration'].value > 0) {
-			if (cME.time - lME.time < prefs['ignore-autorepeat-duration'].value) {
-				// discard this but update this event so its last time is now
-				lME.time = cME.time;
-				console.log('discarding event - meaning not pushing into history');
-				// no need to test here for a current match, as we are ignoring it
-				return false;
-			}
-		}
-		*/
-		
-		// test should we maek cME a click?
-	}
-	
-	if (cME.std.substr(3) == 'DN') {
-		// if (gMEDown.indexOf(cME.)
-	}
-	
-	if (lME) {
-		
-	} else {
-		
-	}
-}
-
-
-
 function tellMMWorkerPrefsAndConfig() {
 	
 	// will not tell worker about any config that has blank config arr
 	
 	// for use once mouse monitor is running
 	
-	var infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
+	infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
 	
 	// steup prefs for worker
 	infoObjForWorker.prefs = {};
@@ -1292,6 +1208,203 @@ var fsMsgListener = {
 	}
 };
 // end - server/framescript comm layer
+
+/* valid values for stdConst
+B?_DN
+B?_UP
+WV_UP
+WV_DN
+WH_LT
+WH_RT
+
+// composited
+B?_CK - click
+B?_HD - hold
+
+
+*/
+
+// non-platform specific
+// gMEDown helper funcs
+/*
+function METracker() {
+	this.arr = [];
+	
+	Object.defineProperty(this, 'length', {
+		get: function getLength() {
+			return this.arr.length;
+		}
+	});
+	
+	this.el = function(aIndex) {
+		return this.arr[aIndex];
+	};
+	
+	this.push = function(aEl) {
+		this.arr.push(aEl);
+	}
+	this.indexOfStd = function(aStd) {
+		for (var i=0; i<this.arr.length; i++) {
+			if (this.arr[i].std == aStd) {
+				return i;
+			}
+		}
+		return -1;
+	},
+	this.splice = 
+}
+*/
+function METracker() {}
+METracker.prototype = Object.create(Array.prototype);
+METracker.prototype.indexOfStd = function(aStd) {
+	for (var i=0; i<this.length; i++) {
+		if (this[i].std == aStd) {
+			return i;
+		}
+	}
+	return -1;
+};
+METracker.prototype.strOfStds = function() {
+	// returns a string of the current std in order
+	var rezstr = [];
+	for (var i=0; i<this.length; i++) {
+		rezstr.push(this[i].std);
+	}
+	return rezstr.join(', ');
+};
+METracker.prototype.asArray = function() {
+	return this.slice();
+};
+
+var gMEHistory = new METracker();
+var gMEDown = new METracker();
+
+function handleMouseEvent(aMEStdConst) {
+	// return true if handled else false (handled means block it)
+	console.log('incoming aMEStdConst:', aMEStdConst);
+	var cME = {
+		std: aMEStdConst,
+		time: (new Date()).getTime(),
+		multi: 1
+	}
+	var cMECombo = new METracker();
+	
+	var lME; // lastMouseEvent
+	if (gMEHistory.length) {
+		lME = gMEHistory[gMEHistory.length-1];
+	}
+	
+	if (lME) {
+		/*
+		// test should we ignore cME
+		if (prefs['ignore-autorepeat-duration'].value > 0) {
+			if (cME.time - lME.time < prefs['ignore-autorepeat-duration'].value) {
+				// discard this but update this event so its last time is now
+				lME.time = cME.time;
+				console.log('discarding event - meaning not pushing into history');
+				// no need to test here for a current match, as we are ignoring it
+				return false;
+			}
+		}
+		*/
+		
+		// test should we maek cME a click?
+	}
+	
+	var cMEDir = cME.std.substr(3);
+	var cMEBtn = cME.std.substr(0, 2);
+	
+	// set previous down mouse event
+	var pMEDown;
+	if (gMEDown.length) {
+		pMEDown = gMEDown[gMEDown.length - 1];
+	}
+	
+	var clearAll = false; // set to true, if no more triggers are held, used in clean up section
+	// add to gMEDown that a trigger is held or no longer held
+	if (cMEBtn != 'WH') {
+		if (cME.std.substr(3) == 'UP') {
+			var ixUp = gMEDown.indexOfStd(cMEBtn + '_DN');
+			console.log('ixUp:', ixUp);
+			if (ixUp > -1) {
+				gMEDown.splice(ixUp, 1);
+				if (!gMEDown.length) {
+					// nothing is down anymore, so clear all after a settimeout, as there may be something on mouseup
+					clearAll = true;
+				}
+			}
+			
+			// if the previous was the DN of this cMEBtn then transform cME to click
+			if (pMEDown && pMEDown.std == cMEBtn + '_DN') { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
+				cME.std = cMEBtn + '_CK';
+				cMEDir = cME.std.substr(3);
+				cMEBtn = cME.std.substr(0, 2);
+			}
+		} else {
+			var ixC = gMEDown.indexOfStd(cME.std);
+			if (ixC > -1) {
+				console.error('should never happen, as every DN event should be followed by an UP event');
+			} else {
+				// add it in
+				gMEDown.push(cME);
+				console.log('gMEDown:', gMEDown.strOfStds());
+			}
+		}
+	}
+	
+	// clone gMEDown to cMECombo
+	for (var i=0; i<gMEDown.length; i++) {
+		cMECombo.push(gMEDown[i]);
+	}
+	
+	// add to cMECombo
+	if (cMEBtn != 'WH' && cMEDir == 'DN') {
+		// if the cME is DN, then its already in cMECombo as gMEDown was cloned to cMECombo so dont add
+	} else {
+		cMECombo.push(cME);
+	}
+	
+	// show cMECombo
+	console.log('cMECombo:', cMECombo.strOfStds());
+	
+	// test if cMECombo is a match to any config
+	var rezHandleME; // need to hold return value here, as i need to pop out fro cMECombo before returning
+	if (bowserFsWantingMouseEvents) {
+		MMWorkerFuncs.currentMouseEventCombo(cMECombo.asArray());
+		rezHandleME = true;
+	} else {
+		// if cMECombo matches then return true else return false
+		rezHandleME = false;
+		for (var p in infoObjForWorker.config) {
+			if (cMECombo.length == infoObjForWorker.config[p].length) {
+					for (var i=0; i<infoObjForWorker.config[p].length; i++) {
+						if (infoObjForWorker.config[p][i].std != cMECombo[i].std) {
+							break;
+						}
+						if (i == infoObjForWorker.config[p].length - 1) {
+							// ok the whole thing matched trigger it
+							// dont break out of p loop as maybe user set another thing to have the same combo
+							MMWorkerFuncs.triggerConfigFunc(p);
+							rezHandleME = false; // :todo: set this to true, right now when i do it, it bugs out
+						}
+					}
+			} // not same length as cMECombo so no way it can match
+		}
+	}
+	
+	// clean up
+	if (clearAll) {
+		gMEHistory = new METracker();
+		cMECombo = new METracker();
+	} else {
+		// remove from cMECombo if its not a held button
+		if (cMEBtn == 'WH' || cMEDir != 'DN') {
+			cMECombo.pop(); // remove it
+		}
+	}
+	
+	return rezHandleME;
+}
 
 // start - common helper functions
 function Deferred() {
