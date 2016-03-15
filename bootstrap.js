@@ -508,9 +508,9 @@ AboutMouseControl.prototype = Object.freeze({
 	newChannel: function(aURI, aSecurity_or_aLoadInfo) {
 
 		var channel;
-		if (Services.vc.compare(core.firefox.version, 48) >= 0) {
+		if (Services.vc.compare(core.firefox.version, '47.*') > 0) {
 			// aSecurity_or_aLoadInfo is aLoadInfo
-			channel = Services.io.newChannelFromURIWithLoadInfo(core.addon.path.content + 'ng-prefs.xhtml', aSecurity_or_aLoadInfo);
+			channel = Services.io.newChannelFromURIWithLoadInfo(Services.io.newURI(core.addon.path.content + 'ng-prefs.xhtml', null, null), aSecurity_or_aLoadInfo);
 		} else {
 			// aSecurity_or_aLoadInfo is aSecurity
 			channel = Services.io.newChannel(core.addon.path.content + 'ng-prefs.xhtml', null, null);
@@ -684,7 +684,35 @@ var MMWorkerFuncs = {
 
 		};
 		OSStuff.mouse_filter_c = ostypes.TYPE.GdkFilterFunc(OSStuff.mouse_filter_js);
+		
+		// var tWin = ostypes.HELPER.xidToGdkWinPtr(ostypes.HELPER.cachedDefaultRootWindow())
+		// console.log('tWin root x way:', tWin.toString());
+		
+		// var tWin = ostypes.API('gdk_get_default_root_window')()
+		// console.log('tWin root default way:', tWin.toString());
+		
+		// var tWin = null;
+		// var baseWindow = Services.wm.getMostRecentWindow('navigator:browser').QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+        //                 .getInterface(Components.interfaces.nsIWebNavigation)
+        //                 .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
+        //                 .treeOwner
+        //                 .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+        //                 .getInterface(Components.interfaces.nsIBaseWindow);
+		// var tWin = ostypes.TYPE.GdkWindow.ptr(ctypes.UInt64(baseWindow.nativeHandle));
+		// console.log('most rec tWin:', tWin.toString());
+		// 
+		// var tScr = ostypes.API('gdk_screen_get_default')();
+		// var tWin = ostypes.API('gdk_screen_get_root_window')(tScr);
+		// console.log('tWin root:', tWin.toString());
+		
+		// var tWin = ostypes.API('gdk_screen_get_active_window')(tScr);
+		// console.log('tWin active:', tWin.toString());
+		// return;  // :debug:
+		// ostypes.API('gdk_window_set_events')(tWin, ostypes.CONST.ALL_EVENTS_MASK);
+		// console.log('ok set events');
+		
 		ostypes.API('gdk_window_add_filter')(null, OSStuff.mouse_filter_c, null);
+		console.log('ok added filter');
 
 	},
 	gtkStopMonitor: function() {
