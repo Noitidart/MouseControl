@@ -1452,11 +1452,8 @@ METracker.prototype.strOfStds = function() {
 	}
 	return rezstr.join(', ');
 };
-METracker.prototype.pslice = function() {
-	
-	var rezslice = Array.slice(this);
-	rezslice.prototype.constructor = METracker;
-	return rezslice;
+METracker.prototype.asArray = function() {
+	return this.slice();
 };
 
 var gMEHistory = new METracker();
@@ -1553,7 +1550,7 @@ function handleMouseEvent(aMEStdConst) {
 	// test if cMECombo is a match to any config
 	var rezHandleME; // need to hold return value here, as i need to pop out fro cMECombo before returning
 	if (sendMouseEventsToMT) {
-		self.postMessage(['currentMouseEventCombo', cMECombo]);
+		self.postMessage(['currentMouseEventCombo', cMECombo.asArray()]);
 		rezHandleME = true;
 	} else {
 		// if cMECombo matches then return true else return false

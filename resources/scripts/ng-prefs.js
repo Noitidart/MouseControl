@@ -563,6 +563,8 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 												if (p == 'group' && BC.guiShouldShowNewGroupTxtBox()) {
 													BC.configs[i].group = BC.building_newly_created_group_name;
 												} else if (p == 'config') {
+													console.log('BC.building[p]:', BC.building[p]);
+													console.log('BC.building[p]:', JSON.stringify(BC.building[p]), uneval(BC.building[p]));
 													BC.configs[i][p] = BC.building[p].slice();
 												} else {
 													BC.configs[i][p] = BC.building[p];
