@@ -627,8 +627,8 @@ var MMWorkerFuncs = {
 	gtkStartMonitor: function() {
 		if (!OSStuff.ostypes_x11_imported) {
 			Cu.import('resource://gre/modules/ctypes.jsm');
-			Services.scriptloader.loadSubScript(core.addon.path.content + 'modules/cutils.jsm', bootstrap);
-			Services.scriptloader.loadSubScript(core.addon.path.content + 'modules/ostypes_x11.jsm', bootstrap);
+			Services.scriptloader.loadSubScript(core.addon.path.content + 'modules/ostypes/cutils.jsm', bootstrap);
+			Services.scriptloader.loadSubScript(core.addon.path.content + 'modules/ostypes/ostypes_x11.jsm', bootstrap);
 			OSStuff.ostypes_x11_imported = true;
 		}
 
