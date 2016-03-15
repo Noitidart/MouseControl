@@ -1461,7 +1461,6 @@ METracker.prototype.pslice = function() {
 
 var gMEHistory = new METracker();
 var gMEDown = new METracker();
-var gMECombo = new METracker();
 
 function handleMouseEvent(aMEStdConst) {
 	// return true if handled else false (handled means block it)
@@ -1471,6 +1470,7 @@ function handleMouseEvent(aMEStdConst) {
 		time: (new Date()).getTime(),
 		multi: 1
 	}
+	var cMECombo = new METracker();
 	
 	var lME; // lastMouseEvent
 	if (gMEHistory.length) {
@@ -1497,6 +1497,12 @@ function handleMouseEvent(aMEStdConst) {
 	var cMEDir = cME.std.substr(3);
 	var cMEBtn = cME.std.substr(0, 2);
 	
+	// set previous down mouse event
+	var pMEDown;
+	if (gMEDown.length) {
+		pMEDown = gMEDown[gMEDown.length - 1];
+	}
+	
 	var clearAll = false; // set to true, if no more triggers are held, used in clean up section
 	// add to gMEDown that a trigger is held or no longer held
 	if (cMEBtn != 'WH') {
@@ -1510,6 +1516,13 @@ function handleMouseEvent(aMEStdConst) {
 					clearAll = true;
 				}
 			}
+			
+			// if the previous was the DN of this cMEBtn then transform cME to click
+			if (pMEDown && pMEDown.std == cMEBtn + '_DN') { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
+				cME.std = cMEBtn + '_CK';
+				cMEDir = cME.std.substr(3);
+				cMEBtn = cME.std.substr(0, 2);
+			}
 		} else {
 			var ixC = gMEDown.indexOfStd(cME.std);
 			if (ixC > -1) {
@@ -1522,28 +1535,39 @@ function handleMouseEvent(aMEStdConst) {
 		}
 	}
 	
-	// add to gMECombo
-	gMECombo.push(cME);
-	console.log('gMECombo:', gMECombo.strOfStds());
+	// clone gMEDown to cMECombo
+	for (var i=0; i<gMEDown.length; i++) {
+		cMECombo.push(gMEDown[i]);
+	}
 	
-	// test if gMECombo is a match to any config
-	var rezHandleME; // need to hold return value here, as i need to pop out fro gMECombo before returning
+	// add to cMECombo
+	if (cMEBtn != 'WH' && cMEDir == 'DN') {
+		// if the cME is DN, then its already in cMECombo as gMEDown was cloned to cMECombo so dont add
+	} else {
+		cMECombo.push(cME);
+	}
+	
+	// show cMECombo
+	console.log('cMECombo:', cMECombo.strOfStds());
+	
+	// test if cMECombo is a match to any config
+	var rezHandleME; // need to hold return value here, as i need to pop out fro cMECombo before returning
 	if (sendMouseEventsToMT) {
-		self.postMessage(['currentMouseEventCombo', gMECombo]);
+		self.postMessage(['currentMouseEventCombo', cMECombo]);
 		rezHandleME = true;
 	} else {
-		// if gMECombo matches then return true else return false
+		// if cMECombo matches then return true else return false
 		rezHandleME = false;
 	}
 	
 	// clean up
 	if (clearAll) {
 		gMEHistory = new METracker();
-		gMECombo = new METracker();
+		cMECombo = new METracker();
 	} else {
-		// remove from gMECombo if its not a held button
+		// remove from cMECombo if its not a held button
 		if (cMEBtn == 'WH' || cMEDir != 'DN') {
-			gMECombo.pop(); // remove it
+			cMECombo.pop(); // remove it
 		}
 	}
 	
