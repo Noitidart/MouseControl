@@ -716,6 +716,11 @@ var bootstrapCallbacks = { // can use whatever, but by default it uses this
 		console.log('framescript getting mouseEvent:', aMouseEvent);
 		gAngScope.BC.building.config.push(aMouseEvent);
 		gAngScope.$digest();
+	},
+	currentMouseEventCombo: function(aMECombo) {
+		console.log('framescript getting aMECombo:', aMECombo);
+		gAngScope.BC.building.config = aMECombo;
+		gAngScope.$digest();
 	}
 };
 const SAM_CB_PREFIX = '_sam_gen_cb_';

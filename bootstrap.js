@@ -505,12 +505,14 @@ AboutMouseControl.prototype = Object.freeze({
 		return Ci.nsIAboutModule.ALLOW_SCRIPT | Ci.nsIAboutModule.URI_MUST_LOAD_IN_CHILD;
 	},
 
-	newChannel: function(aURI, aSecurity) {
+	newChannel: function(aURI, aSecurity_or_aLoadInfo) {
 
 		var channel;
-		if (aURI.path.toLowerCase().indexOf('?community') > -1) {
-			channel = Services.io.newChannel(core.addon.path.content + 'comm.xhtml', null, null);
+		if (Services.vc.compare(core.firefox.version, 48) >= 0) {
+			// aSecurity_or_aLoadInfo is aLoadInfo
+			channel = Services.io.newChannelFromURIWithLoadInfo(core.addon.path.content + 'ng-prefs.xhtml', aSecurity_or_aLoadInfo);
 		} else {
+			// aSecurity_or_aLoadInfo is aSecurity
 			channel = Services.io.newChannel(core.addon.path.content + 'ng-prefs.xhtml', null, null);
 		}
 		channel.originalURI = aURI;
@@ -606,6 +608,12 @@ var MMWorkerFuncs = {
 			bowserFsWantingMouseEvents.messageManager.sendAsyncMessage(core.addon.id, ['mouseEvent', aMouseEvent]);
 		}
 	},
+	currentMouseEventCombo: function(aMECombo) {
+		console.log('bootstrap got aMECombo:', aMECombo);
+		if (bowserFsWantingMouseEvents) { // i decided to allow only one framescript getting mousevents at a time. as only time its needed is when mouse is over that record section
+			bowserFsWantingMouseEvents.messageManager.sendAsyncMessage(core.addon.id, ['currentMouseEventCombo', aMECombo]);
+		}
+	},
 	triggerConfigFunc: function(aConfigId) {
 		for (var i=0; i<gConfigJson.length; i++) {
 			if (gConfigJson[i].id == aConfigId) {
@@ -678,12 +686,20 @@ var MMWorkerFuncs = {
 			}
 			
 			if (stdConst) {
-				MMWorker.postMessage(['gtkMainthreadMouseCallback', stdConst]);
-				if (bowserFsWantingMouseEvents) { // || mouseTracker found a match - need to devise how to detect this, because the mouseTracker is over in the worker
+				var cMEStdConst = stdConst;
+				if (handleMouseEvent(cMEStdConst)) {
+					// block it as it was handled
 					return ostypes.CONST.GDK_FILTER_REMOVE;
 				} else {
 					return ostypes.CONST.GDK_FILTER_CONTINUE;
 				}
+				
+				// MMWorker.postMessage(['gtkMainthreadMouseCallback', stdConst]);
+				// if (bowserFsWantingMouseEvents) { // || mouseTracker found a match - need to devise how to detect this, because the mouseTracker is over in the worker
+				// 	return ostypes.CONST.GDK_FILTER_REMOVE;
+				// } else {
+				// 	return ostypes.CONST.GDK_FILTER_CONTINUE;
+				// }
 			} else {
 				return ostypes.CONST.GDK_FILTER_CONTINUE;
 			}
@@ -709,6 +725,67 @@ var MMWorkerFuncs = {
 	}
 	// end - gtk mainthread technique functions
 };
+
+// mainthread mouse tracker for gtk
+var gMEHistory = []; // history up till user releases all mouse buttons, and the multi-speed and click-speed times have passed
+var gMEDown = []; // what is currently down
+/* valid values for stdConst
+B?_DN
+B?_UP
+WV_UP
+WV_DN
+WH_LT
+WH_RT
+
+// composited
+B?_CK - click
+B?_HD - hold
+
+
+*/
+
+function handleMouseEvent(aMEStdConst) {
+	// return true if handled else false (handled means block it)
+	var cME = {
+		std: aMEStdConst,
+		time: (new Date()).getTime(),
+		multi: 1
+	}
+	
+	var lME; // lastMouseEvent
+	if (gMEHistory.length) {
+		lME = gMEHistory[gMEHistory.length-1];
+	}
+	
+	if (lME) {
+		/*
+		// test should we ignore cME
+		if (prefs['ignore-autorepeat-duration'].value > 0) {
+			if (cME.time - lME.time < prefs['ignore-autorepeat-duration'].value) {
+				// discard this but update this event so its last time is now
+				lME.time = cME.time;
+				console.log('discarding event - meaning not pushing into history');
+				// no need to test here for a current match, as we are ignoring it
+				return false;
+			}
+		}
+		*/
+		
+		// test should we maek cME a click?
+	}
+	
+	if (cME.std.substr(3) == 'DN') {
+		// if (gMEDown.indexOf(cME.)
+	}
+	
+	if (lME) {
+		
+	} else {
+		
+	}
+}
+
+
 
 function tellMMWorkerPrefsAndConfig() {
 	

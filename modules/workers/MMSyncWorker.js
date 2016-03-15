@@ -263,8 +263,60 @@ function actOnDoWhat() {
 	}
 }
 
+var gMDownTracker = [];
 function checkMouseTracker() {
 	// goes through mouseTracker, and decides if it should call a function back in mainthread because mouse config matched AND/OR clear mouseTracker
+	
+	if (mouseTracker.length) {
+		var cMDownTracker = gMDownTracker.slice();
+		var me = mouseTracker[mouseTracker.length - 1];
+		cMDownTracker.push(me);
+		
+		// check if cMDownTracker matches anything in config, if so then trigger
+		if (cMDownTracker.length) {
+			labelSoIForCanContinueThePFor:
+			for (var p in jsMmJsonParsed.config) {
+				for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
+					if (i == mouseTracker.length) {
+						// mouseTrackehnr length is shorter then that of jsMmJsonParsed.config[p] so its impossible for mouseTracker to be a fullset match
+						// console.info('mouseTracker length is shorter then that of jsMmJsonParsed.config[p] so its impossible for mouseTracker to be a fullset match');
+						continue labelSoIForCanContinueThePFor;
+					}
+					if (mouseTracker[i].stdConst != jsMmJsonParsed.config[p][i].stdConst) {
+						delete mouseTrackerIsSubsetOfIds[p];
+						continue labelSoIForCanContinueThePFor;
+					}
+					mouseTrackerIsSubsetOfIds[p] = true;
+				}
+				// got here so mouseTracker matches
+				// console.info('got here so mouseTracker matches');
+				delete mouseTrackerIsSubsetOfIds[p];
+				if (mouseTracker.length == jsMmJsonParsed.config[p].length) {
+					// mouseTracker and config length are same, so call this in mainthread. mouseTracker is fullset of config.
+					// :todo: call in mainthread this function
+					console.error('call mainthread func for id:', p, 'as its config was fullset matched to mouseTracker:', jsMmJsonParsed.config[p]);
+					self.postMessage(['triggerConfigFunc', p]);
+					// dont return, continue as user may have set the same config for multiple
+				} else {
+					// mouseTracker is superset of config (meaning config is subset of mouseTracker)
+					// mouseTracker.length > config length so this config was already called. but mouseTracker is dirty with this in there now because there is another config that mouseTracker is still a subset of
+				}
+			}
+		}
+		
+		
+		if (me.stdConst[0] == 'B') {
+			// check if any current depressions were undepressed
+			if (me.stdConst.substr(3) == 'UP') {
+				gMDownTracker.push(me);
+			}
+			
+			// check if any new depressions
+			if (me.stdConst.substr(3) == 'DN') {
+				gMDownTracker.push(me);
+			}
+		}
+	}
 	
 	// check if mouseTracker matches anything exactly, if it does then call that function
 	// if current mouseTracker is not subset/substring_of_array of any config then clear mouseTracker
@@ -273,7 +325,7 @@ function checkMouseTracker() {
 	for (var p in jsMmJsonParsed.config) {
 		for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
 			if (i == mouseTracker.length) {
-				// mouseTracker length is shorter then that of jsMmJsonParsed.config[p] so its impossible for mouseTracker to be a fullset match
+				// mouseTrackehnr length is shorter then that of jsMmJsonParsed.config[p] so its impossible for mouseTracker to be a fullset match
 				// console.info('mouseTracker length is shorter then that of jsMmJsonParsed.config[p] so its impossible for mouseTracker to be a fullset match');
 				continue labelSoIForCanContinueThePFor;
 			}
@@ -549,6 +601,8 @@ function syncMonitorMouse() {
 						return rezCallNextEx();
 					} else {
 						if (eventType != 'WM_MOUSEMOVE') {
+							var cMEStdConst = {};
+							
 							// lets add it to our global
 							switch (eventType) {
 								case 'WM_MOUSEWHEEL':
@@ -560,11 +614,12 @@ function syncMonitorMouse() {
 										var mouseDataHiwordSigned = mouseDataHiwordUnsigned >= 32768 ? mouseDataHiwordUnsigned - 65536 : mouseDataHiwordUnsigned;
 										var wheelDelta = mouseDataHiwordSigned;
 										
-										mouseTracker.push({
-											stdConst: wheelDelta > 0 ? OSStuff.mouseConstToStdConst[eventType][0] : OSStuff.mouseConstToStdConst[eventType][1],
-											multi: 1,
-											hold: false
-										});
+										cMEStdConst = wheelDelta > 0 ? OSStuff.mouseConstToStdConst[eventType][0] : OSStuff.mouseConstToStdConst[eventType][1];
+										// mouseTracker.push({
+										// 	stdConst: wheelDelta > 0 ? OSStuff.mouseConstToStdConst[eventType][0] : OSStuff.mouseConstToStdConst[eventType][1],
+										// 	multi: 1,
+										// 	hold: false
+										// });
 									
 									break;
 								case 'WM_XBUTTONDOWN':
@@ -578,31 +633,38 @@ function syncMonitorMouse() {
 										if (xButtonNum != ostypes.CONST.XBUTTON1 && xButtonNum != ostypes.CONST.XBUTTON2) {
 											console.error('VERY WEIRD, its not 1 or 2, so maybe 3+ for supporting more then just button 4 and button 5? it is:', xButtonNum);
 										}
-										mouseTracker.push({
-											stdConst: OSStuff.mouseConstToStdConst[eventType][xButtonNum-1],
-											multi: 1,
-											hold: false
-										});
+										cMEStdConst = OSStuff.mouseConstToStdConst[eventType][xButtonNum-1];
+										// mouseTracker.push({
+										// 	stdConst: OSStuff.mouseConstToStdConst[eventType][xButtonNum-1],
+										// 	multi: 1,
+										// 	hold: false
+										// });
 									
 									break;
 								default:
-										mouseTracker.push({
-											stdConst: OSStuff.mouseConstToStdConst[eventType],
-											multi: 1,
-											hold: false
-										});
+										cMEStdConst = OSStuff.mouseConstToStdConst[eventType]
+										// mouseTracker.push({
+										// 	stdConst: OSStuff.mouseConstToStdConst[eventType],
+										// 	multi: 1,
+										// 	hold: false
+										// });
 							}
 							
 							// console.info('mouseTracker:', mouseTracker);
-							
-							if (sendMouseEventsToMT) {
-								self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
-								mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean. but not if they just hovered in and hovered out. only if they get in and do a recording
+							if (handleMouseEvent(cMEStdConst)) {
+								// block it as it was handled
 								return -1;
 							} else {
-								checkMouseTracker();
-								return rezCallNextEx(); // return -1;
+								return rezCallNextEx();
 							}
+							// if (sendMouseEventsToMT) {
+							// 	self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
+							// 	mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean. but not if they just hovered in and hovered out. only if they get in and do a recording
+							// 	return -1;
+							// } else {
+							// 	checkMouseTracker();
+							// 	return rezCallNextEx(); // return -1;
+							// }
 						} else {
 							return rezCallNextEx();
 						}
@@ -1079,6 +1141,7 @@ function syncMonitorMouse() {
 						}
 					}
 					
+					var cMEStdConst;
 					switch (eventType) {
 						case 'kCGEventScrollWheel':
 							
@@ -1109,11 +1172,12 @@ function syncMonitorMouse() {
 								}
 								// console.info('wheelLetter:', wheelLetter, 'deltaHor:', deltaHor, 'deltaVert:', deltaVert);
 								
-								mouseTracker.push({
-									stdConst: 'WH_' + wheelDir,
-									multi: 1,
-									hold: false
-								});
+								cMEStdConst = 'WH_' + wheelDir;
+								// mouseTracker.push({
+								// 	stdConst: 'WH_' + wheelDir,
+								// 	multi: 1,
+								// 	hold: false
+								// });
 								
 							break;
 						case 'kCGEventOtherMouseDown':
@@ -1125,31 +1189,40 @@ function syncMonitorMouse() {
 								// eventBtnNum when kCGEventLeftMouseDown is 1
 								// eventBtnNum when kCGEventScrollWheel is 0
 
-								mouseTracker.push({
-									stdConst: 'B' + (parseInt(eventBtnNum) + 1) + OSStuff.mouseConstToStdConst[eventType],
-									multi: 1,
-									hold: false
-								});
+								cMEStdConst = 'B' + (parseInt(eventBtnNum) + 1) + OSStuff.mouseConstToStdConst[eventType];
+								// mouseTracker.push({
+								// 	stdConst: 'B' + (parseInt(eventBtnNum) + 1) + OSStuff.mouseConstToStdConst[eventType],
+								// 	multi: 1,
+								// 	hold: false
+								// });
 								
 							break;
 						default:
-								mouseTracker.push({
-									stdConst: OSStuff.mouseConstToStdConst[eventType],
-									multi: 1,
-									hold: false
-								});
+								cMEStdConst = OSStuff.mouseConstToStdConst[eventType];
+								// mouseTracker.push({
+								// 	stdConst: OSStuff.mouseConstToStdConst[eventType],
+								// 	multi: 1,
+								// 	hold: false
+								// });
 					}
 					
-					console.info('mouseTracker:', mouseTracker[mouseTracker.length-1].stdConst);
-					
-					if (sendMouseEventsToMT) {
-						self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
-						mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean. but not if they just hovered in and hovered out. only if they get in and do a recording
+					if (handleMouseEvent(cMEStdConst)) {
+						// block it as it was handled
 						return null;
 					} else {
-						checkMouseTracker();
 						return event;
 					}
+					
+					// console.info('mouseTracker:', mouseTracker[mouseTracker.length-1].stdConst);
+					// 
+					// if (sendMouseEventsToMT) {
+					// 	self.postMessage(['mouseEvent', mouseTracker[mouseTracker.length-1]]);
+					// 	mouseTracker = []; // clear mouseTracker, as only time i send mouse events to mainthread is when recording, so after they leave recording mouseTracker needs to be clean. but not if they just hovered in and hovered out. only if they get in and do a recording
+					// 	return null;
+					// } else {
+					// 	checkMouseTracker();
+					// 	return event;
+					// }
 					
 					// return event; // ostypes.TYPE.CGEventRef
 				};
@@ -1330,6 +1403,153 @@ function stopMonitor() {
 			});
 	}
 }
+
+// non-platform specific
+// gMEDown helper funcs
+/*
+function METracker() {
+	this.arr = [];
+	
+	Object.defineProperty(this, 'length', {
+		get: function getLength() {
+			return this.arr.length;
+		}
+	});
+	
+	this.el = function(aIndex) {
+		return this.arr[aIndex];
+	};
+	
+	this.push = function(aEl) {
+		this.arr.push(aEl);
+	}
+	this.indexOfStd = function(aStd) {
+		for (var i=0; i<this.arr.length; i++) {
+			if (this.arr[i].std == aStd) {
+				return i;
+			}
+		}
+		return -1;
+	},
+	this.splice = 
+}
+*/
+function METracker() {}
+METracker.prototype = Object.create(Array.prototype);
+METracker.prototype.indexOfStd = function(aStd) {
+	for (var i=0; i<this.length; i++) {
+		if (this[i].std == aStd) {
+			return i;
+		}
+	}
+	return -1;
+};
+METracker.prototype.strOfStds = function() {
+	// returns a string of the current std in order
+	var rezstr = [];
+	for (var i=0; i<this.length; i++) {
+		rezstr.push(this[i].std);
+	}
+	return rezstr.join(', ');
+};
+METracker.prototype.pslice = function() {
+	
+	var rezslice = Array.slice(this);
+	rezslice.prototype.constructor = METracker;
+	return rezslice;
+};
+
+var gMEHistory = new METracker();
+var gMEDown = new METracker();
+var gMECombo = new METracker();
+
+function handleMouseEvent(aMEStdConst) {
+	// return true if handled else false (handled means block it)
+	console.log('incoming aMEStdConst:', aMEStdConst);
+	var cME = {
+		std: aMEStdConst,
+		time: (new Date()).getTime(),
+		multi: 1
+	}
+	
+	var lME; // lastMouseEvent
+	if (gMEHistory.length) {
+		lME = gMEHistory[gMEHistory.length-1];
+	}
+	
+	if (lME) {
+		/*
+		// test should we ignore cME
+		if (prefs['ignore-autorepeat-duration'].value > 0) {
+			if (cME.time - lME.time < prefs['ignore-autorepeat-duration'].value) {
+				// discard this but update this event so its last time is now
+				lME.time = cME.time;
+				console.log('discarding event - meaning not pushing into history');
+				// no need to test here for a current match, as we are ignoring it
+				return false;
+			}
+		}
+		*/
+		
+		// test should we maek cME a click?
+	}
+	
+	var cMEDir = cME.std.substr(3);
+	var cMEBtn = cME.std.substr(0, 2);
+	
+	var clearAll = false; // set to true, if no more triggers are held, used in clean up section
+	// add to gMEDown that a trigger is held or no longer held
+	if (cMEBtn != 'WH') {
+		if (cME.std.substr(3) == 'UP') {
+			var ixUp = gMEDown.indexOfStd(cMEBtn + '_DN');
+			console.log('ixUp:', ixUp);
+			if (ixUp > -1) {
+				gMEDown.splice(ixUp, 1);
+				if (!gMEDown.length) {
+					// nothing is down anymore, so clear all after a settimeout, as there may be something on mouseup
+					clearAll = true;
+				}
+			}
+		} else {
+			var ixC = gMEDown.indexOfStd(cME.std);
+			if (ixC > -1) {
+				console.error('should never happen, as every DN event should be followed by an UP event');
+			} else {
+				// add it in
+				gMEDown.push(cME);
+				console.log('gMEDown:', gMEDown.strOfStds());
+			}
+		}
+	}
+	
+	// add to gMECombo
+	gMECombo.push(cME);
+	console.log('gMECombo:', gMECombo.strOfStds());
+	
+	// test if gMECombo is a match to any config
+	var rezHandleME; // need to hold return value here, as i need to pop out fro gMECombo before returning
+	if (sendMouseEventsToMT) {
+		self.postMessage(['currentMouseEventCombo', gMECombo]);
+		rezHandleME = true;
+	} else {
+		// if gMECombo matches then return true else return false
+		rezHandleME = false;
+	}
+	
+	// clean up
+	if (clearAll) {
+		gMEHistory = new METracker();
+		gMECombo = new METracker();
+	} else {
+		// remove from gMECombo if its not a held button
+		if (cMEBtn == 'WH' || cMEDir != 'DN') {
+			gMECombo.pop(); // remove it
+		}
+	}
+	
+	return rezHandleME;
+}
+
 // End - Addon Functionality
 
 
