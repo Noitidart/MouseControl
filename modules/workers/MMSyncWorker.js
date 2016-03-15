@@ -1555,6 +1555,21 @@ function handleMouseEvent(aMEStdConst) {
 	} else {
 		// if cMECombo matches then return true else return false
 		rezHandleME = false;
+		for (var p in jsMmJsonParsed.config) {
+			if (cMECombo.length == jsMmJsonParsed.config[p].length) {
+					for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
+						if (jsMmJsonParsed.config[p][i].std != cMECombo[i].std) {
+							break;
+						}
+						if (i == jsMmJsonParsed.config[p].length - 1) {
+							// ok the whole thing matched trigger it
+							// dont break out of p loop as maybe user set another thing to have the same combo
+							self.postMessage(['triggerConfigFunc', p]);
+							rezHandleME = false; // :todo: set this to true, right now when i do it, it bugs out
+						}
+					}
+			} // not same length as cMECombo so no way it can match
+		}
 	}
 	
 	// clean up
