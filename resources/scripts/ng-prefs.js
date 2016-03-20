@@ -267,7 +267,7 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 				values: {
 					'0': myServices.sb.GetStringFromName('mousecontrol.prefs.global'),
 					'1': myServices.sb.GetStringFromName('mousecontrol.prefs.sitespec'),
-					'2': myServices.sb.GetStringFromName('mousecontrol.prefs.temp')
+					'2': myServices.sb.GetStringFromName('mousecontrol.prefs.tabspec')
 				},
 				desc: ''
 			}
