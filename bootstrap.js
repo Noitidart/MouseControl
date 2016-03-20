@@ -491,34 +491,45 @@ XPCOMUtils.defineLazyGetter(myServices, 'hph', function () { return Cc['@mozilla
 XPCOMUtils.defineLazyGetter(myServices, 'sb', function () { return Services.strings.createBundle(core.addon.path.locale + 'bootstrap.properties?' + core.addon.cache_key); /* Randomize URI to work around bug 719376 */ });
 
 
-// START - Addon Functionalities					
+// START - Addon Functionalities
 // start - about module
-var aboutFactory_mousecontrol;
-function AboutMouseControl() {}
-AboutMouseControl.prototype = Object.freeze({
-	classDescription: 'MouseControl Pages',
-	contractID: '@mozilla.org/network/protocol/about;1?what=mousecontrol',
-	classID: Components.ID('{56d1f290-5310-11e5-b970-0800200c9a66}'),
-	QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
+// start - about module
+var aboutFactory_instance;
+function AboutPage() {}
 
-	getURIFlags: function(aURI) {
-		return Ci.nsIAboutModule.ALLOW_SCRIPT | Ci.nsIAboutModule.URI_MUST_LOAD_IN_CHILD;
-	},
+function initAndRegisterAbout() {
+	// init it
+	AboutPage.prototype = Object.freeze({
+		classDescription: 'Preferences for MouseControl',
+		contractID: '@mozilla.org/network/protocol/about;1?what=mousecontrol',
+		classID: Components.ID('{56d1f290-5310-11e5-b970-0800200c9a66}'),
+		QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
 
-	newChannel: function(aURI, aSecurity_or_aLoadInfo) {
+		getURIFlags: function(aURI) {
+			return Ci.nsIAboutModule.ALLOW_SCRIPT;
+		},
 
-		var channel;
-		if (Services.vc.compare(core.firefox.version, '47.*') > 0) {
-			// aSecurity_or_aLoadInfo is aLoadInfo
-			channel = Services.io.newChannelFromURIWithLoadInfo(Services.io.newURI(core.addon.path.content + 'ng-prefs.xhtml', null, null), aSecurity_or_aLoadInfo);
-		} else {
-			// aSecurity_or_aLoadInfo is aSecurity
-			channel = Services.io.newChannel(core.addon.path.content + 'ng-prefs.xhtml', null, null);
+		newChannel: function(aURI, aSecurity_or_aLoadInfo) {
+			var redirUrl = core.addon.path.content + 'ng-prefs.xhtml';
+
+			var channel;
+			if (Services.vc.compare(core.firefox.version, '47.*') > 0) {
+				var redirURI = Services.io.newURI(redirUrl, null, null);
+				channel = Services.io.newChannelFromURIWithLoadInfo(redirURI, aSecurity_or_aLoadInfo);
+			} else {
+				channel = Services.io.newChannel(redirUrl, null, null);
+			}
+			channel.originalURI = aURI;
+			
+			return channel;
 		}
-		channel.originalURI = aURI;
-		return channel;
-	}
-});
+	});
+	
+	// register it
+	aboutFactory_instance = new AboutFactory(AboutPage);
+	
+	console.log('aboutFactory_instance:', aboutFactory_instance);
+}
 
 function AboutFactory(component) {
 	this.createInstance = function(outer, iid) {
@@ -883,7 +894,7 @@ function startup(aData, aReason) {
 	);
 	
 	// register about page
-	aboutFactory_mousecontrol = new AboutFactory(AboutMouseControl);
+	initAndRegisterAbout();
 	
 	// register about pages listener
 	Services.mm.addMessageListener(core.addon.id, fsMsgListener);
@@ -905,7 +916,7 @@ function shutdown(aData, aReason) {
 	if (aReason == APP_SHUTDOWN) { return }
 	
 	// an issue with this unload is that framescripts are left over, i want to destory them eventually
-	aboutFactory_mousecontrol.unregister();
+	aboutFactory_instance.unregister();
 	
 	// unregister about pages listener
 	Services.mm.removeMessageListener(core.addon.id, fsMsgListener);
