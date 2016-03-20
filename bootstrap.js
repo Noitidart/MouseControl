@@ -84,7 +84,12 @@ var gConfigJsonDefault = function() {
 			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
 			config:[],
 			func: BEAUTIFY().js(uneval({
-
+				__init__: function() {
+					Services.prompt.alert(Services.wm.getMostRecentWindow('navigator:browser'), 'init - ' + this.id, 'init - ' + this.name);
+				},
+				__uninit__: function() {
+					Services.prompt.alert(Services.wm.getMostRecentWindow('navigator:browser'), 'UNINIT - ' + this.id, 'UNINIT - ' + this.name);
+				}
 			}))
 		},
 		{
@@ -865,7 +870,20 @@ function startup(aData, aReason) {
 	extendCore();
 	
 	// read in config from file
-	readConfigFromFile();
+	var promise_configInit = readConfigFromFile();
+	promise_configInit.then(
+		function(aVal) {
+			console.log('Fullfilled - promise_configInit - ', aVal);
+			// if anything has a __init__ then execute it
+			for (var i=0; i<gConfigJson.length; i++) {
+				if (gConfigJson[i].func.indexOf('__init__') > -1) {
+					eval('var funcObj = ' + gConfigJson[i].func);
+					funcObj.__init__();
+				}
+			}
+		},
+		genericReject.bind(null, 'promise_configInit', 0)
+	).catch(genericCatch.bind(null, 'promise_configInit', 0));
 	
 	// startup worker
 	var promise_initCommWorker = SICWorker('CommWorker', core.addon.path.workers + 'CommWorker.js', CommWorkerFuncs);
@@ -902,6 +920,15 @@ function startup(aData, aReason) {
 }
 
 function shutdown(aData, aReason) {
+	
+	// if anything has a __uninit__ then execute it
+	for (var i=0; i<gConfigJson.length; i++) {
+		if (gConfigJson[i].func.indexOf('__uninit__') > -1) {
+			eval('var funcObj = ' + gConfigJson[i].func);
+			funcObj.__uninit__();
+		}
+	}
+	
 	if (MMWorker) {
 		CommWorker.postMessageWithCallback(['tellMmWorker', 'stop-mouse-monitor'], function() {
 			console.error('ok tellMmWorker done');
@@ -975,6 +1002,52 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 		tellMMWorkerPrefsAndConfig();
 	},
 	updateConfigsOnServer: function(aNewConfigJson) {
+		// called when the following action done from ng-prefs.xhtml:
+			// trash
+			// add
+			// edit
+			// I MADE IT NOW route restore defaults to route through here
+		// currently i think this is ONLY ever called, when framescript needs to send an updated config, so this is only sent when user makes change, so here i can test if there is a diff between the old and new script, and run the shutdown/init appropriately
+		
+		// go through all the old ones scripts, see if it is in the new. if it is not in the new, if the old has a __uninit__ then execute it
+		for (var oi=0; oi<gConfigJson.length; oi++) { // oi stands for old_configJson_i
+			var cFunc = gConfigJson[oi].func;
+			// go through the new to see if its there
+			var cFuncUnchanged = false;
+			for (var ni=0; ni<aNewConfigJson.length; ni++) { // ni stands for new_configJson_i
+				if (aNewConfigJson[ni].func == cFunc) {
+					cFuncUnchanged = true;
+					break;
+				}
+			}
+			if (!cFuncUnchanged) {
+				// it changed, so uninit the old one if it has a uninit
+				if (cFunc.indexOf('__uninit__') > -1) {
+					eval('var funcObj = ' + cFunc);
+					funcObj.__uninit__();
+				}
+			}
+		}
+		
+		// go through all the new ones, if it is not in the old scripts, then if it has an __init__ then execute it
+		for (var ni=0; ni<aNewConfigJson.length; ni++) {
+			var cFunc = aNewConfigJson[ni].func;
+			var cFuncUnchanged = false;
+			for (var oi=0; oi<gConfigJson.length; oi++) {
+				if (gConfigJson[oi].func == cFunc) {
+					cFuncUnchanged = true;
+					break;
+				}
+			}
+			if (!cFuncUnchanged) {
+				// it changed, so init the new one if it has a init
+				if (cFunc.indexOf('__init__') > -1) {
+					eval('var funcObj = ' + cFunc);
+					funcObj.__init__();
+				}
+			}
+		}
+		
 		gConfigJson = aNewConfigJson;
 		
 		// update worker:
@@ -1014,13 +1087,15 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 		}
 		
 		// reset config
-		gConfigJson = gConfigJsonDefault();
+		// gConfigJson = gConfigJsonDefault(); // need to send it through fsFuncs.updateConfigsOnServer see note on next line
+		// send it through the fsFuncs so it init's and uninit's the funcs as necessary
+		fsFuncs.updateConfigsOnServer(gConfigJsonDefault());
 		
-		// update worker:
-		tellMMWorkerPrefsAndConfig();
+		// no more need to do this as fsFuncs.updateConfigsOnServer handles it
+		// // update worker:
+		// tellMMWorkerPrefsAndConfig();
 		
 		var promise_delteConfig = OS.File.remove(OSPath_config);
-		
 		promise_delteConfig.then(
 			function(aVal) {
 				console.log('Fullfilled - promise_delteConfig - ', aVal);
@@ -1446,47 +1521,63 @@ function handleMouseEvent(aMEStdConst) {
 }
 
 // start - common helper functions
+// rev3 - https://gist.github.com/Noitidart/326f1282c780e3cb7390
 function Deferred() {
-	if (Promise && Promise.defer) {
+	// update 062115 for typeof
+	if (typeof(Promise) != 'undefined' && Promise.defer) {
 		//need import of Promise.jsm for example: Cu.import('resource:/gree/modules/Promise.jsm');
 		return Promise.defer();
-	} else if (PromiseUtils && PromiseUtils.defer) {
+	} else if (typeof(PromiseUtils) != 'undefined'  && PromiseUtils.defer) {
 		//need import of PromiseUtils.jsm for example: Cu.import('resource:/gree/modules/PromiseUtils.jsm');
 		return PromiseUtils.defer();
-	} else if (Promise) {
-		try {
-			/* A method to resolve the associated Promise with the value passed.
-			 * If the promise is already settled it does nothing.
-			 *
-			 * @param {anything} value : This value is used to resolve the promise
-			 * If the value is a Promise then the associated promise assumes the state
-			 * of Promise passed as value.
-			 */
-			this.resolve = null;
-
-			/* A method to reject the assocaited Promise with the value passed.
-			 * If the promise is already settled it does nothing.
-			 *
-			 * @param {anything} reason: The reason for the rejection of the Promise.
-			 * Generally its an Error object. If however a Promise is passed, then the Promise
-			 * itself will be the reason for rejection no matter the state of the Promise.
-			 */
-			this.reject = null;
-
-			/* A newly created Pomise object.
-			 * Initially in pending state.
-			 */
-			this.promise = new Promise(function(resolve, reject) {
-				this.resolve = resolve;
-				this.reject = reject;
-			}.bind(this));
-			Object.freeze(this);
-		} catch (ex) {
-			console.error('Promise not available!', ex);
-			throw new Error('Promise not available!');
-		}
 	} else {
-		throw new Error('Promise not available!');
+		/* A method to resolve the associated Promise with the value passed.
+		 * If the promise is already settled it does nothing.
+		 *
+		 * @param {anything} value : This value is used to resolve the promise
+		 * If the value is a Promise then the associated promise assumes the state
+		 * of Promise passed as value.
+		 */
+		this.resolve = null;
+
+		/* A method to reject the assocaited Promise with the value passed.
+		 * If the promise is already settled it does nothing.
+		 *
+		 * @param {anything} reason: The reason for the rejection of the Promise.
+		 * Generally its an Error object. If however a Promise is passed, then the Promise
+		 * itself will be the reason for rejection no matter the state of the Promise.
+		 */
+		this.reject = null;
+
+		/* A newly created Pomise object.
+		 * Initially in pending state.
+		 */
+		this.promise = new Promise(function(resolve, reject) {
+			this.resolve = resolve;
+			this.reject = reject;
+		}.bind(this));
+		Object.freeze(this);
+	}
+}
+
+function genericReject(aPromiseName, aPromiseToReject, aReason) {
+	var rejObj = {
+		name: aPromiseName,
+		aReason: aReason
+	};
+	console.error('Rejected - ' + aPromiseName + ' - ', rejObj);
+	if (aPromiseToReject) {
+		aPromiseToReject.reject(rejObj);
+	}
+}
+function genericCatch(aPromiseName, aPromiseToReject, aCaught) {
+	var rejObj = {
+		name: aPromiseName,
+		aCaught: aCaught
+	};
+	console.error('Caught - ' + aPromiseName + ' - ', rejObj);
+	if (aPromiseToReject) {
+		aPromiseToReject.reject(rejObj);
 	}
 }
 
