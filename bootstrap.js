@@ -874,9 +874,9 @@ function startup(aData, aReason) {
 	promise_configInit.then(
 		function(aVal) {
 			console.log('Fullfilled - promise_configInit - ', aVal);
-			// if anything has a __init__ then execute it
+			// if anything has a __init__ and a config then execute it
 			for (var i=0; i<gConfigJson.length; i++) {
-				if (gConfigJson[i].func.indexOf('__init__') > -1) {
+				if (gConfigJson[i].func.indexOf('__init__') > -1 && gConfigJson[i].config.length) {
 					eval('var funcObj = ' + gConfigJson[i].func);
 					funcObj.__init__();
 				}
@@ -921,9 +921,9 @@ function startup(aData, aReason) {
 
 function shutdown(aData, aReason) {
 	
-	// if anything has a __uninit__ then execute it
+	// if anything has a __uninit__ and a config then execute it
 	for (var i=0; i<gConfigJson.length; i++) {
-		if (gConfigJson[i].func.indexOf('__uninit__') > -1) {
+		if (gConfigJson[i].func.indexOf('__uninit__') > -1 && gConfigJson[i].config.length) {
 			eval('var funcObj = ' + gConfigJson[i].func);
 			funcObj.__uninit__();
 		}
@@ -1021,8 +1021,8 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 				}
 			}
 			if (!cFuncUnchanged) {
-				// it changed, so uninit the old one if it has a uninit
-				if (cFunc.indexOf('__uninit__') > -1) {
+				// it changed, so uninit the old one if it has a uninit and had a config
+				if (cFunc.indexOf('__uninit__') > -1 && gConfigJson[oi].config.length) {
 					eval('var funcObj = ' + cFunc);
 					funcObj.__uninit__();
 				}
@@ -1040,8 +1040,8 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 				}
 			}
 			if (!cFuncUnchanged) {
-				// it changed, so init the new one if it has a init
-				if (cFunc.indexOf('__init__') > -1) {
+				// it changed, so init the new one if it has a init and has a config
+				if (cFunc.indexOf('__init__') > -1 && aNewConfigJson[ni].config.length) {
 					eval('var funcObj = ' + cFunc);
 					funcObj.__init__();
 				}
