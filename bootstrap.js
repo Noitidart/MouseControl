@@ -411,7 +411,7 @@ var prefs = {
 		type: Ci.nsIPrefBranch.PREF_INT
 	},
 	'click-speed': {
-		default: 50,
+		default: 200,
 		type: Ci.nsIPrefBranch.PREF_INT
 	},
 	'ignore-autorepeat-duration': {

@@ -1449,6 +1449,9 @@ METracker.prototype.strOfStds = function() {
 	var rezstr = [];
 	for (var i=0; i<this.length; i++) {
 		rezstr.push(this[i].std);
+		if (this[i].multi > 1) {
+			rezstr[rezstr.length - 1] = this[i].multi + 'x ' + this[i].std;
+		}
 	}
 	return rezstr.join(', ');
 };
@@ -1456,29 +1459,40 @@ METracker.prototype.asArray = function() {
 	return this.slice();
 };
 
-var gMEHistory = new METracker();
+// var gMEHistory = new METracker();
 var gMEDown = new METracker();
+
+var g_lME; // the last mouse event
+
+var gMEAllReasedBool = true; // set to true when all is realsed, or false when not
+var gMEAllReasedTime = 0; // is set to the last time that all were released
 
 function handleMouseEvent(aMEStdConst) {
 	// return true if handled else false (handled means block it)
+	
 	console.log('incoming aMEStdConst:', aMEStdConst);
+	
+	var cMECombo = new METracker();
+	
 	var cME = {
 		std: aMEStdConst,
 		time: (new Date()).getTime(),
 		multi: 1
 	}
-	var cMECombo = new METracker();
+	var cMEDir = cME.std.substr(3);
+	var cMEBtn = cME.std.substr(0, 2);
 	
-	var lME; // lastMouseEvent
-	if (gMEHistory.length) {
-		lME = gMEHistory[gMEHistory.length-1];
-	}
+	var lME = g_lME; // lastMouseEvent
+	g_lME = cME;
+	console.log('lME:', lME);
 	
 	if (lME) {
+		lMEDir = lME.std.substr(3);
+		lMEBtn = lME.std.substr(0, 2);
 		/*
 		// test should we ignore cME
-		if (prefs['ignore-autorepeat-duration'].value > 0) {
-			if (cME.time - lME.time < prefs['ignore-autorepeat-duration'].value) {
+		if (jsMmJsonParsed.prefs['ignore-autorepeat-duration'].value > 0) {
+			if (cME.time - lME.time < jsMmJsonParsed.prefs['ignore-autorepeat-duration'].value) {
 				// discard this but update this event so its last time is now
 				lME.time = cME.time;
 				console.log('discarding event - meaning not pushing into history');
@@ -1491,17 +1505,19 @@ function handleMouseEvent(aMEStdConst) {
 		// test should we maek cME a click?
 	}
 	
-	var cMEDir = cME.std.substr(3);
-	var cMEBtn = cME.std.substr(0, 2);
-	
 	// set previous down mouse event
 	var pMEDown;
+	// var pMEDir;
+	// var pMEBtn;
 	if (gMEDown.length) {
 		pMEDown = gMEDown[gMEDown.length - 1];
+		// pMEDir = pMEDown.std.substr(3);
+		// pMEBtn = pMEDown.std.substr(0, 2);
 	}
 	
+	console.log('gMEDown:', gMEDown.strOfStds());
 	var clearAll = false; // set to true, if no more triggers are held, used in clean up section
-	// add to gMEDown that a trigger is held or no longer held
+	// add to gMEDown that a trigger is held or no longer held && transform previous event to click if it was
 	if (cMEBtn != 'WH') {
 		if (cME.std.substr(3) == 'UP') {
 			var ixUp = gMEDown.indexOfStd(cMEBtn + '_DN');
@@ -1511,11 +1527,16 @@ function handleMouseEvent(aMEStdConst) {
 				if (!gMEDown.length) {
 					// nothing is down anymore, so clear all after a settimeout, as there may be something on mouseup
 					clearAll = true;
+					gMEAllReasedTime = new Date().getTime();
+					gMEAllReasedBool = true;
 				}
 			}
 			
 			// if the previous was the DN of this cMEBtn then transform cME to click
-			if (pMEDown && pMEDown.std == cMEBtn + '_DN') { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
+			if (pMEDown) {
+				console.log('cME.time - pMEDown.time:', cME.time - pMEDown.time, 'click-speed:', jsMmJsonParsed.prefs['click-speed']);
+			}
+			if (pMEDown && pMEDown.std == cMEBtn + '_DN' && cME.time - pMEDown.time <= jsMmJsonParsed.prefs['click-speed']) { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
 				cME.std = cMEBtn + '_CK';
 				cMEDir = cME.std.substr(3);
 				cMEBtn = cME.std.substr(0, 2);
@@ -1526,8 +1547,35 @@ function handleMouseEvent(aMEStdConst) {
 				console.error('should never happen, as every DN event should be followed by an UP event');
 			} else {
 				// add it in
-				gMEDown.push(cME);
+				gMEDown.push(cME); // link38389222
 				console.log('gMEDown:', gMEDown.strOfStds());
+			}
+		}
+	}
+	
+	if (lME) {
+		// test if cME is a multi action
+		if (cME.time - lME.time <= jsMmJsonParsed.prefs['multi-speed']) {
+			console.log('cMEStd:', cME.std, 'lMEStd:', lME.std, 'time between:', cME.time - lME.time);
+			if (cMEBtn == 'WH') {
+				if (cME.std == lME.std) {
+					cME.multi = lME.multi + 1;
+					// console.log('ok incremented multi, g_lME.multi:', g_lME.multi);
+				}
+			} else {
+				if (lMEDir == 'CK' && cMEBtn == lMEBtn) {
+					if (cMEDir == 'DN') {
+						// then it was pushed link38389222 into gMEDown, lets take it out of there
+						// if (gMEDown.length > 1) {
+							gMEDown.pop();
+						// }
+					}
+					// if (cMEDir == 'DN') {
+						cME.multi = lME.multi + 0.5;
+						cME.std = lME.std;
+						cMEDir = 'CK';
+					// }
+				}
 			}
 		}
 	}
@@ -1574,8 +1622,8 @@ function handleMouseEvent(aMEStdConst) {
 	
 	// clean up
 	if (clearAll) {
-		gMEHistory = new METracker();
-		cMECombo = new METracker();
+		// gMEHistory = new METracker();
+		// cMECombo = new METracker();
 	} else {
 		// remove from cMECombo if its not a held button
 		if (cMEBtn == 'WH' || cMEDir != 'DN') {
