@@ -1406,34 +1406,6 @@ function stopMonitor() {
 
 // non-platform specific
 // gMEDown helper funcs
-/*
-function METracker() {
-	this.arr = [];
-	
-	Object.defineProperty(this, 'length', {
-		get: function getLength() {
-			return this.arr.length;
-		}
-	});
-	
-	this.el = function(aIndex) {
-		return this.arr[aIndex];
-	};
-	
-	this.push = function(aEl) {
-		this.arr.push(aEl);
-	}
-	this.indexOfStd = function(aStd) {
-		for (var i=0; i<this.arr.length; i++) {
-			if (this.arr[i].std == aStd) {
-				return i;
-			}
-		}
-		return -1;
-	},
-	this.splice = 
-}
-*/
 function METracker() {}
 METracker.prototype = Object.create(Array.prototype);
 METracker.prototype.indexOfStd = function(aStd) {
@@ -1461,7 +1433,6 @@ METracker.prototype.asArray = function() {
 
 // var gMEHistory = new METracker();
 var gMEDown = new METracker();
-
 var g_lME; // the last mouse event
 
 var gMEAllReasedBool = true; // set to true when all is realsed, or false when not
@@ -1483,6 +1454,8 @@ function handleMouseEvent(aMEStdConst) {
 	var cMEBtn = cME.std.substr(0, 2);
 	
 	var lME = g_lME; // lastMouseEvent
+	var lMEDir;
+	var lMEBtn;
 	
 	if (lME) {
 		lMEDir = lME.std.substr(3);
