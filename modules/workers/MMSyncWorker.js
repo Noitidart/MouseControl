@@ -1527,10 +1527,10 @@ function handleMouseEvent(aMEStdConst) {
 	// add to gMEDown that a trigger is held or no longer held && transform previous event to click if it was
 	if (cMEBtn != 'WH') {
 		if (cME.std.substr(3) == 'UP') {
-			// var ixCk = gMEDown.indexOfStd(cMEBtn + '_CK');
-			// if (ixCk > -1) {
-				// gMEDown.splice(ixCk, 1);
-			// }
+			var ixCk = gMEDown.indexOfStd(cMEBtn + '_CK');
+			if (ixCk > -1) {
+				gMEDown.splice(ixCk, 1);
+			}
 			var ixUp = gMEDown.indexOfStd(cMEBtn + '_DN');
 			console.log('ixUp:', ixUp);
 			if (ixUp > -1) {
@@ -1550,8 +1550,7 @@ function handleMouseEvent(aMEStdConst) {
 			// if (pMEDown && pMEDown.std == cMEBtn + '_DN' /* && cME.time - pMEDown.time <= jsMmJsonParsed.prefs['click-speed'] */) { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
 			if (lME && lMEBtn == cMEBtn && (lMEDir == 'DN' || lMEDir == 'CK')) {
 				cME.std = cMEBtn + '_CK';
-				cMEDir = cME.std.substr(3);
-				cMEBtn = cME.std.substr(0, 2);
+				cMEDir = 'CK';
 			}
 		} else {
 			var ixC = gMEDown.indexOfStd(cME.std);
@@ -1580,9 +1579,12 @@ function handleMouseEvent(aMEStdConst) {
 					if (cMEDir == 'DN') {
 						// then it was pushed link38389222 into gMEDown, lets take it out of there
 						// if (gMEDown.length > 1) {
-							gMEDown.pop();
+							// gMEDown.pop();
 						// }
 					}
+					// if (cMEDir == 'CK') {
+						// gMEDown.pop();
+					// }
 					// if (cMEDir == 'DN') {
 						cME.multi = lME.multi + 0.5;
 						cME.std = lME.std;
@@ -1602,7 +1604,9 @@ function handleMouseEvent(aMEStdConst) {
 	if (cMEBtn != 'WH' && cMEDir == 'DN') {
 		// if the cME is DN, then its already in cMECombo as gMEDown was cloned to cMECombo so dont add
 	} else {
-		cMECombo.push(cME);
+		if (cMEDir != 'CK' || cME.multi % 1 == 0) { // because if its a .5 on multi of a click, then its a DN so its already in gMEDown
+			cMECombo.push(cME);
+		}
 	}
 	
 	// show cMECombo
@@ -1633,16 +1637,16 @@ function handleMouseEvent(aMEStdConst) {
 		}
 	}
 	
-	// clean up
-	if (clearAll) {
-		// gMEHistory = new METracker();
-		// cMECombo = new METracker();
-	} else {
-		// remove from cMECombo if its not a held button
-		if (cMEBtn == 'WH' || cMEDir != 'DN') {
-			cMECombo.pop(); // remove it
-		}
-	}
+	// // clean up
+	// if (clearAll) {
+	// 	// gMEHistory = new METracker();
+	// 	// cMECombo = new METracker();
+	// } else {
+	// 	// remove from cMECombo if its not a held button
+	// 	if (cMEBtn == 'WH' || cMEDir != 'DN') {
+	// 		cMECombo.pop(); // remove it
+	// 	}
+	// }
 	
 	return rezHandleME;
 }
