@@ -869,6 +869,7 @@ function uninstall(aData, aReason) {
 
 function startup(aData, aReason) {
 	// core.addon.aData = aData;
+	core.addon.version = aData.version;
 	extendCore();
 	
 	// read in config from file

@@ -404,8 +404,6 @@ var	ANG_APP = angular.module('mousecontrol_prefs', [])
 			BC.l10n[l10nPropKey] = l10nPropStr;
 		}
 		
-		// set version for dom
-		BC.l10n['mousecontrol.prefs.addon_version'] = core.addon.cache_key;
 		// end - l10n injection into ng
 		
 		// start - modal stuff

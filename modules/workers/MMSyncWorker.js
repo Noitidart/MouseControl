@@ -1623,7 +1623,7 @@ function handleMouseEvent(aMEStdConst) {
 		for (var p in jsMmJsonParsed.config) {
 			if (cMECombo.length == jsMmJsonParsed.config[p].length) {
 					for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
-						if (jsMmJsonParsed.config[p][i].std != cMECombo[i].std) {
+						if (jsMmJsonParsed.config[p][i].std != cMECombo[i].std || jsMmJsonParsed.config[p][i].multi != cMECombo[i].multi) {
 							break;
 						}
 						if (i == jsMmJsonParsed.config[p].length - 1) {
