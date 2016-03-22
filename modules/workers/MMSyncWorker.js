@@ -1497,7 +1497,11 @@ function handleMouseEvent(aMEStdConst) {
 					lME.time = cME.time;
 					console.log('discarding event - meaning not pushing into history');
 					// no need to test here for a current match, as we are ignoring it
-					return false;
+					if (sendMouseEventsToMT) {
+						return true;
+					} else {
+						return false;
+					}
 				}
 			}
 		// }
