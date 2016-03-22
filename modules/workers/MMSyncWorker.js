@@ -1536,7 +1536,8 @@ function handleMouseEvent(aMEStdConst) {
 			if (pMEDown) {
 				console.log('cME.time - pMEDown.time:', cME.time - pMEDown.time, 'click-speed:', jsMmJsonParsed.prefs['click-speed']);
 			}
-			if (pMEDown && pMEDown.std == cMEBtn + '_DN' && cME.time - pMEDown.time <= jsMmJsonParsed.prefs['click-speed']) { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
+			// if (pMEDown && pMEDown.std == cMEBtn + '_DN' /* && cME.time - pMEDown.time <= jsMmJsonParsed.prefs['click-speed'] */) { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
+			if (lME && lMEBtn == cMEBtn && (lMEDir == 'DN' || lMEDir == 'CK')) {
 				cME.std = cMEBtn + '_CK';
 				cMEDir = cME.std.substr(3);
 				cMEBtn = cME.std.substr(0, 2);
@@ -1558,10 +1559,11 @@ function handleMouseEvent(aMEStdConst) {
 		if (cME.time - lME.time <= jsMmJsonParsed.prefs['multi-speed']) {
 			console.log('cMEStd:', cME.std, 'lMEStd:', lME.std, 'time between:', cME.time - lME.time);
 			if (cMEBtn == 'WH') {
-				if (cME.std == lME.std) {
-					cME.multi = lME.multi + 1;
-					// console.log('ok incremented multi, g_lME.multi:', g_lME.multi);
-				}
+				// disallowing wheel to have multi action
+				// if (cME.std == lME.std) {
+				// 	cME.multi = lME.multi + 1;
+				// 	// console.log('ok incremented multi, g_lME.multi:', g_lME.multi);
+				// }
 			} else {
 				if (lMEDir == 'CK' && cMEBtn == lMEBtn) {
 					if (cMEDir == 'DN') {
