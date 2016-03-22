@@ -1483,27 +1483,30 @@ function handleMouseEvent(aMEStdConst) {
 	var cMEBtn = cME.std.substr(0, 2);
 	
 	var lME = g_lME; // lastMouseEvent
-	g_lME = cME;
-	console.log('lME:', lME);
 	
 	if (lME) {
 		lMEDir = lME.std.substr(3);
 		lMEBtn = lME.std.substr(0, 2);
-		/*
+
 		// test should we ignore cME
-		if (jsMmJsonParsed.prefs['ignore-autorepeat-duration'].value > 0) {
-			if (cME.time - lME.time < jsMmJsonParsed.prefs['ignore-autorepeat-duration'].value) {
-				// discard this but update this event so its last time is now
-				lME.time = cME.time;
-				console.log('discarding event - meaning not pushing into history');
-				// no need to test here for a current match, as we are ignoring it
-				return false;
+		// if (lMEBtn == 'WH' && (lMEDir == 'LT' || lMEDir == 'RT')) {
+			if (jsMmJsonParsed.prefs['ignore-autorepeat-duration'] > 0) {
+				console.log('time between last event:', cME.time - lME.time, 'ignore-autorepeat-duration:', jsMmJsonParsed.prefs['ignore-autorepeat-duration']);
+				if (cME.time - lME.time <= jsMmJsonParsed.prefs['ignore-autorepeat-duration']) {
+					// discard this but update this event so its last time is now
+					lME.time = cME.time;
+					console.log('discarding event - meaning not pushing into history');
+					// no need to test here for a current match, as we are ignoring it
+					return false;
+				}
 			}
-		}
-		*/
+		// }
 		
 		// test should we maek cME a click?
 	}
+	
+	g_lME = cME;
+	console.log('lME:', lME);
 	
 	// set previous down mouse event
 	var pMEDown;
@@ -1520,6 +1523,10 @@ function handleMouseEvent(aMEStdConst) {
 	// add to gMEDown that a trigger is held or no longer held && transform previous event to click if it was
 	if (cMEBtn != 'WH') {
 		if (cME.std.substr(3) == 'UP') {
+			// var ixCk = gMEDown.indexOfStd(cMEBtn + '_CK');
+			// if (ixCk > -1) {
+				// gMEDown.splice(ixCk, 1);
+			// }
 			var ixUp = gMEDown.indexOfStd(cMEBtn + '_DN');
 			console.log('ixUp:', ixUp);
 			if (ixUp > -1) {
@@ -1533,8 +1540,8 @@ function handleMouseEvent(aMEStdConst) {
 			}
 			
 			// if the previous was the DN of this cMEBtn then transform cME to click
-			if (pMEDown) {
-				console.log('cME.time - pMEDown.time:', cME.time - pMEDown.time, 'click-speed:', jsMmJsonParsed.prefs['click-speed']);
+			if (lME) {
+				// console.log('cME.time - pMEDown.time:', cME.time - lME.time, 'click-speed:', jsMmJsonParsed.prefs['click-speed']);
 			}
 			// if (pMEDown && pMEDown.std == cMEBtn + '_DN' /* && cME.time - pMEDown.time <= jsMmJsonParsed.prefs['click-speed'] */) { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
 			if (lME && lMEBtn == cMEBtn && (lMEDir == 'DN' || lMEDir == 'CK')) {

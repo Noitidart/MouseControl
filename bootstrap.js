@@ -410,12 +410,14 @@ var prefs = {
 		default: 200,
 		type: Ci.nsIPrefBranch.PREF_INT
 	},
+	/*
 	'click-speed': {
 		default: 200,
 		type: Ci.nsIPrefBranch.PREF_INT
 	},
+	*/
 	'ignore-autorepeat-duration': {
-		default: 0,
+		default: 25,
 		type: Ci.nsIPrefBranch.PREF_INT
 	},
 	'new-tab-pos': {
@@ -570,7 +572,7 @@ var MMWorkerFuncs = {
 		infoObjForWorker.prefs = {};
 		infoObjForWorker.prefs['multi-speed'] = prefs['multi-speed'].value;
 		infoObjForWorker.prefs['hold-duration'] = prefs['hold-duration'].value;
-		infoObjForWorker.prefs['click-speed'] = prefs['click-speed'].value;
+		// infoObjForWorker.prefs['click-speed'] = prefs['click-speed'].value;
 		infoObjForWorker.prefs['ignore-autorepeat-duration'] = prefs['ignore-autorepeat-duration'].value;
 		
 		// setup config for worker
@@ -759,7 +761,7 @@ function tellMMWorkerPrefsAndConfig() {
 	infoObjForWorker.prefs = {};
 	infoObjForWorker.prefs['multi-speed'] = prefs['multi-speed'].value;
 	infoObjForWorker.prefs['hold-duration'] = prefs['hold-duration'].value;
-	infoObjForWorker.prefs['click-speed'] = prefs['click-speed'].value;
+	// infoObjForWorker.prefs['click-speed'] = prefs['click-speed'].value;
 	infoObjForWorker.prefs['ignore-autorepeat-duration'] = prefs['ignore-autorepeat-duration'].value;
 	
 	// setup config for worker
