@@ -43,7 +43,6 @@ const OSPath_config = OS.Path.join(OSPath_simpleStorage, 'config.json');
 const myPrefBranch = 'extensions.' + core.addon.id + '.';
 
 var ADDON_MANAGER_ENTRY;
-
 // start - beutify stuff
 
 var devtools;
@@ -871,6 +870,14 @@ function startup(aData, aReason) {
 	// core.addon.aData = aData;
 	core.addon.version = aData.version;
 	extendCore();
+	
+	if (core.os.name.indexOf('win') === 0) {
+		Cu.import('resource://gre/modules/ctypes.jsm');
+		var kernel32 = ctypes.open('kernel32');
+		var GetCurrentThreadId = kernel32.declare('GetCurrentThreadId', ctypes.winapi_abi, ctypes.unsigned_long);
+		core.firefox.mainthreadid = parseInt(GetCurrentThreadId().toString());
+		kernel32.close();
+	}
 	
 	var postSetConfig = function() {
 		// startup worker

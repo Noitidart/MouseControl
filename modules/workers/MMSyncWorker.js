@@ -595,6 +595,7 @@ function syncMonitorMouse() {
 						// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
 						return rez_CallNext;
 					};
+					return rezCallNextEx();
 				
 					if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
 						// have to return rez callback because nCode is negative, this is per the docs			
@@ -772,8 +773,15 @@ function syncMonitorMouse() {
 				// OSStuff.myLLMouseHook_js = myLLMouseHook_js; // so it doesnt get gc'ed
 				// OSStuff.myLLMouseHook_c = myLLMouseHook_c; // so it doesnt get gc'ed
 				
+				var exeMod = null;
+				// var exeMod = ostypes.API('GetModuleHandle')(null);
+				console.log('exeMod:', exeMod);
 				
-				OSStuff.winHooked_aHhk = ostypes.API('SetWindowsHookEx')(ostypes.CONST.WH_MOUSE_LL, OSStuff.myLLMouseHook_c, null, 0);
+				// var dwThreadId = ostypes.API('GetCurrentThreadId')();
+				var dwThreadId = core.firefox.mainthreadid;
+				console.log('dwThreadId:', dwThreadId);
+				
+				OSStuff.winHooked_aHhk = ostypes.API('SetWindowsHookEx')(7, OSStuff.myLLMouseHook_c, exeMod, dwThreadId);
 				console.info('OSStuff.winHooked_aHhk:', OSStuff.winHooked_aHhk, OSStuff.winHooked_aHhk.toString());
 				if (OSStuff.winHooked_aHhk.isNull()) {
 					console.error('failed to set hook, winLastError:', ctypes.winLastError);
