@@ -190,6 +190,71 @@ function putInfoObjForWorker_intoShareables(infoObjForWorker) {
 	cutils.modifyCStr(cCharArr_addieOfMmJson, cutils.strOfPtr(MmJson.address())); // if i want to modify this str from MMWorker i have to do cutils.modifyCStr(cCharArr_addieOfMmJson.contents, 'new string')
 }
 
+var gFxInFocus = true; // start it at true cross-file-link391919999999
+var gTellFocusedTimeout;
+var gLastActivatedTime = 0;
+var gLastDeactivatedTime = 0;
+function timeoutTellFocused(boolFocused, aTimestamp) {
+	// boolFocused false for if unfocused, true for if focused
+	
+	if (!boolFocused) {
+		/*
+		if (aTimestamp > gLastDeactivatedTime) {
+			gLastDeactivatedTime = aTimestamp;
+		} else {
+			return;
+		}
+		
+		// clear time out in case
+		if (gTellFocusedTimeout) { // i have no idea when this block will trigger. i dont know how i can get a back to back unfocus. but its here just in case.
+			clearTimeout(gTellFocusedTimeout);
+		}
+		
+		if (!gFxInFocus) {
+			// already knows its NOT in focus
+			return;
+		}
+		*/
+
+		gTellFocusedTimeout = setTimeout(function() {
+			gFxInFocus = false;
+			tellMmWorker('firefox-unfocused');
+		}, 50); // allow 50ms. cuz if user unfocused one window and focused another fx window. then that will come in and cancel this message. fx was really NOT unfocused in this situation, just a window change happend
+	} else {
+		/*
+		if (aTimestamp > gLastActivatedTime) {
+			gLastActivatedTime = aTimestamp;
+		} else {
+			return;
+		}
+		
+		// clear time out in case
+		if (gTellFocusedTimeout) { // i have no idea when this block will trigger. i dont know how i can get a back to back unfocus. but its here just in case.
+			clearTimeout(gTellFocusedTimeout);
+		}
+		
+		if (gFxInFocus) {
+			// already knows its in focus
+			return;
+		}
+		*/
+		// in case a timer for unfocused was set up
+		if (gTellFocusedTimeout) {
+			clearTimeout(gTellFocusedTimeout);
+			gTellFocusedTimeout = undefined;
+		}
+		
+		// test if already knows
+		if (gFxInFocus) {
+			return;
+		}
+		
+		// ok it wasnt already focused and it doesnt know so tell it
+		gFxInFocus = true;
+		tellMmWorker('firefox-focused');
+	}
+}
+
 function tellMmWorker(aWhat, infoObjForWorker) {
 	switch (aWhat) {
 		case 'stop-mouse-monitor':
@@ -211,6 +276,16 @@ function tellMmWorker(aWhat, infoObjForWorker) {
 		case 'withold-mouse-events':
 			
 				cInt_doWhat.value = 3;
+			
+			break;
+		case 'firefox-unfocused':
+			
+				cInt_doWhat.value = 5;
+			
+			break;
+		case 'firefox-focused':
+			
+				cInt_doWhat.value = 6;
 			
 			break;
 		default:

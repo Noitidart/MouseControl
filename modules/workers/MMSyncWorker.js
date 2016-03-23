@@ -17,6 +17,7 @@ var OSStuff = {}; // global vars populated by init, based on OS
 
 var mouseTracker = [];
 var sendMouseEventsToMT = false;
+var gFxInFocus = true; // start at true, meaning firefox is in focus // cross-file-link391919999999
 
 // Imports that use stuff defined in chrome
 // I don't import ostypes_*.jsm yet as I want to init core first, as they use core stuff like core.os.isWinXP etc
@@ -257,6 +258,26 @@ function actOnDoWhat() {
 				
 				return -4;
 			
+			break;
+		case 5:
+		
+				// firefox was unfocused
+				cInt_doWhat.contents = -5;
+				gFxInFocus = false;
+				
+				gMEDown = new METracker();
+				
+				return -5;
+				
+			break;
+		case 6:
+		
+				// firefox was focused
+				cInt_doWhat.contents = -6;
+				gFxInFocus = true;
+				
+				return -6;
+				
 			break;
 		default:
 			console.error('unrecognized cInt_doWhat.contents of "', cInt_doWhat.contents, '"');
@@ -571,7 +592,7 @@ function syncMonitorMouse() {
 				// winRunMessageLoop(ostypes.CONST.WM_MOUSEMOVE, ostypes.CONST.WM_MOUSEHWHEEL); // for sync
 				
 				
-				OSStuff.hookStartTime = new Date().getTime();
+				// OSStuff.hookStartTime = new Date().getTime();
 				OSStuff.myLLMouseHook_js = function(nCode, wParam, lParam) {
 
 					// console.error('in hook callback!!');
@@ -588,22 +609,27 @@ function syncMonitorMouse() {
 						return rez_CallNext;
 					};
 					
-					if (nCode < 0) {
-						return rezCallNextEx();
-					}
-					
 					var eventType;
-					for (var p in OSStuff.mouseConsts) {
-						if (cutils.jscEqual(OSStuff.mouseConsts[p], wParam)) {
-							eventType = p;
-							break;
-						}
-					}
 				
-					if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
+					// if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
+					if (nCode < 0) {
 						// have to return rez callback because nCode is negative, this is per the docs			
 						return rezCallNextEx();
 					} else {
+						
+						// if firefox is not in focus then do nothing
+						if (!gFxInFocus) {
+							return rezCallNextEx();
+						}
+						
+						// get eventType
+						for (var p in OSStuff.mouseConsts) {
+							if (cutils.jscEqual(OSStuff.mouseConsts[p], wParam)) {
+								eventType = p;
+								break;
+							}
+						}
+						
 						if (eventType != 'WM_MOUSEMOVE') {
 							var cMEStdConst = {};
 							
@@ -1445,7 +1471,7 @@ var gMEAllReasedTime = 0; // is set to the last time that all were released
 function handleMouseEvent(aMEStdConst) {
 	// return true if handled else false (handled means block it)
 	
-	console.log('incoming aMEStdConst:', aMEStdConst);
+	console.log('incoming aMEStdConst:', aMEStdConst, 'gFxInFocus:', gFxInFocus);
 	
 	var cMECombo = new METracker();
 	

@@ -612,6 +612,10 @@ var MMWorkerFuncs = {
 			// so now from this point, assume mouse monitor is in a infinite js loop
 				// so to now communicate with MMWorker i have to CommWorker.postMessage to transferToMMWorker (for windows im in a lock for sure, linux im pretty sure, osx i might not, so for osx i should still send this same post message, but on callback of it, i should then send mmworker a message to read in from the shreables as they were updated)
 				// the other reason to commToMMworker is to tell it to start or stop sending mouse events
+				
+			if (!gShutdowned) {
+				windowListener.register();
+			}
 		});
 		
 		// Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
@@ -846,6 +850,78 @@ function readConfigFromFile() {
 	
 	return mainDeferred_readConfigFromFile.promise;
 }
+
+function windowActivated(e) {
+	console.log('win activated time:', e.timeStamp, e);
+	CommWorker.postMessage(['timeoutTellFocused', true, e.timeStamp]);
+}
+
+function windowDeactivated(e) {
+	console.log('win deactivated time:', e.timeStamp, e);
+	CommWorker.postMessage(['timeoutTellFocused', false, e.timeStamp]);
+}
+/*start - windowlistener*/
+var windowListener = {
+	//DO NOT EDIT HERE
+	onOpenWindow: function (aXULWindow) {
+		// Wait for the window to finish loading
+		var aDOMWindow = aXULWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowInternal || Ci.nsIDOMWindow);
+		aDOMWindow.addEventListener('load', function () {
+			aDOMWindow.removeEventListener('load', arguments.callee, false);
+			windowListener.loadIntoWindow(aDOMWindow);
+		}, false);
+	},
+	onCloseWindow: function (aXULWindow) {},
+	onWindowTitleChange: function (aXULWindow, aNewTitle) {},
+	register: function () {
+		
+		// Load into any existing windows
+		var DOMWindows = Services.wm.getEnumerator(null);
+		while (DOMWindows.hasMoreElements()) {
+			var aDOMWindow = DOMWindows.getNext();
+			if (aDOMWindow.document.readyState == 'complete') { //on startup `aDOMWindow.document.readyState` is `uninitialized`
+				windowListener.loadIntoWindow(aDOMWindow);
+			} else {
+				aDOMWindow.addEventListener('load', function () {
+					aDOMWindow.removeEventListener('load', arguments.callee, false);
+					windowListener.loadIntoWindow(aDOMWindow);
+				}, false);
+			}
+		}
+		// Listen to new windows
+		Services.wm.addListener(windowListener);
+	},
+	unregister: function () {
+		// Unload from any existing windows
+		var DOMWindows = Services.wm.getEnumerator(null);
+		while (DOMWindows.hasMoreElements()) {
+			let aDOMWindow = DOMWindows.getNext();
+			windowListener.unloadFromWindow(aDOMWindow);
+		}
+		/*
+		for (var u in unloaders) {
+			unloaders[u]();
+		}
+		*/
+		//Stop listening so future added windows dont get this attached
+		Services.wm.removeListener(windowListener);
+	},
+	//END - DO NOT EDIT HERE
+	loadIntoWindow: function (aDOMWindow) {
+		if (!aDOMWindow) { return }
+		
+		aDOMWindow.addEventListener('activate', windowActivated, false);
+		aDOMWindow.addEventListener('deactivate', windowDeactivated, false);
+	},
+	unloadFromWindow: function (aDOMWindow) {
+		if (!aDOMWindow) { return }
+		
+		aDOMWindow.removeEventListener('activate', windowActivated, false);
+		aDOMWindow.removeEventListener('deactivate', windowDeactivated, false);
+	}
+};
+/*end - windowlistener*/
+
 // END - Addon Functionalities
 
 function install() {}
@@ -878,26 +954,10 @@ function startup(aData, aReason) {
 		promise_initCommWorker.then(
 			function(aVal) {
 				console.log('Fullfilled - promise_initCommWorker - ', aVal);
-				// start - do stuff here - promise_initCommWorker
 				// i dont do anything here, i do it in the init function in CommWorkerFuncs
-				// end - do stuff here - promise_initCommWorker
 			},
-			function(aReason) {
-				var rejObj = {
-					name: 'promise_initCommWorker',
-					aReason: aReason
-				};
-				console.warn('Rejected - promise_initCommWorker - ', rejObj);
-			}
-		).catch(
-			function(aCaught) {
-				var rejObj = {
-					name: 'promise_initCommWorker',
-					aCaught: aCaught
-				};
-				console.error('Caught - promise_initCommWorker - ', rejObj);
-			}
-		);
+			genericReject.bind(null, 'promise_initCommWorker', 0)
+		).catch(genericCatch.bind(null, 'promise_initCommWorker', 0));
 		
 		// register about page
 		initAndRegisterAbout();
@@ -923,20 +983,11 @@ function startup(aData, aReason) {
 		genericReject.bind(null, 'promise_configInit', 0)
 	).catch(genericCatch.bind(null, 'promise_configInit', 0));
 	
-
-	
 }
 
+var gShutdowned; // so in case user shuts down before i get to the point of windowLister.register()
 function shutdown(aData, aReason) {
-	
-	// if anything has a __uninit__ and a config then execute it
-	for (var i=0; i<gConfigJson.length; i++) {
-		if (gConfigJson[i].func.indexOf('__uninit__') > -1 && gConfigJson[i].config.length) {
-			eval('var funcObj = ' + gConfigJson[i].func);
-			funcObj.__uninit__();
-		}
-	}
-	
+	// need to tell workers to stop or firefox wont close; if i just do terminate, MMWorker will crash as its in an infinite event loop
 	if (MMWorker) {
 		CommWorker.postMessageWithCallback(['tellMmWorker', 'stop-mouse-monitor'], function() {
 			console.error('ok tellMmWorker done');
@@ -949,6 +1000,17 @@ function shutdown(aData, aReason) {
 	}
 	
 	if (aReason == APP_SHUTDOWN) { return }
+	
+	gShutdowned = true;
+	windowListener.unregister();
+	
+	// if anything has a __uninit__ and a config then execute it
+	for (var i=0; i<gConfigJson.length; i++) {
+		if (gConfigJson[i].func.indexOf('__uninit__') > -1 && gConfigJson[i].config.length) {
+			eval('var funcObj = ' + gConfigJson[i].func);
+			funcObj.__uninit__();
+		}
+	}
 	
 	// an issue with this unload is that framescripts are left over, i want to destory them eventually
 	aboutFactory_instance.unregister();
