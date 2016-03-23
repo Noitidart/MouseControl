@@ -1449,7 +1449,7 @@ function handleMouseEvent(aMEStdConst) {
 		std: aMEStdConst,
 		time: (new Date()).getTime(),
 		multi: 1
-	}
+	};
 	var cMEDir = cME.std.substr(3);
 	var cMEBtn = cME.std.substr(0, 2);
 	
@@ -1463,6 +1463,7 @@ function handleMouseEvent(aMEStdConst) {
 
 		// test should we ignore cME
 		// if (lMEBtn == 'WH' && (lMEDir == 'LT' || lMEDir == 'RT')) {
+		if (lMEBtn == 'WH' && lMEDir == cMEDir) {
 			if (jsMmJsonParsed.prefs['ignore-autorepeat-duration'] > 0) {
 				console.log('time between last event:', cME.time - lME.time, 'ignore-autorepeat-duration:', jsMmJsonParsed.prefs['ignore-autorepeat-duration']);
 				if (cME.time - lME.time <= jsMmJsonParsed.prefs['ignore-autorepeat-duration']) {
@@ -1477,7 +1478,7 @@ function handleMouseEvent(aMEStdConst) {
 					}
 				}
 			}
-		// }
+		}
 		
 		// test should we maek cME a click?
 	}
@@ -1487,12 +1488,12 @@ function handleMouseEvent(aMEStdConst) {
 	
 	// set previous down mouse event
 	var pMEDown;
-	// var pMEDir;
-	// var pMEBtn;
+	var pMEDir;
+	var pMEBtn;
 	if (gMEDown.length) {
 		pMEDown = gMEDown[gMEDown.length - 1];
-		// pMEDir = pMEDown.std.substr(3);
-		// pMEBtn = pMEDown.std.substr(0, 2);
+		pMEDir = pMEDown.std.substr(3);
+		pMEBtn = pMEDown.std.substr(0, 2);
 	}
 	
 	console.log('gMEDown:', gMEDown.strOfStds());
@@ -1517,11 +1518,12 @@ function handleMouseEvent(aMEStdConst) {
 			}
 			
 			// if the previous was the DN of this cMEBtn then transform cME to click
-			if (lME) {
+			// if (lME) {
 				// console.log('cME.time - pMEDown.time:', cME.time - lME.time, 'click-speed:', jsMmJsonParsed.prefs['click-speed']);
-			}
+			// }
 			// if (pMEDown && pMEDown.std == cMEBtn + '_DN' /* && cME.time - pMEDown.time <= jsMmJsonParsed.prefs['click-speed'] */) { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
-			if (lME && lMEBtn == cMEBtn && (lMEDir == 'DN' || lMEDir == 'CK')) {
+			// if (lME && lMEBtn == cMEBtn && (lMEDir == 'DN' || lMEDir == 'CK')) {
+			if (pMEDown && pMEBtn == cMEBtn && (pMEDir == 'DN' || pMEDir == 'CK')) {
 				cME.std = cMEBtn + '_CK';
 				cMEDir = 'CK';
 			}
