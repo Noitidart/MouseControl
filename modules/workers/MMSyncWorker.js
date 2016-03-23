@@ -1499,7 +1499,7 @@ function handleMouseEvent(aMEStdConst) {
 	var clearAll = false; // set to true, if no more triggers are held, used in clean up section
 	// add to gMEDown that a trigger is held or no longer held && transform previous event to click if it was
 	if (cMEBtn != 'WH') {
-		if (cME.std.substr(3) == 'UP') {
+		if (cMEDir == 'UP') {
 			var ixCk = gMEDown.indexOfStd(cMEBtn + '_CK');
 			if (ixCk > -1) {
 				gMEDown.splice(ixCk, 1);
@@ -1528,7 +1528,7 @@ function handleMouseEvent(aMEStdConst) {
 		} else {
 			var ixC = gMEDown.indexOfStd(cME.std);
 			if (ixC > -1) {
-				console.error('should never happen, as every DN event should be followed by an UP event');
+				console.error('should never happen, as every DN event should be followed by an UP event, cME.std:', cME.std);
 			} else {
 				// add it in
 				gMEDown.push(cME); // link38389222

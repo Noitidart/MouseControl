@@ -872,6 +872,40 @@ function startup(aData, aReason) {
 	core.addon.version = aData.version;
 	extendCore();
 	
+	var postSetConfig = function() {
+		// startup worker
+		var promise_initCommWorker = SICWorker('CommWorker', core.addon.path.workers + 'CommWorker.js', CommWorkerFuncs);
+		promise_initCommWorker.then(
+			function(aVal) {
+				console.log('Fullfilled - promise_initCommWorker - ', aVal);
+				// start - do stuff here - promise_initCommWorker
+				// i dont do anything here, i do it in the init function in CommWorkerFuncs
+				// end - do stuff here - promise_initCommWorker
+			},
+			function(aReason) {
+				var rejObj = {
+					name: 'promise_initCommWorker',
+					aReason: aReason
+				};
+				console.warn('Rejected - promise_initCommWorker - ', rejObj);
+			}
+		).catch(
+			function(aCaught) {
+				var rejObj = {
+					name: 'promise_initCommWorker',
+					aCaught: aCaught
+				};
+				console.error('Caught - promise_initCommWorker - ', rejObj);
+			}
+		);
+		
+		// register about page
+		initAndRegisterAbout();
+		
+		// register about pages listener
+		Services.mm.addMessageListener(core.addon.id, fsMsgListener);
+	};
+	
 	// read in config from file
 	var promise_configInit = readConfigFromFile();
 	promise_configInit.then(
@@ -884,41 +918,12 @@ function startup(aData, aReason) {
 					funcObj.__init__();
 				}
 			}
+			postSetConfig();
 		},
 		genericReject.bind(null, 'promise_configInit', 0)
 	).catch(genericCatch.bind(null, 'promise_configInit', 0));
 	
-	// startup worker
-	var promise_initCommWorker = SICWorker('CommWorker', core.addon.path.workers + 'CommWorker.js', CommWorkerFuncs);
-	promise_initCommWorker.then(
-		function(aVal) {
-			console.log('Fullfilled - promise_initCommWorker - ', aVal);
-			// start - do stuff here - promise_initCommWorker
-			// i dont do anything here, i do it in the init function in CommWorkerFuncs
-			// end - do stuff here - promise_initCommWorker
-		},
-		function(aReason) {
-			var rejObj = {
-				name: 'promise_initCommWorker',
-				aReason: aReason
-			};
-			console.warn('Rejected - promise_initCommWorker - ', rejObj);
-		}
-	).catch(
-		function(aCaught) {
-			var rejObj = {
-				name: 'promise_initCommWorker',
-				aCaught: aCaught
-			};
-			console.error('Caught - promise_initCommWorker - ', rejObj);
-		}
-	);
-	
-	// register about page
-	initAndRegisterAbout();
-	
-	// register about pages listener
-	Services.mm.addMessageListener(core.addon.id, fsMsgListener);
+
 	
 }
 
