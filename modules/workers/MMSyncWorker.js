@@ -581,6 +581,16 @@ function syncMonitorMouse() {
 						// var rez_PostMessage = ostypes.API('PostMessage')(null, ostypes.CONST.WM_INPUT, 4, 0);
 						// console.log('rez_PostMessage:', rez_PostMessage, rez_PostMessage.toString());
 					// }
+                
+					var rezCallNextEx = function() {
+						var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
+						// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
+						return rez_CallNext;
+					};
+					
+					if (nCode < 0) {
+						return rezCallNextEx();
+					}
 					
 					var eventType;
 					for (var p in OSStuff.mouseConsts) {
@@ -589,12 +599,6 @@ function syncMonitorMouse() {
 							break;
 						}
 					}
-                
-					var rezCallNextEx = function() {
-						var rez_CallNext = ostypes.API('CallNextHookEx')(null, nCode, wParam, lParam);
-						// console.info('rez_CallNext:', rez_CallNext, rez_CallNext.toString());
-						return rez_CallNext;
-					};
 				
 					if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
 						// have to return rez callback because nCode is negative, this is per the docs			
