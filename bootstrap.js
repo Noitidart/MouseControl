@@ -612,9 +612,11 @@ var MMWorkerFuncs = {
 			// so now from this point, assume mouse monitor is in a infinite js loop
 				// so to now communicate with MMWorker i have to CommWorker.postMessage to transferToMMWorker (for windows im in a lock for sure, linux im pretty sure, osx i might not, so for osx i should still send this same post message, but on callback of it, i should then send mmworker a message to read in from the shreables as they were updated)
 				// the other reason to commToMMworker is to tell it to start or stop sending mouse events
-				
-			if (!gShutdowned) {
-				windowListener.register();
+			
+			if (core.os.name.indexOf('win') === 0) {
+				if (!gShutdowned) {
+					windowListener.register();
+				}
 			}
 		});
 		
@@ -1001,8 +1003,10 @@ function shutdown(aData, aReason) {
 	
 	if (aReason == APP_SHUTDOWN) { return }
 	
-	gShutdowned = true;
-	windowListener.unregister();
+	if (core.os.name.indexOf('win') === 0) {
+		gShutdowned = true;
+		windowListener.unregister();
+	}
 	
 	// if anything has a __uninit__ and a config then execute it
 	for (var i=0; i<gConfigJson.length; i++) {
