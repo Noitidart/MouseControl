@@ -1704,7 +1704,7 @@ function comboIsConfig(aMECombo, boolTriggerFunc) {
 			if (aMECombo.length == jsMmJsonParsed.config[p].length) {
 					for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
 						if (jsMmJsonParsed.config[p][i].std != aMECombo[i].std || jsMmJsonParsed.config[p][i].multi != aMECombo[i].multi || jsMmJsonParsed.config[p][i].held != aMECombo[i].held) {
-							return false;
+							continue;
 						}
 						if (i == jsMmJsonParsed.config[p].length - 1) {
 							// ok the whole thing matched trigger it
@@ -1717,6 +1717,7 @@ function comboIsConfig(aMECombo, boolTriggerFunc) {
 					}
 			} // not same length as aMECombo so no way it can match
 		}
+		return false; // no matching config found for this combo
 	}
 }
 
