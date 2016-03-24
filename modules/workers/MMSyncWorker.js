@@ -113,8 +113,10 @@ function init(objCore) {
 	
 	core = objCore;
 	
+	core.os.mname = core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name; // mname stands for modified-name
+	
 	// I import ostypes_*.jsm in init as they may use things like core.os.isWinXp etc
-	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
+	switch (core.os.mname) {
 		case 'winnt':
 		case 'winmo':
 		case 'wince':
@@ -135,7 +137,7 @@ function init(objCore) {
 	
 	// OS Specific Init
 	var aInitInfoObj = {};
-	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
+	switch (core.os.mname) {
 		case 'winnt':
 		case 'winmo':
 		case 'wince':
@@ -450,24 +452,24 @@ function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 		var rez_GetMessage = ostypes.API('GetMessage')(LMessage.address(), null, wMsgFilterMin, wMsgFilterMax);
 		console.log('rez_GetMessage:', rez_GetMessage);
 
-		console.log('LMessage.message:', LMessage.toString());
-		
-		var rez_DispatchMessage = ostypes.API('DispatchMessage')(LMessage.address());
-		console.log('rez_DispatchMessage:', rez_DispatchMessage);
-
-		console.log('LMessage.message:', LMessage.toString());		
-		
-		// i set the wParam to custom things to signal my thread. to either just break from GetMessage to repeat loop, or quit
-		switch (actOnDoWhat()) {
-			case -4:
-					
-					// stop mouse monitor
-					break labelSoSwitchCanBreakWhile;
-					
-				break;
-			default:
-				// continue loop
+		console.log('LMessage.message:', LMessage.message, LMessage);
+		if (cutils.jscEqual(LMessage.message, 0x8000)) { // cross-file-link191119191383
+			// 0x8000 is my custom message, 
+			switch (actOnDoWhat()) {
+				case -4:
+						
+						// stop mouse monitor
+						break labelSoSwitchCanBreakWhile;
+						
+					break;
+				default:
+					// continue loop
+			}
+		} else {
+			var rez_DispatchMessage = ostypes.API('DispatchMessage')(LMessage.address()); // for WM_TIMER this triggers the callback set up by SetTimer per https://msdn.microsoft.com/en-us/library/windows/desktop/ms644934%28v=vs.85%29.aspx it says "If the lpmsg parameter points to a WM_TIMER message and the lParam parameter of the WM_TIMER message is not NULL, lParam points to a function that is called instead of the window procedure"
+			console.log('rez_DispatchMessage:', rez_DispatchMessage);
 		}
+		
 	}
 	// console.log('message loop ended');
 	stopMonitor(); // must stop monitor when stop loop otherwise mouse will freeze up for like 5sec, well thats what happens to me on win81
@@ -539,7 +541,7 @@ function syncMonitorMouse() {
 	
 	console.log('in syncMonitorMouse jsMmJsonParsed.prefs[\'hold-duration\']:', jsMmJsonParsed.prefs['hold-duration'], 'jsMmJsonParsed.prefs[\'multi-speed\']:', jsMmJsonParsed.prefs['multi-speed'], 'jsMmJsonParsed.config:', jsMmJsonParsed.config);
 	
-	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
+	switch (core.os.mname) {
 		case 'winnt':
 		case 'winmo':
 		case 'wince':
@@ -1362,7 +1364,7 @@ function gtkMainthreadMouseCallback(stdConst) {
 
 function stopMonitor() {
 	// cancels the monitoring if its in progress
-	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
+	switch (core.os.mname) {
 		case 'winnt':
 		case 'winmo':
 		case 'wince':
@@ -1472,6 +1474,15 @@ function handleMouseEvent(aMEStdConst) {
 	// return true if handled else false (handled means block it)
 	
 	console.log('incoming aMEStdConst:', aMEStdConst, 'gFxInFocus:', gFxInFocus);
+	
+	// cancel the hold timer if there was one
+	if (OSStuff.heldTimerId) {
+		var rez_KillTimer = ostypes.API('KillTimer')(null, OSStuff.heldTimerId);
+		console.error('rez_KillTimer:', rez_KillTimer);
+		delete OSStuff.heldTimerCallback;
+		delete OSStuff.heldTimerId;
+		delete OSStuff.heldTimerCallback_js;
+	}
 	
 	var cMECombo = new METracker();
 	
@@ -1616,6 +1627,7 @@ function handleMouseEvent(aMEStdConst) {
 	
 	// show cMECombo
 	console.log('cMECombo:', cMECombo.strOfStds());
+	g_cMECombo = cMECombo;
 	
 	// test if cMECombo is a match to any config
 	var rezHandleME; // need to hold return value here, as i need to pop out fro cMECombo before returning
@@ -1624,22 +1636,8 @@ function handleMouseEvent(aMEStdConst) {
 		rezHandleME = true;
 	} else {
 		// if cMECombo matches then return true else return false
-		rezHandleME = false;
-		for (var p in jsMmJsonParsed.config) {
-			if (cMECombo.length == jsMmJsonParsed.config[p].length) {
-					for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
-						if (jsMmJsonParsed.config[p][i].std != cMECombo[i].std || jsMmJsonParsed.config[p][i].multi != cMECombo[i].multi) {
-							break;
-						}
-						if (i == jsMmJsonParsed.config[p].length - 1) {
-							// ok the whole thing matched trigger it
-							// dont break out of p loop as maybe user set another thing to have the same combo
-							self.postMessage(['triggerConfigFunc', p]);
-							rezHandleME = false; // :todo: set this to true, right now when i do it, it bugs out
-						}
-					}
-			} // not same length as cMECombo so no way it can match
-		}
+		rezHandleME = comboIsConfig(cMECombo, true);
+		rezHandleME = false; // :todo: :debug:, right now if i leave this at true, then it blocks the mouse vent which bugs out. i need to block properly
 	}
 	
 	// // clean up
@@ -1653,7 +1651,114 @@ function handleMouseEvent(aMEStdConst) {
 	// 	}
 	// }
 	
+	if (jsMmJsonParsed.prefs['hold-duration'] > 0) {
+		// is cMECombo holdable
+		if (cMEBtn != 'WH' && cMEDir == 'DN' || (cMEDir == 'CK' && cME.multi % 1 == 0.5)) {
+			console.log('ok holdable');
+			
+			switch (core.os.mname) {
+				case 'winnt':
+				case 'winmo':
+				case 'wince':
+						
+						//
+						OSStuff.heldTimerCallback_js = function(hwnd, uMsg, idEvent, dwTime) {
+							var rez_KillTimer = ostypes.API('KillTimer')(null, OSStuff.heldTimerId);
+							console.error('rez_KillTimer:', rez_KillTimer);
+							makeMouseEventHeld(cMECombo);
+							delete OSStuff.heldTimerCallback;
+							delete OSStuff.heldTimerId;
+							delete OSStuff.heldTimerCallback_js;
+						};
+						
+						OSStuff.heldTimerCallback = ostypes.TYPE.TIMERPROC.ptr(OSStuff.heldTimerCallback_js);
+						OSStuff.heldTimerId = ostypes.API('SetTimer')(null, 1337, jsMmJsonParsed.prefs['hold-duration'], OSStuff.heldTimerCallback);
+						console.log('OSStuff.heldTimerId:', OSStuff.heldTimerId);
+						
+					break;
+				case 'darwin':
+						
+						// 
+						
+					break;
+				default:
+					// will not get here
+			}
+		}
+	}
+	
 	return rezHandleME;
+}
+
+function comboIsConfig(aMECombo, boolTriggerFunc) {
+	// tests if aMECombo is a button combo (config) for any of the users prefs.
+	// if boolTriggerConfig is true, if it finds it is a config, then it will trigger the respective func
+	// returns bool
+	if (sendMouseEventsToMT) {
+		self.postMessage(['currentMouseEventCombo', aMECombo.asArray()]);
+		return true;
+	} else {
+		// if aMECombo matches then return true else return false
+		rezHandleME = false;
+		for (var p in jsMmJsonParsed.config) {
+			if (aMECombo.length == jsMmJsonParsed.config[p].length) {
+					for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
+						if (jsMmJsonParsed.config[p][i].std != aMECombo[i].std || jsMmJsonParsed.config[p][i].multi != aMECombo[i].multi || jsMmJsonParsed.config[p][i].held != aMECombo[i].held) {
+							return false;
+						}
+						if (i == jsMmJsonParsed.config[p].length - 1) {
+							// ok the whole thing matched trigger it
+							// dont break out of p loop as maybe user set another thing to have the same combo
+							if (boolTriggerFunc) {
+								self.postMessage(['triggerConfigFunc', p]);
+							}
+							return true;
+						}
+					}
+			} // not same length as aMECombo so no way it can match
+		}
+	}
+}
+
+var g_cMECombo;
+function makeMouseEventHeld(a_cMECombo) {
+	
+	// if windows check to see if gFxInFocus
+	// :todo:
+	
+	// test if g_cMECombo matches a_cMECombo, if it doesn't then it means things changed
+	if (g_cMECombo.strOfStds() != a_cMECombo.strOfStds()) {
+		console.warn('a_cMECombo no longer matches the global one so dont make it held', 'g_cMECombo:', g_cMECombo.strOfStds(), 'a_cMECombo:', a_cMECombo.strOfStds());
+		return;
+	}
+	
+	
+	// make a referenced copy so i can push to it a final element that wont affect the global
+	var cMECombo = new METracker();
+	for (var i=0; i<a_cMECombo.length-1; i++) {
+		cMECombo.push(a_cMECombo[i]);
+	}
+	
+	// add in the last one as a copy so when i add to .held it wont affect the lME in handleMouseEvent
+	var last_cMEComboEntry = a_cMECombo[a_cMECombo.length - 1];
+	cMECombo.push(
+		{
+			std: last_cMEComboEntry.std,
+			time: last_cMEComboEntry.time,
+			multi: last_cMEComboEntry.multi,
+			held: true
+		}
+	);
+
+	// send to mainthread	
+	if (sendMouseEventsToMT) {
+		console.log('sending held to prefs page');
+		self.postMessage(['currentMouseEventCombo', cMECombo.asArray()]);
+	} else {
+		console.log('testing if should trigger a config on mainthread');
+		// if cMECombo matches then return true else return false
+		comboIsConfig(cMECombo, true);
+	}
 }
 
 // End - Addon Functionality

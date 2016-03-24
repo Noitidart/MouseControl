@@ -36,7 +36,7 @@
 				<small>PLACE MOUSE HERE AND DO MOUSE COMBO</small>
 				<img src="chrome://mousecontrol/content/resources/images/delete16.png" ng-show="BC.building.config.length" ng-mouseenter="BC.requestingWitholdMouseEvents($event)" ng-click="BC.building.config=[]"/>
 				<span ng-repeat="aMouseEvent in BC.building.config">
-					{{aMouseEvent.multi > 1 ? aMouseEvent.multi + 'x ' : ''}}{{aMouseEvent.std}}
+					{{aMouseEvent.multi > 1 ? aMouseEvent.multi + 'x ' : ''}}{{aMouseEvent.std}}{{aMouseEvent.held ? ' + HOLD' : undefined}}
 				</span>
 			</div>
 			<div class="modal-row">
