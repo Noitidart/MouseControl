@@ -997,6 +997,7 @@ function shutdown(aData, aReason) {
 				console.error('ok mmworker preterminate done');
 				MMWorker.terminate();
 				CommWorker.terminate();
+				console.error('ok terminated from mainthread');
 			})
 		});
 	}

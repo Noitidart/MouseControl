@@ -151,6 +151,8 @@ function init(objCore) {
 					OSStuff.aLoop = ostypes.API('CFRunLoopGetCurrent')();
 					console.log('OSStuff.aLoop:', OSStuff.aLoop, OSStuff.aLoop.toString());
 					aInitInfoObj.macMmWorkerThread_CFRunLoopRef_ptrStr = cutils.strOfPtr(OSStuff.aLoop);
+
+					OSStuff.runLoopMode = ostypes.HELPER.makeCFStr('com.mozilla.firefox.mousecontrol');					
 			
 			break;
 		default:
@@ -453,8 +455,8 @@ function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 		console.log('rez_GetMessage:', rez_GetMessage);
 
 		console.log('LMessage.message:', LMessage.message, LMessage);
-		if (cutils.jscEqual(LMessage.message, 0x8000)) { // cross-file-link191119191383
-			// 0x8000 is my custom message, 
+		if (cutils.jscEqual(LMessage.message, ostypes.CONST.WM_APP+1)) { // cross-file-link191119191383
+			// ostypes.CONST.WM_APP+1 is my custom message, 
 			switch (actOnDoWhat()) {
 				case -4:
 						
@@ -1153,7 +1155,8 @@ function syncMonitorMouse() {
 				
 				var MouseTracker_js = function(proxy, type, event, refcon) {
 					// console.error('in MouseTracker_js!!!!');
-					
+					gMac++;
+					console.log('ok incremented gMac in tracker callback, gMac is now:', gMac);
 					var eventType;
 					for (var p in OSStuff.mouseConsts) {
 						if (cutils.jscEqual(OSStuff.mouseConsts[p], type)) {
@@ -1289,7 +1292,6 @@ function syncMonitorMouse() {
 					// console.log('cfreleased OSStuff.mouseEventTap');
 					
 					if (!OSStuff.aRLS.isNull()) {						
-						OSStuff.runLoopMode = ostypes.HELPER.makeCFStr('com.mozilla.firefox.mousecontrol');
 						
 						ostypes.API('CFRunLoopAddSource')(OSStuff.aLoop, OSStuff.aRLS, OSStuff.runLoopMode); // returns void
 						console.log('did CFRunLoopAddSource');
@@ -1307,8 +1309,11 @@ function syncMonitorMouse() {
 						// equivalent of winRunMessageLoop for mac
 						labelSoSwitchCanBreakWhile:
 						while (true) {
-							var rez_CFRunLoopRunInMode = ostypes.API('CFRunLoopRunInMode')(OSStuff.runLoopMode, 10, false);
+							gMac++;
+							console.log('gMac incremented from while loop:', gMac);
+							var rez_CFRunLoopRunInMode = ostypes.API('CFRunLoopRunInMode')(OSStuff.runLoopMode, 100000, false);
 							console.log('rez_CFRunLoopRunInMode:', rez_CFRunLoopRunInMode, rez_CFRunLoopRunInMode.toString());
+							console.log('ok post RunLoop end gMac is:', gMac);
 							
 							if (cutils.jscEqual(rez_CFRunLoopRunInMode, ostypes.CONST.kCFRunLoopRunStopped)) { // because when i stop it from CommWorker
 								switch (actOnDoWhat()) {
@@ -1342,6 +1347,8 @@ function syncMonitorMouse() {
 			});
 	}
 }
+
+var gMac = 0;
 
 function gtkMainthreadMouseCallback(stdConst) {
 		mouseTracker.push({
@@ -1476,12 +1483,32 @@ function handleMouseEvent(aMEStdConst) {
 	console.log('incoming aMEStdConst:', aMEStdConst, 'gFxInFocus:', gFxInFocus);
 	
 	// cancel the hold timer if there was one
-	if (OSStuff.heldTimerId) {
-		var rez_KillTimer = ostypes.API('KillTimer')(null, OSStuff.heldTimerId);
-		console.error('rez_KillTimer:', rez_KillTimer);
-		delete OSStuff.heldTimerCallback;
-		delete OSStuff.heldTimerId;
-		delete OSStuff.heldTimerCallback_js;
+	if (OSStuff.heldTimerCallback) {
+		
+		switch (core.os.mname) {
+			case 'winnt':
+			case 'winmo':
+			case 'wince':
+					
+					var rez_KillTimer = ostypes.API('KillTimer')(null, OSStuff.heldTimerId);
+					console.error('rez_KillTimer:', rez_KillTimer);
+					delete OSStuff.heldTimerCallback;
+					delete OSStuff.heldTimerId;
+					delete OSStuff.heldTimerCallback_js;
+					
+				break;
+			case 'darwin':
+					
+					ostypes.API('CFRunLoopTimerInvalidate')(OSStuff.heldTimer);
+					console.log('ok should have cancelled timer');
+					delete OSStuff.heldTimerCallback;
+					delete OSStuff.heldTimerCallback_js;
+					delete OSStuff.heldTimer;
+					
+				break;
+			default:
+				// will not get here
+		}
 	}
 	
 	var cMECombo = new METracker();
@@ -1678,7 +1705,17 @@ function handleMouseEvent(aMEStdConst) {
 					break;
 				case 'darwin':
 						
-						// 
+						//
+						OSStuff.heldTimerCallback_js = function() {
+							console.error('in held timer callback!');
+							makeMouseEventHeld(cMECombo);
+							delete OSStuff.heldTimerCallback;
+							delete OSStuff.heldTimerCallback_js;
+							delete OSStuff.heldTimer;
+						};
+						OSStuff.heldTimerCallback = ostypes.TYPE.CFRunLoopTimerCallBack(OSStuff.heldTimerCallback_js);
+						OSStuff.heldTimer = ostypes.API('CFRunLoopTimerCreate')(ostypes.CONST.kCFAllocatorDefault, ostypes.API('CFAbsoluteTimeGetCurrent')() + (jsMmJsonParsed.prefs['hold-duration'] / 1000), 0, 0, 0, OSStuff.heldTimerCallback, null);
+						ostypes.API('CFRunLoopAddTimer')(OSStuff.aLoop, OSStuff.heldTimer, OSStuff.runLoopMode);
 						
 					break;
 				default:
