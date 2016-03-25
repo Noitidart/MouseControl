@@ -407,7 +407,7 @@ var prefs = {
 		type: Ci.nsIPrefBranch.PREF_INT
 	},
 	'hold-duration': {
-		default: 200,
+		default: 300,
 		type: Ci.nsIPrefBranch.PREF_INT
 	},
 	/*
@@ -751,9 +751,17 @@ var MMWorkerFuncs = {
 		OSStuff.mouse_filter_c = null;
 		
 		console.log('ok gtk monitor stopped');
-	}
+	},
 	// end - gtk mainthread technique functions
+	startHeldTimer: function(aMECombo) {
+		gHeldTimer.cancel();
+		xpcomSetTimeout(gHeldTimer, infoObjForWorker.prefs['hold-duration'], makeMouseEventHeld.bind(null, aMECombo));
+	},
+	cancelAnyPendingHeldTimer: function() {
+		gHeldTimer.cancel();
+	}
 };
+var gHeldTimer = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
 
 function tellMMWorkerPrefsAndConfig() {
 	
@@ -1450,7 +1458,36 @@ var gMEAllReasedTime = 0; // is set to the last time that all were released
 function handleMouseEvent(aMEStdConst) {
 	// return true if handled else false (handled means block it)
 	
-	console.log('incoming aMEStdConst:', aMEStdConst);
+	// console.log('incoming aMEStdConst:', aMEStdConst, 'gFxInFocus:', gFxInFocus);
+	
+	// cancel the hold timer if there was one
+	if (OSStuff.heldTimerCallback) {
+		
+		switch (core.os.mname) {
+			case 'winnt':
+			case 'winmo':
+			case 'wince':
+					
+					var rez_KillTimer = ostypes.API('KillTimer')(null, OSStuff.heldTimerId);
+					console.error('rez_KillTimer:', rez_KillTimer);
+					delete OSStuff.heldTimerCallback;
+					delete OSStuff.heldTimerId;
+					delete OSStuff.heldTimerCallback_js;
+					
+				break;
+			case 'darwin':
+					
+					ostypes.API('CFRunLoopTimerInvalidate')(OSStuff.heldTimer);
+					console.log('ok should have cancelled timer');
+					delete OSStuff.heldTimerCallback;
+					delete OSStuff.heldTimerCallback_js;
+					delete OSStuff.heldTimer;
+					
+				break;
+			default:
+				// will not get here
+		}
+	}
 	
 	var cMECombo = new METracker();
 	
@@ -1458,7 +1495,7 @@ function handleMouseEvent(aMEStdConst) {
 		std: aMEStdConst,
 		time: (new Date()).getTime(),
 		multi: 1
-	}
+	};
 	var cMEDir = cME.std.substr(3);
 	var cMEBtn = cME.std.substr(0, 2);
 	
@@ -1509,7 +1546,7 @@ function handleMouseEvent(aMEStdConst) {
 	var clearAll = false; // set to true, if no more triggers are held, used in clean up section
 	// add to gMEDown that a trigger is held or no longer held && transform previous event to click if it was
 	if (cMEBtn != 'WH') {
-		if (cME.std.substr(3) == 'UP') {
+		if (cMEDir == 'UP') {
 			var ixCk = gMEDown.indexOfStd(cMEBtn + '_CK');
 			if (ixCk > -1) {
 				gMEDown.splice(ixCk, 1);
@@ -1527,9 +1564,9 @@ function handleMouseEvent(aMEStdConst) {
 			}
 			
 			// if the previous was the DN of this cMEBtn then transform cME to click
-			if (lME) {
+			// if (lME) {
 				// console.log('cME.time - pMEDown.time:', cME.time - lME.time, 'click-speed:', infoObjForWorker.prefs['click-speed']);
-			}
+			// }
 			// if (pMEDown && pMEDown.std == cMEBtn + '_DN' /* && cME.time - pMEDown.time <= infoObjForWorker.prefs['click-speed'] */) { // gMEDown[gMEDown.length-1] == cMEBtn + '_DN'
 			// if (lME && lMEBtn == cMEBtn && (lMEDir == 'DN' || lMEDir == 'CK')) {
 			if (pMEDown && pMEBtn == cMEBtn && (pMEDir == 'DN' || pMEDir == 'CK')) {
@@ -1539,7 +1576,7 @@ function handleMouseEvent(aMEStdConst) {
 		} else {
 			var ixC = gMEDown.indexOfStd(cME.std);
 			if (ixC > -1) {
-				console.error('should never happen, as every DN event should be followed by an UP event');
+				console.error('should never happen, as every DN event should be followed by an UP event, cME.std:', cME.std);
 			} else {
 				// add it in
 				gMEDown.push(cME); // link38389222
@@ -1595,6 +1632,7 @@ function handleMouseEvent(aMEStdConst) {
 	
 	// show cMECombo
 	console.log('cMECombo:', cMECombo.strOfStds());
+	// g_cMECombo = cMECombo;
 	
 	// test if cMECombo is a match to any config
 	var rezHandleME; // need to hold return value here, as i need to pop out fro cMECombo before returning
@@ -1603,22 +1641,8 @@ function handleMouseEvent(aMEStdConst) {
 		rezHandleME = true;
 	} else {
 		// if cMECombo matches then return true else return false
-		rezHandleME = false;
-		for (var p in infoObjForWorker.config) {
-			if (cMECombo.length == infoObjForWorker.config[p].length) {
-					for (var i=0; i<infoObjForWorker.config[p].length; i++) {
-						if (infoObjForWorker.config[p][i].std != cMECombo[i].std || infoObjForWorker.config[p][i].multi != cMECombo[i].multi) {
-							break;
-						}
-						if (i == infoObjForWorker.config[p].length - 1) {
-							// ok the whole thing matched trigger it
-							// dont break out of p loop as maybe user set another thing to have the same combo
-							MMWorkerFuncs.triggerConfigFunc(p);
-							rezHandleME = false; // :todo: set this to true, right now when i do it, it bugs out
-						}
-					}
-			} // not same length as cMECombo so no way it can match
-		}
+		rezHandleME = comboIsConfig(cMECombo, true);
+		rezHandleME = false; // :todo: :debug:, right now if i leave this at true, then it blocks the mouse vent which bugs out. i need to block properly
 	}
 	
 	// // clean up
@@ -1632,7 +1656,87 @@ function handleMouseEvent(aMEStdConst) {
 	// 	}
 	// }
 	
+	if (infoObjForWorker.prefs['hold-duration'] > 0) {
+		// is cMECombo holdable
+		if (cMEBtn != 'WH' && cMEDir == 'DN' || (cMEDir == 'CK' && cME.multi % 1 == 0.5)) {
+			console.log('ok holdable');
+			
+			MMWorkerFuncs.startHeldTimer(cMECombo.asArray());
+		} else {
+			MMWorkerFuncs.cancelAnyPendingHeldTimer();
+		}
+	}
+	
 	return rezHandleME;
+}
+
+function comboIsConfig(aMECombo, boolTriggerFunc) {
+	// tests if aMECombo is a button combo (config) for any of the users prefs.
+	// if boolTriggerConfig is true, if it finds it is a config, then it will trigger the respective func
+	// returns bool
+	if (bowserFsWantingMouseEvents) {
+		MMWorkerFuncs.currentMouseEventCombo(cMECombo.asArray());
+		return true;
+	} else {
+		// if aMECombo matches then return true else return false
+		rezHandleME = false;
+		for (var p in infoObjForWorker.config) {
+			if (aMECombo.length == infoObjForWorker.config[p].length) {
+					for (var i=0; i<infoObjForWorker.config[p].length; i++) {
+						if (infoObjForWorker.config[p][i].std != aMECombo[i].std || infoObjForWorker.config[p][i].multi !== aMECombo[i].multi || infoObjForWorker.config[p][i].held != aMECombo[i].held) {
+							break;
+						}
+						if (i == infoObjForWorker.config[p].length - 1) {
+							// ok the whole thing matched trigger it
+							// dont break out of p loop as maybe user set another thing to have the same combo
+							if (boolTriggerFunc) {
+								MMWorkerFuncs.triggerConfigFunc(p);
+							}
+							return true;
+						}
+					}
+			} // not same length as aMECombo so no way it can match
+		}
+		return false; // no matching config found for this combo
+	}
+}
+
+// var g_cMECombo;
+function makeMouseEventHeld(a_cMECombo) {
+	
+	// // test if g_cMECombo matches a_cMECombo, if it doesn't then it means things changed
+	// if (g_cMECombo.strOfStds() != a_cMECombo.strOfStds()) {
+	// 	console.warn('a_cMECombo no longer matches the global one so dont make it held', 'g_cMECombo:', g_cMECombo.strOfStds(), 'a_cMECombo:', a_cMECombo.strOfStds());
+	// 	return;
+	// }
+	
+	
+	// make a referenced copy so i can push to it a final element that wont affect the global
+	var cMECombo = new METracker();
+	for (var i=0; i<a_cMECombo.length-1; i++) {
+		cMECombo.push(a_cMECombo[i]);
+	}
+	
+	// add in the last one as a copy so when i add to .held it wont affect the lME in handleMouseEvent
+	var last_cMEComboEntry = a_cMECombo[a_cMECombo.length - 1];
+	cMECombo.push(
+		{
+			std: last_cMEComboEntry.std,
+			time: last_cMEComboEntry.time,
+			multi: last_cMEComboEntry.multi,
+			held: true
+		}
+	);
+
+	// send to mainthread	
+	if (bowserFsWantingMouseEvents) {
+		console.log('sending held to prefs page');
+		MMWorkerFuncs.currentMouseEventCombo(cMECombo.asArray());
+	} else {
+		console.log('testing if should trigger a config on mainthread');
+		// if cMECombo matches then return true else return false
+		comboIsConfig(cMECombo, true);
+	}
 }
 
 // start - common helper functions
@@ -2194,5 +2298,12 @@ function tryOsFile_ifDirsNoExistMakeThenRetry(nameOfOsFileFunc, argsOfOsFileFunc
 	
 	
 	return deferred_tryOsFile_ifDirsNoExistMakeThenRetry.promise;
+}
+function xpcomSetTimeout(aNsiTimer, aDelayTimerMS, aTimerCallback) {
+	aNsiTimer.initWithCallback({
+		notify: function() {
+			aTimerCallback();
+		}
+	}, aDelayTimerMS, Ci.nsITimer.TYPE_ONE_SHOT);
 }
 // end - common helper functions

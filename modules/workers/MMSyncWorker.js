@@ -1463,6 +1463,9 @@ METracker.prototype.strOfStds = function() {
 		if (this[i].multi > 1) {
 			rezstr[rezstr.length - 1] = this[i].multi + 'x ' + this[i].std;
 		}
+		if (this[i].held) {
+			rezstr[rezstr.length - 1] += ' + HOLD'
+		}
 	}
 	return rezstr.join(', ');
 };
@@ -1740,8 +1743,8 @@ function comboIsConfig(aMECombo, boolTriggerFunc) {
 		for (var p in jsMmJsonParsed.config) {
 			if (aMECombo.length == jsMmJsonParsed.config[p].length) {
 					for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
-						if (jsMmJsonParsed.config[p][i].std != aMECombo[i].std || jsMmJsonParsed.config[p][i].multi != aMECombo[i].multi || jsMmJsonParsed.config[p][i].held != aMECombo[i].held) {
-							continue;
+						if (jsMmJsonParsed.config[p][i].std != aMECombo[i].std || jsMmJsonParsed.config[p][i].multi !== aMECombo[i].multi || jsMmJsonParsed.config[p][i].held != aMECombo[i].held) {
+							break;
 						}
 						if (i == jsMmJsonParsed.config[p].length - 1) {
 							// ok the whole thing matched trigger it
@@ -1798,6 +1801,22 @@ function makeMouseEventHeld(a_cMECombo) {
 		comboIsConfig(cMECombo, true);
 	}
 }
+/*
+function strOfStds(aCombo) {
+	// returns a string of the current std in order
+	var rezstr = [];
+	for (var i=0; i<aCombo.length; i++) {
+		rezstr.push(aCombo[i].std);
+		if (aCombo[i].multi > 1) {
+			rezstr[rezstr.length - 1] = aCombo[i].multi + 'x ' + aCombo[i].std;
+		}
+		if (aCombo[i].held) {
+			rezstr[rezstr.length - 1] += ' + HOLD'
+		}
+	}
+	return rezstr.join(', ');
+}
+*/
 
 // End - Addon Functionality
 
