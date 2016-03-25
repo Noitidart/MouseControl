@@ -222,7 +222,67 @@ var gConfigJsonDefault = function() {
 			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
 			config:[],
 			func: BEAUTIFY().js(uneval({
-
+				__init__: function() {		
+					$MC_BS_.RemElStore = {
+						onFsCreated: function(aTarget) {
+							// runs in bootstrap scope
+							// aTarget is a messageManager
+							$MC_execInTab($MC_BS_.RemElStore.fsInjectInit, null, {tab:aTarget});
+						},
+						onFsUninit: function(aTarget) {
+							// runs in bootstrap scope
+							// aTarget is a messageManager
+							$MC_execInTab($MC_BS_.RemElStore.fsInjectUninit, null, {tab:aTarget});
+						},
+						fsInjectInit: function() {
+							// runs in framescript scope
+							$MC_FS_.RemElStore = {
+								exec: function() {
+									// executes the removal
+									var el = $MC_FS_.RemElStore.el;
+									console.error('ok execing on el:', el);
+									if (el) {
+										el.parentNode.removeChild(el);
+										$MC_FS_.RemElStore.el = null;
+										console.error('ok execd');
+									}
+								},
+								ondown: function(e) {
+									$MC_FS_.RemElStore.el = e.target;
+									console.error('this.el:', $MC_FS_.RemElStore.el);
+								}
+							};
+							
+							addEventListener('mousedown', $MC_FS_.RemElStore.ondown, false);
+							addEventListener('mouseup', $MC_FS_.RemElStore.onup, false);
+						},
+						fsInjectUninit: function() {
+							// runs in framescript scope
+							removeEventListener('mousedown', $MC_FS_.RemElStore.ondown, false);
+							removeEventListener('mouseup', $MC_FS_.RemElStore.onup, false);
+							delete $MC_FS_.RemElStore;
+						}
+					};
+					
+					console.log('$MC_BS_:', $MC_BS_);
+					$MC_execInAllTabs($MC_BS_.RemElStore.fsInjectInit);
+					$MC_addEventListener('framescript_created', $MC_BS_.RemElStore.onFsCreated);
+					$MC_addEventListener('framescript_uninit', $MC_BS_.RemElStore.onFsUninit);
+				},
+				__uninit__: function() {
+					$MC_removeEventListener('framescript_created', $MC_BS_.RemElStore.onFsCreated);
+					$MC_removeEventListener('framescript_uninit', $MC_BS_.RemElStore.onFsUninit);
+					
+					$MC_execInAllTabs($MC_BS_.RemElStore.fsInjectUninit);
+					delete $MC_BS_.RemElStore;
+				},
+				__exec__: function() {
+					$MC_execInTab(
+						function() {
+							$MC_FS_.RemElStore.exec();
+						}
+					);
+				}
 			}))
 		},
 		{
@@ -804,11 +864,20 @@ function updateConfigJson(aNewConfigJson) {
 		var gEntry = getConfigById(nEntry.id, gConfigJson);
 		if (!gEntry) {
 			// this one is new
-			eval('_cache_func["' + nEntry.id + '"] = ' + nEntry.func);
-			
+			try {
+				eval('_cache_func["' + nEntry.id + '"] = ' + nEntry.func);
+			} catch (ignore) {
+				console.error('Error on eval of "' + nEntry.name + '":', ignore);
+				_cache_func[nEntry.id] = {};
+			}
+
 			// if it has a __init__ AND a config then run it
 			if (nEntry.config.length && _cache_func[nEntry.id].__init__) {
-				_cache_func[nEntry.id].__init__();
+				try {
+					_cache_func[nEntry.id].__init__();
+				} catch (ignore) {
+					console.error('Error on __init__ of "' + nEntry.name + '":', ignore);
+				}
 			}
 		} else {
 			// it is not new
@@ -818,15 +887,28 @@ function updateConfigJson(aNewConfigJson) {
 				
 				// but first run __uninit__ if it had one AND it had a config
 				if (gEntry.config.length && _cache_func[nEntry.id].__uninit__) {
-					_cache_func[nEntry.id].__uninit__();
+					try {
+						_cache_func[nEntry.id].__uninit__();
+					} catch (ignore) {
+						console.error('Error on __uninit__ of "' + nEntry.name + '":', ignore);
+					}
 				}
 				
 				// ok now recache it
-				eval('_cache_func["' + nEntry.id + '"] = ' + nEntry.func);
+				try {
+					eval('_cache_func["' + nEntry.id + '"] = ' + nEntry.func);
+				} catch (ignore) {
+					console.error('Error on eval of "' + nEntry.name + '":', ignore);
+					_cache_func[nEntry.id] = {};
+				}
 				
 				// if it has a __init__ AND a config then run it
 				if (nEntry.config.length && _cache_func[nEntry.id].__init__) {
-					_cache_func[nEntry.id].__init__();
+					try {
+						_cache_func[nEntry.id].__init__();
+					} catch (ignore) {
+						console.error('Error on __init__ of "' + nEntry.name + '":', ignore);
+					}
 				}
 			} else {
 				// the func is unchanged
@@ -839,7 +921,11 @@ function updateConfigJson(aNewConfigJson) {
 					if (!nEntry.config.length) {
 						// no longer does, so if it has an __uninit__ then run it
 						if (_cache_func[nEntry.id].__uninit__) {
-							_cache_func[nEntry.id].__uninit__();
+							try {
+								_cache_func[nEntry.id].__uninit__();
+							} catch (ignore) {
+								console.error('Error on __uninit__ of "' + nEntry.name + '":', ignore);
+							}
 						}
 					} // else it still has one
 				} else {
@@ -849,7 +935,11 @@ function updateConfigJson(aNewConfigJson) {
 					if (nEntry.config.length) {
 						// but now DOES have one so __init__ if it has one
 						if (_cache_func[nEntry.id].__init__) {
-							_cache_func[nEntry.id].__init__();
+							try {
+								_cache_func[nEntry.id].__init__();
+							} catch (ignore) {
+								console.error('Error on __init__ of "' + nEntry.name + '":', ignore);
+							}
 						}
 					} // else it still does not have one
 				}
@@ -866,7 +956,11 @@ function updateConfigJson(aNewConfigJson) {
 			
 			// run __uninit__ if it had one AND if it had a config (if it had no config then the __init__ would never have ran)
 			if (gEntry.config.length && _cache_func[gEntry.id].__uninit__) {
-				_cache_func[gEntry.id].__uninit__();
+				try {
+					_cache_func[gEntry.id].__uninit__();
+				} catch (ignore) {
+					console.error('Error on __uninit__ of "' + gEntry.name + '":', ignore);
+				}
 			}
 			
 			// remove it from cache

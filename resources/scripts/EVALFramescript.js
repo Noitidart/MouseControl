@@ -165,13 +165,27 @@ bootstrapCallbacks.destroySelf = function() {
 
 bootstrapCallbacks.eval = function(aFuncAsStr) {
 	// console.log('in eval, aFuncAsStr:', aFuncAsStr);
-	eval('var func = ' + aFuncAsStr);
-	var rez = func();
-	console.error('rez:', rez);
-	if (rez && rez.constructor.name == 'Promise') {
-		return rez;
+	try {
+		eval('var func = ' + aFuncAsStr);
+	} catch (ignore) {
+		console.error('Error on eval in framescript:', ignore);
+	}
+	if (func) {
+		var rez;
+		try {
+			rez = func();
+		} catch (ignore) {
+			console.error('Error on executing func in framescript:', ignore);
+			return [undefined];
+		}
+		console.error('rez:', rez);
+		if (rez && rez.constructor.name == 'Promise') {
+			return rez;
+		} else {
+			return [rez];
+		}
 	} else {
-		return [rez];
+		return [undefined];
 	}
 };
 
