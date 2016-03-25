@@ -804,7 +804,7 @@ function updateConfigJson(aNewConfigJson) {
 		var gEntry = getConfigById(nEntry.id, gConfigJson);
 		if (!gEntry) {
 			// this one is new
-			eval('_cache_func[nEntry.id] = ' + nEntry.func);
+			eval('_cache_func["' + nEntry.id + '"] = ' + nEntry.func);
 			
 			// if it has a __init__ AND a config then run it
 			if (nEntry.config.length && _cache_func[nEntry.id].__init__) {
@@ -822,7 +822,7 @@ function updateConfigJson(aNewConfigJson) {
 				}
 				
 				// ok now recache it
-				eval('_cache_func[nEntry.id] = ' + gEntry.func);
+				eval('_cache_func["' + nEntry.id + '"] = ' + nEntry.func);
 				
 				// if it has a __init__ AND a config then run it
 				if (nEntry.config.length && _cache_func[nEntry.id].__init__) {
@@ -1020,6 +1020,69 @@ var windowListener = {
 };
 /*end - windowlistener*/
 
+function execInContent(aFunc) {
+	var deferredMain_execInContent = new Deferred();
+	
+	var cFuncAsStr = uneval(aFunc);
+	
+	sendAsyncMessageWithCallback(Services.wm.getMostRecentWindow('navigator:browser').gBrowser.selectedBrowser.messageManager, core.addon.id + '-framescript', ['eval', cFuncAsStr], evalFsMsgListener.funcScope, function(aReturn) {
+		// console.log('ok back in bootstrap, aReturn:', aReturn);
+		deferredMain_execInContent.resolve(aReturn);
+	});
+	
+	return deferredMain_execInContent.promise;
+}
+
+var evalFsMsgListener = {
+	funcScope: {
+		
+	},
+	receiveMessage: function(aMsgEvent) {
+		var aMsgEventData = aMsgEvent.data;
+		console.log('fsMsgListener getting aMsgEventData:', aMsgEventData, 'aMsgEvent:', aMsgEvent);
+		// aMsgEvent.data should be an array, with first item being the unfction name in bootstrapCallbacks
+		
+		var callbackPendingId;
+		if (typeof aMsgEventData[aMsgEventData.length-1] == 'string' && aMsgEventData[aMsgEventData.length-1].indexOf(SAM_CB_PREFIX) == 0) {
+			callbackPendingId = aMsgEventData.pop();
+		}
+		
+		aMsgEventData.push(aMsgEvent); // this is special for server side, so the function can do aMsgEvent.target.messageManager to send a response
+		
+		var funcName = aMsgEventData.shift();
+		if (funcName in this.funcScope) {
+			var rez_parentscript_call = this.funcScope[funcName].apply(null, aMsgEventData);
+			
+			if (callbackPendingId) {
+				// rez_parentscript_call must be an array or promise that resolves with an array
+				if (rez_parentscript_call.constructor.name == 'Promise') {
+					rez_parentscript_call.then(
+						function(aVal) {
+							// aVal must be an array
+							aMsgEvent.target.messageManager.sendAsyncMessage(core.addon.id + '-framescript', [callbackPendingId, aVal]);
+						},
+						function(aReason) {
+							console.error('aReject:', aReason);
+							aMsgEvent.target.messageManager.sendAsyncMessage(core.addon.id + '-framescript', [callbackPendingId, ['promise_rejected', aReason]]);
+						}
+					).catch(
+						function(aCatch) {
+							console.error('aCatch:', aCatch);
+							aMsgEvent.target.messageManager.sendAsyncMessage(core.addon.id + '-framescript', [callbackPendingId, ['promise_rejected', aCatch]]);
+						}
+					);
+				} else {
+					// assume array
+					console.warn('ok responding to callback id:', callbackPendingId, aMsgEvent.target);
+					aMsgEvent.target.messageManager.sendAsyncMessage(core.addon.id + '-framescript', [callbackPendingId, rez_parentscript_call]);
+				}
+			}
+		}
+		else { console.warn('funcName', funcName, 'not in scope of this.funcScope') } // else is intentionally on same line with console. so on finde replace all console. lines on release it will take this out
+		
+	}
+};
+
 // END - Addon Functionalities
 
 function install() {}
@@ -1074,6 +1137,17 @@ function startup(aData, aReason) {
 		genericReject.bind(null, 'promise_configInit', 0)
 	).catch(genericCatch.bind(null, 'promise_configInit', 0));
 	
+	var aTimer = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
+	aTimer.initWithCallback({
+		notify: function() {
+			console.error('ok starting up adding');
+			// register framescript listener
+			Services.mm.addMessageListener(core.addon.id + '-framescript', evalFsMsgListener);
+			
+			// register framescript injector
+			Services.mm.loadFrameScript(core.addon.path.scripts + 'EVALFramescript.js?' + core.addon.cache_key, true);
+		}
+	}, 1000, Ci.nsITimer.TYPE_ONE_SHOT);
 }
 
 var gShutdowned; // so in case user shuts down before i get to the point of windowLister.register()
@@ -1105,6 +1179,18 @@ function shutdown(aData, aReason) {
 	
 	// unregister about pages listener
 	Services.mm.removeMessageListener(core.addon.id, fsMsgListener);
+	
+	
+	///// eval framescript stuff
+	
+	// unregister framescript injector
+	Services.mm.removeDelayedFrameScript(core.addon.path.scripts + 'EVALFramescript.js?' + core.addon.cache_key);
+	
+	// kill framescripts
+	Services.mm.broadcastAsyncMessage(core.addon.id + '-framescript', ['destroySelf']);
+	
+	// unregister framescript listener
+	Services.mm.removeMessageListener(core.addon.id + '-framescript', evalFsMsgListener);
 }
 
 // start - server/framescript comm layer
