@@ -166,7 +166,7 @@ bootstrapCallbacks.eval = function(aFuncAsStr) {
 	eval('var func = ' + aFuncAsStr);
 	var rez = func();
 	console.error('rez:', rez);
-	if (rez.constructor.name == 'Promise') {
+	if (rez && rez.constructor.name == 'Promise') {
 		return rez;
 	} else {
 		return [rez];

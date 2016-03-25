@@ -1020,18 +1020,70 @@ var windowListener = {
 };
 /*end - windowlistener*/
 
-function execInContent(aFunc) {
-	var deferredMain_execInContent = new Deferred();
-	
+// start - functions for use in func of config
+function $MC_execInAllTabs(aFunc, aCallback) {	
 	var cFuncAsStr = uneval(aFunc);
 	
-	sendAsyncMessageWithCallback(Services.wm.getMostRecentWindow('navigator:browser').gBrowser.selectedBrowser.messageManager, core.addon.id + '-framescript', ['eval', cFuncAsStr], evalFsMsgListener.funcScope, function(aReturn) {
-		// console.log('ok back in bootstrap, aReturn:', aReturn);
-		deferredMain_execInContent.resolve(aReturn);
-	});
-	
-	return deferredMain_execInContent.promise;
+	var DOMWindows = Services.wm.getEnumerator('navigator:browser');
+	while (DOMWindows.hasMoreElements()) {
+		var aDOMWindow = DOMWindows.getNext();
+		var aGBrowser = aDOMWindow.gBrowser;
+		var aBrowsers = aGBrowser.browsers;
+		for (var i=0; i<aBrowsers.length; i++) {
+			if (aCallback) {
+				sendAsyncMessageWithCallback(aBrowsers[i].messageManager, core.addon.id + '-framescript', ['eval', cFuncAsStr], evalFsMsgListener.funcScope, function(aReturn) {
+					// console.log('ok back in bootstrap, aReturn:', aReturn);
+					aCallback(aReturn);
+				});
+			} else {
+				aBrowsers[i].messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['eval', cFuncAsStr]);
+			}
+		}
+	}
 }
+
+function $MC_execInTab(aFunc, aCallback) {	
+	var cFuncAsStr = uneval(aFunc);
+	
+	if (aCallback) {
+		sendAsyncMessageWithCallback(Services.wm.getMostRecentWindow('navigator:browser').gBrowser.selectedBrowser.messageManager, core.addon.id + '-framescript', ['eval', cFuncAsStr], evalFsMsgListener.funcScope, function(aReturn) {
+			// console.log('ok back in bootstrap, aReturn:', aReturn);
+			aCallback(aReturn);
+		});
+	} else {
+		Services.wm.getMostRecentWindow('navigator:browser').gBrowser.selectedBrowser.messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['eval', cFuncAsStr]);
+	}
+}
+// end - functions for use in func of config
+
+/*
+({
+    __exec__: function() {
+        $MC_execInTab(
+            function() {
+                return content.window.location.href;
+            },
+            function(aHref) {
+                Services.prompt.alert(null, 'Got It', aHref);
+            }
+        );
+    }
+})
+
+({
+    __exec__: function() {
+        $MC_execInAllTabs(
+            function() {
+                content.document.documentElement.style.backgroundColor = 'blue';
+                return content.window.location.href;
+            },
+			function(aHref) {
+                Services.prompt.alert(null, 'Made this site blue', aHref);
+            }
+        );
+    }
+})
+*/
 
 var evalFsMsgListener = {
 	funcScope: {
