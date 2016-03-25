@@ -71,7 +71,7 @@ function BEAUTIFY() {
 
 // Global config stuff
 
-var gConfigJson;
+var gConfigJson = [];
 var gConfigJsonDefault = function() {
 	// :todo: once setup server, ensure that these items get the id here. or whatever id they get there submit it here
 	// because if id is negative, then that means it hasnt got a server id yet. but i need to keep decrementing the negative id, as i cant have multiple of the same ids
@@ -639,13 +639,7 @@ var MMWorkerFuncs = {
 		}
 	},
 	triggerConfigFunc: function(aConfigId) {
-		for (var i=0; i<gConfigJson.length; i++) {
-			if (gConfigJson[i].id == aConfigId) {
-				eval('var funcObj = ' + gConfigJson[i].func);
-				funcObj.__exec__();
-				return;
-			}
-		}
+		_cache_func[aConfigId].__exec__();
 	},
 	// start - gtk mainthread technique functions
 	gtkStartMonitor: function() {
@@ -789,6 +783,100 @@ function tellMMWorkerPrefsAndConfig() {
 	CommWorker.postMessage(['tellMmWorker', 'update-prefs-config', infoObjForWorker]);
 }
 
+function getConfigById(aId, aConfigJsonObj) {
+	for (var i=0; i<aConfigJsonObj.length; i++) {
+		if (aConfigJsonObj[i].id == aId) {
+			return aConfigJsonObj[i];
+		}
+	}
+	return null;
+}
+
+var _cache_func = {}; // key is id of config group. and value is eval of func
+function updateConfigJson(aNewConfigJson) {
+	// if finds any new/removed/changed func/config combination, it stores the new on in the _cache_func and runs __init__ or __uninit__ as necessary
+	// it then updates gConfigJson
+	
+	// check to see if anything new was ADDED or if an EXISTING CHANGED, by id - if something found then eval its func and store it in _cache_func and run __init__
+	for (var j=0; j<aNewConfigJson.length; j++) {
+		var nEntry = aNewConfigJson[j];
+		
+		var gEntry = getConfigById(nEntry.id, gConfigJson);
+		if (!gEntry) {
+			// this one is new
+			eval('_cache_func[nEntry.id] = ' + nEntry.func);
+			
+			// if it has a __init__ AND a config then run it
+			if (nEntry.config.length && _cache_func[nEntry.id].__init__) {
+				_cache_func[nEntry.id].__init__();
+			}
+		} else {
+			// it is not new
+			// test if the func changed
+			if (gEntry.func != nEntry.func) {
+				// ok func changed so recache it
+				
+				// but first run __uninit__ if it had one AND it had a config
+				if (gEntry.config.length && _cache_func[nEntry.id].__uninit__) {
+					_cache_func[nEntry.id].__uninit__();
+				}
+				
+				// ok now recache it
+				eval('_cache_func[nEntry.id] = ' + gEntry.func);
+				
+				// if it has a __init__ AND a config then run it
+				if (nEntry.config.length && _cache_func[nEntry.id].__init__) {
+					_cache_func[nEntry.id].__init__();
+				}
+			} else {
+				// the func is unchanged
+				
+				// lets see if config is now removed and it was there before
+				if (gEntry.config.length) {
+					// it HAD a config - so its __init__ was run
+					
+					// lets see if it does NOT have one anymore
+					if (!nEntry.config.length) {
+						// no longer does, so if it has an __uninit__ then run it
+						if (_cache_func[nEntry.id].__uninit__) {
+							_cache_func[nEntry.id].__uninit__();
+						}
+					} // else it still has one
+				} else {
+					// it did NOT have a config so its __init__ had not run
+					
+					// lets see if it HAS one now
+					if (nEntry.config.length) {
+						// but now DOES have one so __init__ if it has one
+						if (_cache_func[nEntry.id].__init__) {
+							_cache_func[nEntry.id].__init__();
+						}
+					} // else it still does not have one
+				}
+			}
+		}
+	}
+	
+	// check to see if anything was removed
+	for (var j=0; j<gConfigJson.length; j++) {
+		var gEntry = gConfigJson[j];
+		var nEntry = getConfigById(gEntry.id, aNewConfigJson);
+		if (!nEntry) {
+			// it was removed
+			
+			// run __uninit__ if it had one AND if it had a config (if it had no config then the __init__ would never have ran)
+			if (gEntry.config.length && _cache_func[gEntry.id].__uninit__) {
+				_cache_func[gEntry.id].__uninit__();
+			}
+			
+			// remove it from cache
+			delete _cache_func[gEntry.id];
+		} // else it was not removed
+	}
+	
+	gConfigJson = aNewConfigJson;
+}
+
 var CommWorkerFuncs = {
 	init: function() {
 		// init MMWorker
@@ -834,7 +922,7 @@ function readConfigFromFile() {
 		function(aVal) {
 			console.log('Fullfilled - promise_readConfig - ', aVal);
 			// start - do stuff here - promise_readConfig
-			gConfigJson = JSON.parse(aVal);
+			updateConfigJson(JSON.parse(aVal));
 			console.log('on readConfigFromFile file not found so retruning defaults');
 			mainDeferred_readConfigFromFile.resolve([gConfigJson]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
 			// end - do stuff here - promise_readConfig
@@ -842,7 +930,7 @@ function readConfigFromFile() {
 		function(aReason) {
 			if (aReasonMax(aReason).becauseNoSuchFile) {
 				console.log('on readConfigFromFile file not found so retruning defaults');
-				gConfigJson = gConfigJsonDefault();
+				updateConfigJson(gConfigJsonDefault());
 				mainDeferred_readConfigFromFile.resolve([gConfigJson]); // aMsgEvent.target is the browser it came from, so send a message back to its frame manager
 				return;
 			}
@@ -981,13 +1069,6 @@ function startup(aData, aReason) {
 	promise_configInit.then(
 		function(aVal) {
 			console.log('Fullfilled - promise_configInit - ', aVal);
-			// if anything has a __init__ and a config then execute it
-			for (var i=0; i<gConfigJson.length; i++) {
-				if (gConfigJson[i].func.indexOf('__init__') > -1 && gConfigJson[i].config.length) {
-					eval('var funcObj = ' + gConfigJson[i].func);
-					funcObj.__init__();
-				}
-			}
 			postSetConfig();
 		},
 		genericReject.bind(null, 'promise_configInit', 0)
@@ -1017,13 +1098,7 @@ function shutdown(aData, aReason) {
 		windowListener.unregister();
 	}
 	
-	// if anything has a __uninit__ and a config then execute it
-	for (var i=0; i<gConfigJson.length; i++) {
-		if (gConfigJson[i].func.indexOf('__uninit__') > -1 && gConfigJson[i].config.length) {
-			eval('var funcObj = ' + gConfigJson[i].func);
-			funcObj.__uninit__();
-		}
-	}
+	updateConfigJson([]); // if anything has a __uninit__ and a config then execute it
 	
 	// an issue with this unload is that framescripts are left over, i want to destory them eventually
 	aboutFactory_instance.unregister();
@@ -1092,46 +1167,7 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 			// I MADE IT NOW route restore defaults to route through here
 		// currently i think this is ONLY ever called, when framescript needs to send an updated config, so this is only sent when user makes change, so here i can test if there is a diff between the old and new script, and run the shutdown/init appropriately
 		
-		// go through all the old ones scripts, see if it is in the new. if it is not in the new, if the old has a __uninit__ then execute it
-		for (var oi=0; oi<gConfigJson.length; oi++) { // oi stands for old_configJson_i
-			var cFunc = gConfigJson[oi].func;
-			// go through the new to see if its there
-			var cFuncUnchanged = false;
-			for (var ni=0; ni<aNewConfigJson.length; ni++) { // ni stands for new_configJson_i
-				if (aNewConfigJson[ni].func == cFunc) {
-					cFuncUnchanged = true;
-					break;
-				}
-			}
-			if (!cFuncUnchanged) {
-				// it changed, so uninit the old one if it has a uninit and had a config
-				if (cFunc.indexOf('__uninit__') > -1 && gConfigJson[oi].config.length) {
-					eval('var funcObj = ' + cFunc);
-					funcObj.__uninit__();
-				}
-			}
-		}
-		
-		// go through all the new ones, if it is not in the old scripts, then if it has an __init__ then execute it
-		for (var ni=0; ni<aNewConfigJson.length; ni++) {
-			var cFunc = aNewConfigJson[ni].func;
-			var cFuncUnchanged = false;
-			for (var oi=0; oi<gConfigJson.length; oi++) {
-				if (gConfigJson[oi].func == cFunc) {
-					cFuncUnchanged = true;
-					break;
-				}
-			}
-			if (!cFuncUnchanged) {
-				// it changed, so init the new one if it has a init and has a config
-				if (cFunc.indexOf('__init__') > -1 && aNewConfigJson[ni].config.length) {
-					eval('var funcObj = ' + cFunc);
-					funcObj.__init__();
-				}
-			}
-		}
-		
-		gConfigJson = aNewConfigJson;
+		updateConfigJson(aNewConfigJson);
 		
 		// update worker:
 		tellMMWorkerPrefsAndConfig();
@@ -1319,7 +1355,7 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 					console.log('Fullfilled - promise_import - ', aVal);
 					// start - do stuff here - promise_import
 					var importFileContents = JSON.parse(aVal);
-					gConfigJson = importFileContents.config;
+					updateConfigJson(importFileContents.config);
 					
 					for (var aPrefName in importFileContents.prefs) {
 						prefs[aPrefName].value = importFileContents.prefs[aPrefName];
