@@ -1460,34 +1460,7 @@ function handleMouseEvent(aMEStdConst) {
 	
 	// console.log('incoming aMEStdConst:', aMEStdConst, 'gFxInFocus:', gFxInFocus);
 	
-	// cancel the hold timer if there was one
-	if (OSStuff.heldTimerCallback) {
-		
-		switch (core.os.mname) {
-			case 'winnt':
-			case 'winmo':
-			case 'wince':
-					
-					var rez_KillTimer = ostypes.API('KillTimer')(null, OSStuff.heldTimerId);
-					console.error('rez_KillTimer:', rez_KillTimer);
-					delete OSStuff.heldTimerCallback;
-					delete OSStuff.heldTimerId;
-					delete OSStuff.heldTimerCallback_js;
-					
-				break;
-			case 'darwin':
-					
-					ostypes.API('CFRunLoopTimerInvalidate')(OSStuff.heldTimer);
-					console.log('ok should have cancelled timer');
-					delete OSStuff.heldTimerCallback;
-					delete OSStuff.heldTimerCallback_js;
-					delete OSStuff.heldTimer;
-					
-				break;
-			default:
-				// will not get here
-		}
-	}
+	// :todo: consider cancel the hold timer if there was one
 	
 	var cMECombo = new METracker();
 	
@@ -1679,7 +1652,6 @@ function comboIsConfig(aMECombo, boolTriggerFunc) {
 		return true;
 	} else {
 		// if aMECombo matches then return true else return false
-		rezHandleME = false;
 		for (var p in infoObjForWorker.config) {
 			if (aMECombo.length == infoObjForWorker.config[p].length) {
 					for (var i=0; i<infoObjForWorker.config[p].length; i++) {

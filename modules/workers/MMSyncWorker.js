@@ -1485,35 +1485,8 @@ function handleMouseEvent(aMEStdConst) {
 	
 	console.log('incoming aMEStdConst:', aMEStdConst, 'gFxInFocus:', gFxInFocus);
 	
-	// cancel the hold timer if there was one
-	if (OSStuff.heldTimerCallback) {
-		
-		switch (core.os.mname) {
-			case 'winnt':
-			case 'winmo':
-			case 'wince':
-					
-					var rez_KillTimer = ostypes.API('KillTimer')(null, OSStuff.heldTimerId);
-					console.error('rez_KillTimer:', rez_KillTimer);
-					delete OSStuff.heldTimerCallback;
-					delete OSStuff.heldTimerId;
-					delete OSStuff.heldTimerCallback_js;
-					
-				break;
-			case 'darwin':
-					
-					ostypes.API('CFRunLoopTimerInvalidate')(OSStuff.heldTimer);
-					console.log('ok should have cancelled timer');
-					delete OSStuff.heldTimerCallback;
-					delete OSStuff.heldTimerCallback_js;
-					delete OSStuff.heldTimer;
-					
-				break;
-			default:
-				// will not get here
-		}
-	}
-	
+	// :todo: consider cancel the hold timer if there was one
+
 	var cMECombo = new METracker();
 	
 	var cME = {
@@ -1685,45 +1658,9 @@ function handleMouseEvent(aMEStdConst) {
 		// is cMECombo holdable
 		if (cMEBtn != 'WH' && cMEDir == 'DN' || (cMEDir == 'CK' && cME.multi % 1 == 0.5)) {
 			console.log('ok holdable');
-			
-			switch (core.os.mname) {
-				case 'winnt':
-				case 'winmo':
-				case 'wince':
-						
-						//
-						OSStuff.heldTimerCallback_js = function(hwnd, uMsg, idEvent, dwTime) {
-							var rez_KillTimer = ostypes.API('KillTimer')(null, OSStuff.heldTimerId);
-							console.error('rez_KillTimer:', rez_KillTimer);
-							makeMouseEventHeld(cMECombo);
-							delete OSStuff.heldTimerCallback;
-							delete OSStuff.heldTimerId;
-							delete OSStuff.heldTimerCallback_js;
-						};
-						
-						OSStuff.heldTimerCallback = ostypes.TYPE.TIMERPROC.ptr(OSStuff.heldTimerCallback_js);
-						OSStuff.heldTimerId = ostypes.API('SetTimer')(null, 1337, jsMmJsonParsed.prefs['hold-duration'], OSStuff.heldTimerCallback);
-						console.log('OSStuff.heldTimerId:', OSStuff.heldTimerId);
-						
-					break;
-				case 'darwin':
-						
-						//
-						OSStuff.heldTimerCallback_js = function() {
-							console.error('in held timer callback!');
-							makeMouseEventHeld(cMECombo);
-							delete OSStuff.heldTimerCallback;
-							delete OSStuff.heldTimerCallback_js;
-							delete OSStuff.heldTimer;
-						};
-						OSStuff.heldTimerCallback = ostypes.TYPE.CFRunLoopTimerCallBack(OSStuff.heldTimerCallback_js);
-						OSStuff.heldTimer = ostypes.API('CFRunLoopTimerCreate')(ostypes.CONST.kCFAllocatorDefault, ostypes.API('CFAbsoluteTimeGetCurrent')() + (jsMmJsonParsed.prefs['hold-duration'] / 1000), 0, 0, 0, OSStuff.heldTimerCallback, null);
-						ostypes.API('CFRunLoopAddTimer')(OSStuff.aLoop, OSStuff.heldTimer, OSStuff.runLoopMode);
-						
-					break;
-				default:
-					// will not get here
-			}
+			self.postMessage(['startHeldTimer', cMECombo.asArray()]);
+		} else {
+			self.postMessage(['cancelAnyPendingHeldTimer']);
 		}
 	}
 	
@@ -1739,7 +1676,6 @@ function comboIsConfig(aMECombo, boolTriggerFunc) {
 		return true;
 	} else {
 		// if aMECombo matches then return true else return false
-		rezHandleME = false;
 		for (var p in jsMmJsonParsed.config) {
 			if (aMECombo.length == jsMmJsonParsed.config[p].length) {
 					for (var i=0; i<jsMmJsonParsed.config[p].length; i++) {
