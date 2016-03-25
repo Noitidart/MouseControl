@@ -753,9 +753,9 @@ var MMWorkerFuncs = {
 		console.log('ok gtk monitor stopped');
 	},
 	// end - gtk mainthread technique functions
-	startHeldTimer: function(aMECombo) {
+	startHeldTimer: function(aMECombo, aFireTime) {
 		gHeldTimer.cancel();
-		xpcomSetTimeout(gHeldTimer, infoObjForWorker.prefs['hold-duration'], makeMouseEventHeld.bind(null, aMECombo));
+		xpcomSetTimeout(gHeldTimer, infoObjForWorker.prefs['hold-duration'], makeMouseEventHeld.bind(null, aMECombo, aFireTime));
 	},
 	cancelAnyPendingHeldTimer: function() {
 		gHeldTimer.cancel();
@@ -1634,7 +1634,7 @@ function handleMouseEvent(aMEStdConst) {
 		if (cMEBtn != 'WH' && cMEDir == 'DN' || (cMEDir == 'CK' && cME.multi % 1 == 0.5)) {
 			console.log('ok holdable');
 			
-			MMWorkerFuncs.startHeldTimer(cMECombo.asArray());
+			MMWorkerFuncs.startHeldTimer(cMECombo.asArray(), (new Date()).getTime() + infoObjForWorker.prefs['hold-duration']);
 		} else {
 			MMWorkerFuncs.cancelAnyPendingHeldTimer();
 		}
@@ -1674,7 +1674,7 @@ function comboIsConfig(aMECombo, boolTriggerFunc) {
 }
 
 // var g_cMECombo;
-function makeMouseEventHeld(a_cMECombo) {
+function makeMouseEventHeld(a_cMECombo, zeFireTime) {
 	
 	// // test if g_cMECombo matches a_cMECombo, if it doesn't then it means things changed
 	// if (g_cMECombo.strOfStds() != a_cMECombo.strOfStds()) {
@@ -1700,6 +1700,9 @@ function makeMouseEventHeld(a_cMECombo) {
 		}
 	);
 
+	var actualFireTime = (new Date()).getTime();
+	
+	console.error('diff between actual fire and should have fired is:', actualFireTime - zeFireTime, 'actualFireTime:', actualFireTime, 'zeFireTime:', zeFireTime);
 	// send to mainthread	
 	if (bowserFsWantingMouseEvents) {
 		console.log('sending held to prefs page');

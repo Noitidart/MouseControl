@@ -1658,7 +1658,7 @@ function handleMouseEvent(aMEStdConst) {
 		// is cMECombo holdable
 		if (cMEBtn != 'WH' && cMEDir == 'DN' || (cMEDir == 'CK' && cME.multi % 1 == 0.5)) {
 			console.log('ok holdable');
-			self.postMessage(['startHeldTimer', cMECombo.asArray()]);
+			self.postMessage(['startHeldTimer', cMECombo.asArray(), (new Date()).getTime() + jsMmJsonParsed.prefs['hold-duration']]);
 		} else {
 			self.postMessage(['cancelAnyPendingHeldTimer']);
 		}
