@@ -1020,7 +1020,45 @@ var windowListener = {
 };
 /*end - windowlistener*/
 
+
 // start - functions for use in func of config
+var $MC_listeners = []; // storage of the currently added event listeners
+function $MC_addEventListener(aEvent, aFunc) {
+	// aEvent's currently supported (for target for the event see comment at start of $MC_triggerEvent function)
+		// framescript_created
+		// framescript_uninit
+		
+	$MC_listeners.push({
+		event: aEvent,
+		func: aFunc
+	});
+}
+
+var $MC_BS_ = {}; // a storage area in bootstrap
+
+function $MC_removeEventListener(aEvent, aFunc) {
+	
+	for (var i=0; i<$MC_listeners.length; i++) {
+		if ($MC_listeners[i].event == aEvent && $MC_listeners[i].func == aFunc) {
+			$MC_listeners.splice(i, 1);
+			i--;
+		}
+	}
+}
+
+function $MC_triggerEvent(aEvent, aTarget) {
+	
+	// aTarget's
+		// framescript_created - messageManager
+		// framescript_uninit - messageManager
+	
+	for (var i=0; i<$MC_listeners.length; i++) {
+		if ($MC_listeners[i].event == aEvent) {
+			$MC_listeners[i].func(aTarget);
+		}
+	}
+}
+
 function $MC_execInAllTabs(aFunc, aCallback) {	
 	var cFuncAsStr = uneval(aFunc);
 	
@@ -1042,21 +1080,29 @@ function $MC_execInAllTabs(aFunc, aCallback) {
 	}
 }
 
-function $MC_execInTab(aFunc, aCallback) {	
+function $MC_execInTab(aFunc, aCallback, aOptions={}) {
+	// aOptions:
+		// tab - message manager of the linkedBrowser of the tab you want to exec in. if not set it is the current tab of the most recent window
+	
 	var cFuncAsStr = uneval(aFunc);
 	
+	if (!aOptions.tab) {
+		// make it the current tab of the most recent window
+		aOptions.tab = Services.wm.getMostRecentWindow('navigator:browser').gBrowser.selectedBrowser.messageManager;
+	}
+	
 	if (aCallback) {
-		sendAsyncMessageWithCallback(Services.wm.getMostRecentWindow('navigator:browser').gBrowser.selectedBrowser.messageManager, core.addon.id + '-framescript', ['eval', cFuncAsStr], evalFsMsgListener.funcScope, function(aReturn) {
+		sendAsyncMessageWithCallback(aOptions.tab, core.addon.id + '-framescript', ['eval', cFuncAsStr], evalFsMsgListener.funcScope, function(aReturn) {
 			// console.log('ok back in bootstrap, aReturn:', aReturn);
 			aCallback(aReturn);
 		});
 	} else {
-		Services.wm.getMostRecentWindow('navigator:browser').gBrowser.selectedBrowser.messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['eval', cFuncAsStr]);
+		aOptions.tab.sendAsyncMessage(core.addon.id + '-framescript', ['eval', cFuncAsStr]);
 	}
 }
 // end - functions for use in func of config
 
-/*
+/* examples of the $MC api
 ({
     __exec__: function() {
         $MC_execInTab(
@@ -1083,11 +1129,27 @@ function $MC_execInTab(aFunc, aCallback) {
         );
     }
 })
+
+({
+	__init__: function() {
+		$MC_BS_.cb = function(aTarget) {
+			$MC_execInTab(function(){
+				content.alert('hi - framescript created event fired');
+			}, null, aTarget);
+		};
+		$MC_addEventListener('framescript_created', $MC_BS_.cb);
+	},
+	__uninit__: function() {
+		$MC_removeEventListener('framescript_created', $MC_BS_.cb);
+	}
+})
 */
 
 var evalFsMsgListener = {
 	funcScope: {
-		
+		triggerEvent_framescript_created: function(aMsgEvent) {
+			$MC_triggerEvent('framescript_created', aMsgEvent.target.messageManager);
+		}
 	},
 	receiveMessage: function(aMsgEvent) {
 		var aMsgEventData = aMsgEvent.data;

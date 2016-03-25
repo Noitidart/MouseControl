@@ -159,6 +159,8 @@ function genericCatch(aPromiseName, aPromiseToReject, aCaught) {
 bootstrapCallbacks.destroySelf = function() {
 	contentMMFromContentWindow_Method2(content).removeMessageListener(core.addon.id, bootstrapMsgListener);
 	// console.log('ok destroyed self frmamescript');
+	
+	contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['triggerEvent_framescript_uninit']); // framescript_uninit is NOT when tab is closed, that is natural destroy. it is for when say user changes function, so uninit's the old function. or addon is disabled. so its for shutting down the tab when its not TAB_SHUTDOWN (in terms of APP_SHUTDOWN for aReason of shtudown)
 };
 
 bootstrapCallbacks.eval = function(aFuncAsStr) {
@@ -172,4 +174,8 @@ bootstrapCallbacks.eval = function(aFuncAsStr) {
 		return [rez];
 	}
 };
+
+contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['triggerEvent_framescript_created']);
+
+var $MC_FS_ = {}; // a storage area in framescript
 // END - framescript functionality
