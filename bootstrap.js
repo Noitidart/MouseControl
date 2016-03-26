@@ -192,7 +192,9 @@ var gConfigJsonDefault = function() {
 			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
 			config:[],
 			func: BEAUTIFY().js(uneval({
-
+				__exec__: function() {
+					Services.wm.getMostRecentWindow('navigator:browser').FullZoom.reset();
+				}
 			}))
 		},
 		{
@@ -202,7 +204,9 @@ var gConfigJsonDefault = function() {
 			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
 			config:[],
 			func: BEAUTIFY().js(uneval({
-
+				__exec__: function() {
+					Services.wm.getMostRecentWindow('navigator:browser').FullZoom.enlarge();
+				}
 			}))
 		},
 		{
@@ -212,7 +216,9 @@ var gConfigJsonDefault = function() {
 			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
 			config:[],
 			func: BEAUTIFY().js(uneval({
-
+				__exec__: function() {
+					Services.wm.getMostRecentWindow('navigator:browser').FullZoom.reduce();
+				}
 			}))
 		},
 		{
@@ -292,7 +298,9 @@ var gConfigJsonDefault = function() {
 			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
 			config:[],
 			func: BEAUTIFY().js(uneval({
-
+				__exec__: function() {
+					Services.prompt.alert(Services.wm.getMostRecentWindow('navigator:browser'), $MC_getConfig(this).id, $MC_getConfig(this).name);
+				}
 			}))
 		},
 		{
@@ -329,7 +337,19 @@ var gConfigJsonDefault = function() {
 					}
 				}
 			}))
-		}
+		},
+		{
+			id: 15,
+			name: myServices.sb.GetStringFromName('config_name-closesitetabs'),
+			group: myServices.sb.GetStringFromName('config_group-tabs'),
+			desc: myServices.sb.GetStringFromName('config_desc-closesitetabs'),
+			config:[],
+			func: BEAUTIFY().js(uneval({
+				__exec__: function() {
+					
+				}
+			}))
+		},
 	];
 };
 
@@ -1116,6 +1136,8 @@ var windowListener = {
 
 
 // start - functions for use in func of config
+var $MC_BS_ = {}; // a storage area in bootstrap
+
 var $MC_listeners = []; // storage of the currently added event listeners
 function $MC_addEventListener(aEvent, aFunc) {
 	// aEvent's currently supported (for target for the event see comment at start of $MC_triggerEvent function)
@@ -1127,8 +1149,6 @@ function $MC_addEventListener(aEvent, aFunc) {
 		func: aFunc
 	});
 }
-
-var $MC_BS_ = {}; // a storage area in bootstrap
 
 function $MC_removeEventListener(aEvent, aFunc) {
 	
@@ -1149,6 +1169,19 @@ function $MC_triggerEvent(aEvent, aTarget) {
 	for (var i=0; i<$MC_listeners.length; i++) {
 		if ($MC_listeners[i].event == aEvent) {
 			$MC_listeners[i].func(aTarget);
+		}
+	}
+}
+
+$MC_getConfig = function(aEvaledFunc_or_id) {
+	// returns the entry in gConfigJson for by id where id is a number OR it is the object held in _cache_func (and this object is the subject of `this` in all __exec__ / __init__ / __uninit__)
+	if (typeof(aEvaledFunc_or_id) == 'number') {
+		return getConfigById(p, gConfigJson);
+	} else {
+		for (var p in _cache_func) {
+			if (_cache_func[p] == aEvaledFunc_or_id) {
+				return getConfigById(p, gConfigJson);
+			}
 		}
 	}
 }
