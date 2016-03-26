@@ -299,7 +299,35 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
-					Services.prompt.alert(Services.wm.getMostRecentWindow('navigator:browser'), $MC_getConfig(this).id, $MC_getConfig(this).name);
+					$MC_execInTab(
+						function() {
+							var contentWithFocus = $MC_FS_getDeepestFocusedContentWindow(content);
+							console.log('contentWithFocus:', contentWithFocus);
+							
+							var activeDomEl = contentWithFocus.document.activeElement;
+							if (!activeDomEl || !activeDomEl.scrollTopMax) {
+								activeDomEl = contentWithFocus.document.documentElement;
+							}
+							
+							console.log('activeDomEl:', activeDomEl, activeDomEl.scrollTop, activeDomEl.scrollTopMin, activeDomEl.scrollTopMax);
+							
+							if (activeDomEl.scrollTop > 0 && activeDomEl.scrollTop < activeDomEl.scrollTopMax) {
+								$MC_FS_.memScrollStore = {
+									el: activeDomEl,
+									top: activeDomEl.scrollTop
+								};
+							}
+							
+							activeDomEl.scrollTop = activeDomEl.scrollTopMin;
+						}
+					);
+				},
+				__uninit__: function() {
+					$MC_execInAllTabs(
+						function() {
+							delete $MC_FS_.memScrollStore;
+						}
+					);
 				}
 			}))
 		},
@@ -310,7 +338,37 @@ var gConfigJsonDefault = function() {
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
 			config:[],
 			func: BEAUTIFY().js(uneval({
-
+				__exec__: function() {
+					$MC_execInTab(
+						function() {
+							var contentWithFocus = $MC_FS_getDeepestFocusedContentWindow(content);
+							console.log('contentWithFocus:', contentWithFocus);
+							
+							var activeDomEl = contentWithFocus.document.activeElement;
+							if (!activeDomEl || !activeDomEl.scrollTopMax) {
+								activeDomEl = contentWithFocus.document.documentElement;
+							}
+							
+							console.log('activeDomEl:', activeDomEl, activeDomEl.scrollTop, activeDomEl.scrollTopMin, activeDomEl.scrollTopMax);
+							
+							if (activeDomEl.scrollTop > 0 && activeDomEl.scrollTop < activeDomEl.scrollTopMax) {
+								$MC_FS_.memScrollStore = {
+									el: activeDomEl,
+									top: activeDomEl.scrollTop
+								};
+							}
+							
+							activeDomEl.scrollTop = activeDomEl.scrollTopMax;
+						}
+					);
+				},
+				__uninit__: function() {
+					$MC_execInAllTabs(
+						function() {
+							delete $MC_FS_.memScrollStore;
+						}
+					);
+				}
 			}))
 		},
 		{
@@ -320,7 +378,44 @@ var gConfigJsonDefault = function() {
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
 			config:[],
 			func: BEAUTIFY().js(uneval({
-
+				__exec__: function() {
+					$MC_execInTab(
+						function() {
+							if ($MC_FS_.memScrollStore) {
+								var contentWithFocus = $MC_FS_getDeepestFocusedContentWindow(content);
+								console.log('contentWithFocus:', contentWithFocus);
+								
+								var activeDomEl = contentWithFocus.document.activeElement;
+								if (!activeDomEl || !activeDomEl.scrollTopMax) {
+									activeDomEl = contentWithFocus.document.documentElement;
+								}
+								
+								try {
+									// make sure $MC_FS_.memScrollStore.el is not a dead object
+									String($MC_FS_.memScrollStore.el);
+								} catch(ignore) {
+									// its a dead object, so obviusl its not === activeDomEl
+									console.error('ITS A DEAD OBJECT WRAPPER, ex:', ignore);
+									delete $MC_FS_.memScrollStore;
+									return;
+								}
+								
+								if (activeDomEl == $MC_FS_.memScrollStore.el) {
+									activeDomEl.scrollTop = $MC_FS_.memScrollStore.top;
+								} else {
+									console.error('MISMATCH BETWEEEN activeDomEl and store el!', activeDomEl, $MC_FS_.memScrollStore.el);
+								}
+							}
+						}
+					);
+				},
+				__uninit__: function() {
+					$MC_execInAllTabs(
+						function() {
+							delete $MC_FS_.memScrollStore;
+						}
+					);
+				}
 			}))
 		},
 		{
@@ -346,7 +441,43 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
+					var DOMWindow = Services.wm.getMostRecentWindow(null);
+					if (!DOMWindow.gBrowser) {
+						return;
+					}
 					
+					var extractHost = function(aURI) {
+						try {
+							if (aURI.host) {
+								return aURI.host;
+							}
+						} catch(ignore) {}
+						
+						if (aURI.spec.toLowerCase().indexOf('about:') === 0) {
+							return aURI.spec.toLowerCase().match(/about\:[a-z]*/i)[0];
+						} else {
+							return aURI.spec;
+						}
+					};
+					
+					var selectedTab = DOMWindow.gBrowser.selectedTab;
+					var targetHost = extractHost(selectedTab.linkedBrowser.currentURI);
+
+					DOMWindow.BrowserCloseTabOrWindow();
+					
+					var tabsToClose = [];
+					
+					var cTabs = DOMWindow.gBrowser.tabContainer.childNodes;
+					for (var i=0; i<cTabs.length; i++) {
+						var cHost = extractHost(cTabs[i].linkedBrowser.currentURI);
+						if (cHost == targetHost) {
+							tabsToClose.push(cTabs[i]);
+						}
+					}
+					
+					for (var i=0; i<tabsToClose.length; i++) {
+						DOMWindow.gBrowser.removeTab(tabsToClose[i]);
+					}
 				}
 			}))
 		},

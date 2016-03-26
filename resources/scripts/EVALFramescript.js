@@ -192,4 +192,29 @@ bootstrapCallbacks.eval = function(aFuncAsStr) {
 contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['triggerEvent_framescript_created']);
 
 var $MC_FS_ = {}; // a storage area in framescript
+
+function $MC_FS_getFocusedContentWindow(aContentWindow) {
+	var contentFrames = aContentWindow.frames;
+	for (var i=0; i<contentFrames.length; i++) {
+		if (contentFrames[i].document.hasFocus()) {
+			return contentFrames[i];
+		}
+	}
+};
+
+function $MC_FS_getDeepestFocusedContentWindow(aContentWindow) {
+	var cFocusedWin = aContentWindow;
+	var maxTry = 30;
+	var cTry = 0;
+	while(cTry < maxTry) {
+		cTry++;
+		var thisFocusedWin = $MC_FS_getFocusedContentWindow(cFocusedWin);
+		if (thisFocusedWin) {
+			cFocusedWin = thisFocusedWin;
+		} else {
+			break;
+		}
+	}
+	return cFocusedWin;
+};
 // END - framescript functionality
