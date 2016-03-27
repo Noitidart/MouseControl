@@ -204,8 +204,185 @@ var gConfigJsonDefault = function() {
 			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
 			config:[],
 			func: BEAUTIFY().js(uneval({
+				__init__: function() {
+					
+					$MC_BS_.zoomStore = {
+						prefs: { // holds what the values of the prefs were on init
+							context: prefs['zoom-context'].value,
+							indicator: prefs['zoom-indicator'].value,
+							style: prefs['zoom-style'].value
+						}
+					};
+					var zs = $MC_BS_.zoomStore;
+					
+					Services.prefs.setBoolPref('browser.zoom.full', zs.prefs.context === 0 ? true : false);
+
+					// if (styleChanged) {
+						switch(zs.prefs.style) {
+							case 0:
+							
+									// global
+									console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+									Services.prefs.setBoolPref('browser.zoom.siteSpecific', true);
+									
+									zs.cps = Cc['@mozilla.org/content-pref/service;1'].getService(Ci.nsIContentPrefService2);
+									zs.removeAllButGlobal = function() {
+										var domainsToRemoveFor = [];
+										zs.cps.getByName('browser.content.full-zoom', null, {
+											handleResult: function(aPref) {
+												console.log('in handle result, args:', arguments)
+												if (aPref.domain) {
+													domainsToRemoveFor.push(aPref.domain);
+												} // else its null, so that means its the global value
+											},
+											handleCompletion: function() {
+												console.log('ok complete, args:', arguments)
+												
+												for (var i=0; i<domainsToRemoveFor.length; i++) {
+													console.log('removing for domain:', domainsToRemoveFor[i]);
+													zs.cps.removeByDomainAndName(domainsToRemoveFor[i], 'browser.content.full-zoom', null);
+												}
+											}
+										});
+									};
+									zs.applyZoomToAllDomains = function(aNewZoom, boolDontSetGlobal, boolRemoveAll) {
+										// sets the zoom level of all currently open domains to aNewZoom
+											// including global zoom value
+										
+										// get all currently open domains, and set site specific for each domain so they update in background, then remove all
+										var allDomains = new Set();
+										var domWins = Services.wm.getEnumerator('navigator:browser');
+										while (domWins.hasMoreElements()) {
+											var domWin = domWins.getNext();
+											var gbrowser = domWin.gBrowser;
+											var cntBrowsers = gbrowser.browsers.length;
+											for (var i=0; i<cntBrowsers; i++) {
+												// e10s safe way to check uri of all browsers
+												console.log(i, gbrowser.browsers[i].currentURI.spec);
+												allDomains.add(zs.cps.extractDomain(gbrowser.browsers[i].currentURI.spec));
+											}
+										}
+										
+										var promiseAllArr_siteSpecificSet = [];
+										
+										if (!boolDontSetGlobal) {
+											var deferred_globalSet = new Deferred();
+											promiseAllArr_siteSpecificSet.push(deferred_globalSet.promise);
+											zs.cps.setGlobal('browser.content.full-zoom', aNewZoom, null, {
+												handleCompletion: function() {
+													console.log('ok complete, args:', arguments);
+													// remove all site specific so each zoom goes to the global value of the one i just set
+													deferred_globalSet.resolve(); // i put in the oncomplete, so it doesnt change it to what ever global is then bounce back to this new value
+												}
+											});
+										}
+										
+										allDomains.forEach(function(domain) {
+											var deferred_siteSpecificSet = new Deferred();
+											promiseAllArr_siteSpecificSet.push(promiseAllArr_siteSpecificSet.promise);
+											
+											// set zoom for this domain
+											zs.cps.set(domain, 'browser.content.full-zoom', aNewZoom, null, {
+												handleCompletion: function() {
+													console.log('ok set for domain', domain, 'args:', arguments[0].domain);
+													deferred_siteSpecificSet.resolve();
+												}
+											});
+										});
+										
+										var promiseAll_siteSpecificSet = Promise.all(promiseAllArr_siteSpecificSet);
+										promiseAll_siteSpecificSet.then(
+											function(aVal) {
+												console.log('Fullfilled - promiseAll_siteSpecificSet - ', aVal);
+												
+												if (boolRemoveAll) {
+													zs.cps.removeByName('browser.content.full-zoom', null);
+												} else {
+													// remove all site specific so each zoom goes to the global value of the one i just set
+													zs.removeAllButGlobal(); // i put in the oncomplete, so it doesnt change it to what ever global is then bounce back to this new value
+												}
+											},
+											genericReject.bind(null, 'promiseAll_siteSpecificSet', 0)
+										).catch(genericCatch.bind(null, 'promiseAll_siteSpecificSet', 0));
+									};
+									zs.Observes = {
+										observers: {
+											'browser-fullZoom:zoomReset': function (aSubject, aTopic, aData) {
+												console.log('zoom reset!', aSubject, aTopic, aData);
+												
+												// have to do this because see link99993
+												// CPS2.setGlobal('browser.content.full-zoom', 1, null);
+												
+												zs.applyZoomToAllDomains(1);
+											},
+											'browser-fullZoom:zoomChange': function (aSubject, aTopic, aData) {
+												console.log('zoom changed!', aSubject, aTopic, aData);
+												
+												var newZoom = Services.wm.getMostRecentWindow('navigator:browser').ZoomManager.zoom;
+												console.log('newZoom:', newZoom);
+												
+												zs.applyZoomToAllDomains(newZoom);
+											}
+										},
+										init: function() {
+											console.error('this:', this);
+											console.log('this.observers:', this.observers);
+											for (var o in this.observers) {
+												console.log('initing o:', o);
+												
+												// register it
+												// make it an object so i can addObserver and removeObserver to it
+												zs.Observes.observers[o] = {
+													observe: this.observers[o]
+												};
+												Services.obs.addObserver(this.observers[o], o, false);
+											}
+										},
+										uninit: function() {
+											for (var o in this.observers) {
+												// unregister it
+												Services.obs.removeObserver(this.observers[o], o);
+												
+												// restore it as a function so it can be re-inited
+												this.observers[o] = this.observers[o].observe;
+											}
+										}
+									};
+									zs.Observes.init();
+									
+								break;
+							default:
+							
+								Services.prefs.setBoolPref('browser.zoom.siteSpecific', zs.prefs.style === 1 ? true /*sitespec*/ : false /*tabspec*/);
+								
+						}
+					// }
+					
+					var thisFuncObj = this;
+					zs.prefChange = function(aTarget) {
+						if (aTarget.name == 'zoom-context') {
+							Services.prefs.setBoolPref('browser.zoom.full', aTarget.newval === 0 ? true : false);
+						} else if (aTarget.name == 'zoom-style') {
+							Services.prompt.alert(null, 'zoom-style changed', 'so reinitializing');
+							_cache_func[$MC_getConfig(thisFuncObj).id].__uninit__();
+							_cache_func[$MC_getConfig(thisFuncObj).id].__init__();
+						}
+					};
+					$MC_addEventListener('setpref_from_options', zs.prefChange);
+					
+				},
 				__exec__: function() {
+
 					Services.wm.getMostRecentWindow('navigator:browser').FullZoom.enlarge();
+				},
+				__uninit__: function(aReason) {
+					$MC_removeEventListener('setpref_from_options', $MC_BS_.zoomStore.prefChange);
+					if ($MC_BS_.zoomStore.prefs.style === 0) {
+						// it was global
+						$MC_BS_.zoomStore.applyZoomToAllDomains(1, true, true);
+						$MC_BS_.zoomStore.Observes.uninit();
+					}
+					delete $MC_BS_.zoomStore;
 				}
 			}))
 		},
@@ -609,9 +786,9 @@ var prefs = {
 		type: Ci.nsIPrefBranch.PREF_INT,
 		values: [0, 1, 2]
 		// values
-			// 0 - all content
+			// 0 - global
 			// 1 - site specific
-			// 2 - text only
+			// 2 - tab specific
 	},
 	'multi-speed': {
 		default: 200,
@@ -1296,6 +1473,7 @@ function $MC_triggerEvent(aEvent, aTarget) {
 	// aTarget's
 		// framescript_created - messageManager
 		// framescript_uninit - messageManager
+		// setpref_from_options - {name:prefname, newval:newval, oldval:oldval, obj:prefs[aPrefName]}
 	
 	for (var i=0; i<$MC_listeners.length; i++) {
 		if ($MC_listeners[i].event == aEvent) {
@@ -1612,10 +1790,18 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 		}
 	},
 	setPref: function(aPrefName, aNewVal) {
+		var oldval = prefs[aPrefName].value;
 		prefs[aPrefName].value = aNewVal;
 		
 		// update worker:
 		tellMMWorkerPrefsAndConfig();
+		
+		$MC_triggerEvent('setpref_from_options', {
+			name: aPrefName,
+			newval: aNewVal,
+			oldval: oldval,
+			obj: prefs[aPrefName]
+		});
 	},
 	updateConfigsOnServer: function(aNewConfigJson) {
 		// called when the following action done from ng-prefs.xhtml:
