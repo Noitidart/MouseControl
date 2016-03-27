@@ -85,10 +85,13 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__init__: function() {
-					Services.prompt.alert(Services.wm.getMostRecentWindow('navigator:browser'), 'init - ' + this.id, 'init - ' + this.name);
+					
+				},
+				__exec__: function() {
+					
 				},
 				__uninit__: function() {
-					Services.prompt.alert(Services.wm.getMostRecentWindow('navigator:browser'), 'UNINIT - ' + this.id, 'UNINIT - ' + this.name);
+					delete $MC_BS_.jumpStore;
 				}
 			}))
 		},
@@ -225,7 +228,6 @@ var gConfigJsonDefault = function() {
 							case 0:
 							
 									// global
-									console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
 									Services.prefs.setBoolPref('browser.zoom.siteSpecific', true);
 									
 									zs.cps = Cc['@mozilla.org/content-pref/service;1'].getService(Ci.nsIContentPrefService2);
@@ -351,6 +353,10 @@ var gConfigJsonDefault = function() {
 											}
 										}
 									};
+									
+									// remove all currently site site specific stuff - this will instantly (because observers are setup by the FullZoom module) change zoom to the global value default of 1 per dxr - https://dxr.mozilla.org/mozilla-central/source/browser/base/content/browser-fullZoom.js#281 - `value === undefined ? 1 : value` because value there is the global default value // link99993
+									zs.removeAllButGlobal();
+									
 									zs.Observes.init();
 									
 								break;
@@ -366,7 +372,6 @@ var gConfigJsonDefault = function() {
 						if (aTarget.name == 'zoom-context') {
 							Services.prefs.setBoolPref('browser.zoom.full', aTarget.newval === 0 ? true : false);
 						} else if (aTarget.name == 'zoom-style') {
-							Services.prompt.alert(null, 'zoom-style changed', 'so reinitializing');
 							_cache_func[$MC_getConfig(thisFuncObj).id].__uninit__();
 							_cache_func[$MC_getConfig(thisFuncObj).id].__init__();
 						}
@@ -390,7 +395,6 @@ var gConfigJsonDefault = function() {
 						if (prefs['zoom-indicator'].value) {
 							var domElIndic = aDOMWin.document.getElementById('MC_zoomIndic');
 							if (!domElIndic) {
-								$MC_triggerEvent
 								domElIndic = aDOMWin.document.createElement('panel');
 								domElIndic.setAttribute('id', 'MC_zoomIndic');
 								domElIndic.setAttribute('style','-moz-appearance:none;-moz-border-radius:10px;border-radius:20px;background-color:#f9f9f9;border:1px solid #AAA;opacity:.9;color:#336666;font-weight:bold;font-size:40px;padding:0px 15px 3px 15px;text-shadow:#AAA 2px 2px 4px;');
@@ -425,14 +429,14 @@ var gConfigJsonDefault = function() {
 					$MC_BS_.zoomStore.updateIndicator(domWin, domWin.ZoomManager.zoom);
 				},
 				__uninit__: function(aReason) {
-					$MC_removeEventListener('setpref_from_options', $MC_BS_.zoomStore.prefChange);
 					if ($MC_BS_.zoomStore.prefs.style === 0) {
 						// it was global
 						$MC_BS_.zoomStore.applyZoomToAllDomains(1, true, true);
 						$MC_BS_.zoomStore.Observes.uninit();
 					}
-					$MC_removeEventListener('all_buttons_released', zs.hideAllIndicator);
-					$MC_removeEventListener('setpref_from_options', zs.prefChange);
+					
+					$MC_removeEventListener('all_buttons_released', $MC_BS_.zoomStore.hideAllIndicator);
+					$MC_removeEventListener('setpref_from_options', $MC_BS_.zoomStore.prefChange);
 					
 					delete $MC_BS_.zoomStore;
 				}
@@ -1509,7 +1513,14 @@ function $MC_addEventListener(aEvent, aFunc) {
 	// aEvent's currently supported (for target for the event see comment at start of $MC_triggerEvent function)
 		// framescript_created
 		// framescript_uninit
-		
+	
+	for (var i=0; i<$MC_listeners.length; i++) {
+		if ($MC_listeners[i].event == aEvent && $MC_listeners[i].func == aFunc) {
+			console.warn('func is already added for this event, so not adding it again');
+			return;
+		}
+	}
+	
 	$MC_listeners.push({
 		event: aEvent,
 		func: aFunc
@@ -1521,7 +1532,7 @@ function $MC_removeEventListener(aEvent, aFunc) {
 	for (var i=0; i<$MC_listeners.length; i++) {
 		if ($MC_listeners[i].event == aEvent && $MC_listeners[i].func == aFunc) {
 			$MC_listeners.splice(i, 1);
-			i--;
+			return; // no need to continue, as i cant have multiple listeners for the same combination of aEvent and aFunc
 		}
 	}
 }
