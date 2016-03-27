@@ -1558,6 +1558,7 @@ function handleMouseEvent(aMEStdConst) {
 					clearAll = true;
 					gMEAllReasedTime = new Date().getTime();
 					gMEAllReasedBool = true;
+					self.postMessage(['triggerEvent', 'all_buttons_released']);
 				}
 			}
 			

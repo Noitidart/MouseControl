@@ -193,7 +193,10 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
-					Services.wm.getMostRecentWindow('navigator:browser').FullZoom.reset();
+					var domWin = Services.wm.getMostRecentWindow('navigator:browser');
+					domWin.FullZoom.reset();
+					
+					$MC_BS_.zoomStore.updateIndicator(domWin, domWin.ZoomManager.zoom);
 				}
 			}))
 		},
@@ -370,10 +373,56 @@ var gConfigJsonDefault = function() {
 					};
 					$MC_addEventListener('setpref_from_options', zs.prefChange);
 					
+					zs.hideAllIndicator = function() {
+						if (prefs['zoom-indicator'].value) {
+							var DOMWindows = Services.wm.getEnumerator('navigator:browser');
+							while (DOMWindows.hasMoreElements()) {
+								var aDOMWindow = DOMWindows.getNext();
+								var domElIndic = aDOMWindow.document.getElementById('MC_zoomIndic');
+								if (domElIndic) {
+									domElIndic.hidePopup();
+								}
+							}
+						}
+					};
+					
+					zs.updateIndicator = function(aDOMWin, aZoomLevel) {
+						if (prefs['zoom-indicator'].value) {
+							var domElIndic = aDOMWin.document.getElementById('MC_zoomIndic');
+							if (!domElIndic) {
+								$MC_triggerEvent
+								domElIndic = aDOMWin.document.createElement('panel');
+								domElIndic.setAttribute('id', 'MC_zoomIndic');
+								domElIndic.setAttribute('style','-moz-appearance:none;-moz-border-radius:10px;border-radius:20px;background-color:#f9f9f9;border:1px solid #AAA;opacity:.9;color:#336666;font-weight:bold;font-size:40px;padding:0px 15px 3px 15px;text-shadow:#AAA 2px 2px 4px;');
+								domElIndic.setAttribute('noautohide',true);
+								domElIndic.setAttribute('noautofocus',true);
+								
+								var domElLbl = aDOMWin.document.createElement('label');
+								domElLbl.setAttribute('style','margin:0;padding:0;text-align:center;');
+								domElIndic.appendChild(domElLbl);
+								aDOMWin.document.getElementById('content').appendChild(domElIndic);
+								
+								domElIndic.addEventListener('popuphidden', function() {
+									domElIndic.parentNode.removeChild(domElIndic);
+								}, false);
+							}
+							
+							domElIndic.childNodes[0].textContent = Math.round(aZoomLevel * 100) + '%';
+							
+							if (domElIndic.state != 'open') {
+								domElIndic.openPopup(aDOMWin.gBrowser.mPanelContainer, 'overlap', 5, 5, false, false);
+							}
+						}
+					};
+					$MC_addEventListener('all_buttons_released', zs.hideAllIndicator);
+					
 				},
 				__exec__: function() {
 
-					Services.wm.getMostRecentWindow('navigator:browser').FullZoom.enlarge();
+					var domWin = Services.wm.getMostRecentWindow('navigator:browser');
+					domWin.FullZoom.enlarge();
+					
+					$MC_BS_.zoomStore.updateIndicator(domWin, domWin.ZoomManager.zoom);
 				},
 				__uninit__: function(aReason) {
 					$MC_removeEventListener('setpref_from_options', $MC_BS_.zoomStore.prefChange);
@@ -382,6 +431,9 @@ var gConfigJsonDefault = function() {
 						$MC_BS_.zoomStore.applyZoomToAllDomains(1, true, true);
 						$MC_BS_.zoomStore.Observes.uninit();
 					}
+					$MC_removeEventListener('all_buttons_released', zs.hideAllIndicator);
+					$MC_removeEventListener('setpref_from_options', zs.prefChange);
+					
 					delete $MC_BS_.zoomStore;
 				}
 			}))
@@ -394,7 +446,10 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
-					Services.wm.getMostRecentWindow('navigator:browser').FullZoom.reduce();
+					var domWin = Services.wm.getMostRecentWindow('navigator:browser');
+					domWin.FullZoom.reduce();
+					
+					$MC_BS_.zoomStore.updateIndicator(domWin, domWin.ZoomManager.zoom);
 				}
 			}))
 		},
@@ -1141,6 +1196,9 @@ var MMWorkerFuncs = {
 	},
 	cancelAnyPendingHeldTimer: function() {
 		gHeldTimer.cancel();
+	},
+	triggerEvent: function(aEvent) {
+		$MC_triggerEvent(aEvent, null);
 	}
 };
 var gHeldTimer = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
@@ -1474,7 +1532,8 @@ function $MC_triggerEvent(aEvent, aTarget) {
 		// framescript_created - messageManager
 		// framescript_uninit - messageManager
 		// setpref_from_options - {name:prefname, newval:newval, oldval:oldval, obj:prefs[aPrefName]}
-	
+		// all_buttons_released - null
+		
 	for (var i=0; i<$MC_listeners.length; i++) {
 		if ($MC_listeners[i].event == aEvent) {
 			$MC_listeners[i].func(aTarget);
@@ -2213,6 +2272,7 @@ function handleMouseEvent(aMEStdConst) {
 					clearAll = true;
 					gMEAllReasedTime = new Date().getTime();
 					gMEAllReasedBool = true;
+					MMWorkerFuncs.triggerEvent('all_buttons_released');
 				}
 			}
 			
