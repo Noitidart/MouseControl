@@ -85,12 +85,91 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__init__: function() {
+					$MC_BS_.jumpStore = {};
+					var js = $MC_BS_.jumpStore;
+					
+					js.tabHistory = [];
+					js.onTabSelect = function(e) {
+						var tab = e.target;
+						if (js.scrollingThruTabs) {
+							js.lastScrolledTab = tab;
+							console.error('TAB SELECTED but storing as last scroll');
+						} else {
+							console.error('TAB SELECTED and pushing');
+							js.addTabToHistory(tab);
+						}
+					};
+					
+					js.initWin = function(aDOMWin) {
+						var aGBrowser = aDOMWin.gBrowser;
+						if (!aGBrowser) {
+							// window not yet loaded, just return, because i attach the newwindow_ready listener, that will handle initing it
+							return;
+						}
+						aGBrowser.tabContainer.addEventListener('TabSelect', js.onTabSelect, false);
+					};
+					js.uninitWin = function(aDOMWin) {
+						var aGBrowser = aDOMWin.gBrowser;
+						aGBrowser.tabContainer.removeEventListener('TabSelect', js.onTabSelect, false);
+					};
+					
+					js.scrollingThruTabs = false; // for use by nexttab and prevtab
+					js.doneScrollingThruTabs = function() {
+						js.scrollingThruTabs = false;
+						js.addTabToHistory(js.lastScrolledTab);
+						$MC_removeEventListener('all_buttons_released', js.doneScrollingThruTabs);
+					};
+					
+					js.addTabToHistory = function(aTab) {
+						// aTab must be a tab not a tab weak!
+						var prevTab;
+						try {
+							prevTab = js.tabHistory[js.tabHistory.length - 1].get();
+						} catch(deadobj) {
+							// prev tab is dead
+							prevTab = null;
+						}
+						if (!js.tabHistory.length || prevTab != aTab) {
+							js.tabHistory.push(Cu.getWeakReference(aTab));
+						}
+					};
+					
+					$MC_removeEventListener('newwindow_ready', js.doneScrollingThruTabs);
+					
+					var DOMWindows = Services.wm.getEnumerator('navigator:browser');
+					while (DOMWindows.hasMoreElements()) {
+						var aDOMWindow = DOMWindows.getNext();
+						js.initWin(aDOMWindow);
+						if (aDOMWindow == Services.focus.activeWindow) {
+							js.tabHistory.push(Cu.getWeakReference(aDOMWindow.gBrowser.selectedTab));
+						}
+					}
+					
 					
 				},
 				__exec__: function() {
-					
+					var tHist = $MC_BS_.jumpStore.tabHistory;
+					for (var i=tHist.length-1; i>=0; i--) {
+						try {
+							var cTab = tHist[i].get();
+							var cDOMWin = cTab.ownerDocument.defaultView;
+							if (cDOMWin.gBrowser.selectedTab != cTab) {
+								cDOMWin.focus();
+								cDOMWin.gBrowser.selectedTab = cTab;
+								break;
+							}
+						} catch(deadobj) {
+							console.warn('ok cTab is a dead object remove it, err:', deadobj);
+							tHist.splice(i, 1);
+						}
+					}
 				},
 				__uninit__: function() {
+					var DOMWindows = Services.wm.getEnumerator('navigator:browser');
+					while (DOMWindows.hasMoreElements()) {
+						var aDOMWindow = DOMWindows.getNext();
+						$MC_BS_.jumpStore.uninitWin(aDOMWindow);
+					}
 					delete $MC_BS_.jumpStore;
 				}
 			}))
@@ -153,6 +232,10 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
+					if ($MC_BS_.jumpStore) {
+						$MC_BS_.jumpStore.scrollingThruTabs = true;
+						$MC_addEventListener('all_buttons_released', $MC_BS_.jumpStore.doneScrollingThruTabs);
+					}
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
 						DOMWindow.gBrowser.mTabContainer.advanceSelectedTab(1, true);
@@ -168,6 +251,10 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
+					if ($MC_BS_.jumpStore) {
+						$MC_BS_.jumpStore.scrollingThruTabs = true;
+						$MC_addEventListener('all_buttons_released', $MC_BS_.jumpStore.doneScrollingThruTabs);
+					}
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
 						DOMWindow.gBrowser.mTabContainer.advanceSelectedTab(-1, true);
@@ -1494,6 +1581,8 @@ var windowListener = {
 		
 		aDOMWindow.addEventListener('activate', windowActivated, false);
 		aDOMWindow.addEventListener('deactivate', windowDeactivated, false);
+		
+		$MC_triggerEvent('newwindow_ready', aDOMWindow);
 	},
 	unloadFromWindow: function (aDOMWindow) {
 		if (!aDOMWindow) { return }
@@ -1544,6 +1633,7 @@ function $MC_triggerEvent(aEvent, aTarget) {
 		// framescript_uninit - messageManager
 		// setpref_from_options - {name:prefname, newval:newval, oldval:oldval, obj:prefs[aPrefName]}
 		// all_buttons_released - null
+		// newwindow_ready - aDOMWindow
 		
 	for (var i=0; i<$MC_listeners.length; i++) {
 		if ($MC_listeners[i].event == aEvent) {
