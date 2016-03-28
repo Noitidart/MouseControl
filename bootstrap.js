@@ -579,17 +579,26 @@ var gConfigJsonDefault = function() {
 								ondown: function(e) {
 									$MC_FS_.RemElStore.el = e.target;
 									console.error('this.el:', $MC_FS_.RemElStore.el);
+								},
+								onover: function(e) {
+									$MC_FS_.RemElStore.el = e.target;
+									console.error('over this.el:', $MC_FS_.RemElStore.el);
 								}
 							};
 							
 							addEventListener('mousedown', $MC_FS_.RemElStore.ondown, false);
-							addEventListener('mouseup', $MC_FS_.RemElStore.onup, false);
 						},
 						fsInjectUninit: function() {
 							// runs in framescript scope
 							removeEventListener('mousedown', $MC_FS_.RemElStore.ondown, false);
-							removeEventListener('mouseup', $MC_FS_.RemElStore.onup, false);
 							delete $MC_FS_.RemElStore;
+						},
+						doneExec: function() {
+							$MC_execInTab(
+								function() {
+									removeEventListener('mouseover', $MC_FS_.RemElStore.onover, false);
+								}
+							);
 						}
 					};
 					
@@ -606,8 +615,10 @@ var gConfigJsonDefault = function() {
 					delete $MC_BS_.RemElStore;
 				},
 				__exec__: function() {
+					$MC_addEventListener('all_buttons_released', $MC_BS_.RemElStore.doneExec);
 					$MC_execInTab(
 						function() {
+							addEventListener('mouseover', $MC_FS_.RemElStore.onover, false);
 							$MC_FS_.RemElStore.exec();
 						}
 					);

@@ -1516,9 +1516,13 @@ function handleMouseEvent(aMEStdConst) {
 					console.log('discarding event - meaning not pushing into history');
 					// no need to test here for a current match, as we are ignoring it
 					if (sendMouseEventsToMT) {
-						return true;
+						return true; // block mouse event
 					} else {
-						return false;
+						if (gMEDown.length) {
+							return true; // block mouse event
+						} else {
+							return false;
+						}
 					}
 				}
 			}
@@ -1641,7 +1645,10 @@ function handleMouseEvent(aMEStdConst) {
 	} else {
 		// if cMECombo matches then return true else return false
 		rezHandleME = comboIsConfig(cMECombo, true);
-		rezHandleME = false; // :todo: :debug:, right now if i leave this at true, then it blocks the mouse vent which bugs out. i need to block properly
+		// rezHandleME = false; // :todo: :debug:, right now if i leave this at true, then it blocks the mouse vent which bugs out. i need to block properly
+		if (rezHandleME || cMECombo.length > 1) {
+			rezHandleME = true;
+		}
 	}
 	
 	// // clean up
