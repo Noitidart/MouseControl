@@ -269,6 +269,7 @@ function actOnDoWhat() {
 				cInt_doWhat.contents = -5;
 				gFxInFocus = false;
 				
+				console.warn('FIREFOX UNFOCUSED');
 				gMEDown = new METracker();
 				
 				return -5;
@@ -279,7 +280,7 @@ function actOnDoWhat() {
 				// firefox was focused
 				cInt_doWhat.contents = -6;
 				gFxInFocus = true;
-				
+				console.warn('FOCUSED');
 				return -6;
 				
 			break;

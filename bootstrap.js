@@ -99,6 +99,14 @@ var gConfigJsonDefault = function() {
 							js.addTabToHistory(tab);
 						}
 					};
+					js.onWindowActivate = function(aTarget) {
+						console.log('ok jumptab winactivated');
+						if (aTarget.gBrowser) {
+							console.log('ok jumptab winactivated HAS GBROWSER');
+							var tab = aTarget.gBrowser.selectedTab;
+							js.addTabToHistory(tab);
+						}
+					};
 					
 					js.initWin = function(aDOMWin) {
 						var aGBrowser = aDOMWin.gBrowser;
@@ -134,7 +142,8 @@ var gConfigJsonDefault = function() {
 						}
 					};
 					
-					$MC_removeEventListener('newwindow_ready', js.doneScrollingThruTabs);
+					$MC_addEventListener('newwindow_ready', js.initWin);
+					$MC_addEventListener('window_activated', js.onWindowActivate);
 					
 					var DOMWindows = Services.wm.getEnumerator('navigator:browser');
 					while (DOMWindows.hasMoreElements()) {
@@ -149,11 +158,31 @@ var gConfigJsonDefault = function() {
 				},
 				__exec__: function() {
 					var tHist = $MC_BS_.jumpStore.tabHistory;
+					
+					var debPrintArr = [];
 					for (var i=tHist.length-1; i>=0; i--) {
 						try {
 							var cTab = tHist[i].get();
+							if (cTab == null) {
+								console.warn('tab is a dead obj');
+								continue; // as its a deadobj
+							}
+							debPrintArr.push(cTab.linkedBrowser.currentURI.spec);
+						} catch(deadobj) {}
+					}
+					console.log('tHist:', debPrintArr);
+					
+					for (var i=tHist.length-1; i>=0; i--) {
+						try {
+							var cTab = tHist[i].get();
+							if (cTab == null) {
+								console.warn('tab is a dead obj');
+								tHist.splice(i, 1);
+								continue; // as its a deadobj
+							}
 							var cDOMWin = cTab.ownerDocument.defaultView;
-							if (cDOMWin.gBrowser.selectedTab != cTab) {
+							var rightNowWin = Services.wm.getMostRecentWindow(null);
+							if (rightNowWin != cDOMWin || !rightNowWin.gBrowser || rightNowWin.gBrowser.selectedTab != cTab) {
 								cDOMWin.focus();
 								cDOMWin.gBrowser.selectedTab = cTab;
 								break;
@@ -165,6 +194,8 @@ var gConfigJsonDefault = function() {
 					}
 				},
 				__uninit__: function() {
+					$MC_removeEventListener('window_activated', $MC_BS_.jumpStore.onWindowActivate);
+					$MC_removeEventListener('newwindow_ready', $MC_BS_.jumpStore.initWin);
 					var DOMWindows = Services.wm.getEnumerator('navigator:browser');
 					while (DOMWindows.hasMoreElements()) {
 						var aDOMWindow = DOMWindows.getNext();
@@ -1534,6 +1565,8 @@ function readConfigFromFile() {
 function windowActivated(e) {
 	console.log('win activated time:', e.timeStamp, e);
 	CommWorker.postMessage(['timeoutTellFocused', true, e.timeStamp]);
+	
+	$MC_triggerEvent('window_activated', e.target);
 }
 
 function windowDeactivated(e) {
@@ -1645,6 +1678,7 @@ function $MC_triggerEvent(aEvent, aTarget) {
 		// setpref_from_options - {name:prefname, newval:newval, oldval:oldval, obj:prefs[aPrefName]}
 		// all_buttons_released - null
 		// newwindow_ready - aDOMWindow
+		// window_activated - aDOMWindow
 		
 	for (var i=0; i<$MC_listeners.length; i++) {
 		if ($MC_listeners[i].event == aEvent) {
