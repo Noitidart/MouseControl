@@ -301,8 +301,32 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
+					
+					var closesitetabsConfigId = 15;
+					if ($MC_overlaps(closesitetabsConfigId, this)) {
+						$MC_BS_.closeTabStore = {};
+					} else {
+						delete $MC_BS_.closeTabStore;
+					}
+					
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
+					if (!DOMWindow.gBrowser || DOMWindow.gBrowser.tabContainer.childNodes.length === 1) {
+						if ($MC_BS_.closeTabStore) {
+							$MC_BS_.closeTabStore.closesitetabsPreventDefault = true;
+						}
+						// just close the window
+						DOMWindow.close();
+						return;
+					}
+					
+					if ($MC_BS_.closeTabStore) {
+						$MC_BS_.closeTabStore.lasturi = DOMWindow.gBrowser.selectedBrowser.currentURI;
+					}
+					
 					DOMWindow.BrowserCloseTabOrWindow();
+				},
+				__uninit__: function() {
+					delete $MC_BS_.closeTabStore;
 				}
 			}))
 		},
@@ -811,6 +835,13 @@ var gConfigJsonDefault = function() {
 						return;
 					}
 					
+					if ($MC_BS_.closeTabStore) {
+						if ($MC_BS_.closeTabStore.closesitetabsPreventDefault) {
+							delete $MC_BS_.closeTabStore.closesitetabsPreventDefault;
+							return;
+						}
+					}
+					
 					var extractHost = function(aURI) {
 						try {
 							if (aURI.host) {
@@ -825,10 +856,16 @@ var gConfigJsonDefault = function() {
 						}
 					};
 					
-					var selectedTab = DOMWindow.gBrowser.selectedTab;
-					var targetHost = extractHost(selectedTab.linkedBrowser.currentURI);
+					var targetHost;
+					if (!$MC_BS_.closeTabStore) {
+						var selectedTab = DOMWindow.gBrowser.selectedTab;
+						targetHost = extractHost(selectedTab.linkedBrowser.currentURI);
 
-					DOMWindow.BrowserCloseTabOrWindow();
+						DOMWindow.BrowserCloseTabOrWindow();
+					} else {
+						targetHost = extractHost($MC_BS_.closeTabStore.lasturi);
+						delete $MC_BS_.closeTabStore.lasturi;
+					}
 					
 					var tabsToClose = [];
 					
@@ -1687,10 +1724,125 @@ function $MC_triggerEvent(aEvent, aTarget) {
 	}
 }
 
-$MC_getConfig = function(aEvaledFunc_or_id) {
+function $MC_overlaps(aThisConfigId_or_func, aTestConfigId_or_func, aIgnoreSoft) {
+	// meaning if overlapped, then aTest will trigger on the way to execute aThis
+	// returns
+		// 0 - if aThis does not overlap aTest
+		// a number (plus 0.1) indicating how much aTestConfigId is overlapped by aThisConfigId_or_func (minimum is 0.5)
+		// if aIgnoreSoft is true - then value is always positive. if false, then value is negative if aTestConfigId_or_func contains a "HOLD". its considered soft because it MAY not have triggered
+	// so this means it returns 0.1 if exactly the same
+	
+	var aThis = $MC_getConfig(aThisConfigId_or_func, gConfigJson).config;
+	var aTest = $MC_getConfig(aTestConfigId_or_func, gConfigJson).config;
+	
+	if (aThis.length < aTest.length) {
+		return 0;
+	}
+	
+	if (!aThis.length || !aTest.length) {
+		return 0;
+	}
+	
+	// var underlapCnt = 0;
+	// var overlapCnt = 0;
+	for (var i=0; i<aTest.length - 1; i++) {
+		if (aThis[i].std != aTest[i].std && aThis[i].multi !== aTest[i].multi && aThis[i].held != aTest[i].held) {
+			return 0;
+		} else {
+			console.log('match i:', i);
+		}
+	}
+	
+	// if get here it means aTest perfectly overlaps the start of aThis
+	
+	// var i = aTest.length - 1;
+	console.log('i:', i);
+	var thisMEDir = aThis[i].std.substr(3);
+	var thisMEBtn = aThis[i].std.substr(0, 2);
+	var testMEDir = aTest[i].std.substr(3);
+	var testMEBtn = aTest[i].std.substr(0, 2);
+	
+	// calc diff of multi as if both std were same
+	var diffOfMulti;
+	if (aThis[i].multi >= aTest[i].multi) {
+		diffOfMulti = (aThis[i].multi - aTest[i].multi) + 0.1;
+	} else {
+		// aTest overlaps aThis as the multi of aTest is greater
+		return 0;
+	}
+	
+	// if (aThis[i].std != aTest[i].std && aThis[i].multi !== aTest[i].multi && aThis[i].held != aTest[i].held) {
+	if (aThis[i].std != aTest[i].std) {
+		// aTest is exactly the start of aThis
+		if (thisMEBtn == testMEBtn) {
+			if (thisMEDir == 'CK' && testMEDir == 'DN') {
+				var rezBuild = 0.5 + (aThis[i].multi - 1) + 0.1;
+				/* theorizing that held DOES add to count
+				if (aThis[i].held) {
+					rezBuild += 0.5;	
+				}
+				if (aTest[i].held && rezBuild == 0.6) {
+					rezBuild -= 0.5;
+				}
+				// */
+				// theorizing that held does NOT add to count - do nothing special}
+				return rezBuild;
+			} else if (thisMEDir == 'DN' && testMEDir == 'CK') {
+				// aTest overlaps aThis
+				return 0;
+			}
+		} else {
+			return 0;
+		}
+	} else {
+		// std of both are same
+		if (aThis[i].held == aTest[i].held) {
+			if (aThis[i].held) {
+				if (aIgnoreSoft) {
+					return diffOfMulti;
+				} else {
+					return diffOfMulti * -1;
+				}
+			} else {
+				return diffOfMulti;
+			}
+		} else {
+			// helds dont match
+			// /* theorizing that held does NOT add to count
+			if (aThis[i].held) {
+				if (aIgnoreSoft) {
+					return diffOfMulti;
+				} else {
+					return (diffOfMulti) * -1;
+				}
+			} else {
+				// aTest is held so aTest overlaps aThis
+				return 0;
+			}
+			// */
+			/* theorizing that held DOES add to count
+			if (aThis[i].held) {
+				// add 0.5 for the held
+				if (aIgnoreSoft) {
+					return diffOfMulti + 0.5;
+				} else {
+					return (diffOfMulti  + 0.5) * -1;
+				}
+			} else {
+				// aTest is held so aTest overlaps aThis
+				// if i did return here i would substract 0.5 for the held
+				return 0;
+			}
+			// */
+		}
+	}
+	
+}
+
+function $MC_getConfig(aEvaledFunc_or_id) {
 	// returns the entry in gConfigJson for by id where id is a number OR it is the object held in _cache_func (and this object is the subject of `this` in all __exec__ / __init__ / __uninit__)
 	if (typeof(aEvaledFunc_or_id) == 'number') {
-		return getConfigById(p, gConfigJson);
+		return getConfigById(aEvaledFunc_or_id, gConfigJson);
 	} else {
 		for (var p in _cache_func) {
 			if (_cache_func[p] == aEvaledFunc_or_id) {
