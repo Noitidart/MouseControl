@@ -302,31 +302,37 @@ var gConfigJsonDefault = function() {
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					
-					var closesitetabsConfigId = 15;
-					if ($MC_overlaps(closesitetabsConfigId, this)) {
-						$MC_BS_.closeTabStore = {};
+					if ($MC_BS_.undoStoreForClose && $MC_BS_.undoStoreForClose.justundid) {
+						delete $MC_BS_.undoStoreForClose.justundid;
+						return;
+					}
+					
+					var closesitesConfigId = 15;
+					if ($MC_overlaps(closesitesConfigId, this)) {
+						$MC_BS_.closeTabStoreForSites = {};
 					} else {
-						delete $MC_BS_.closeTabStore;
+						delete $MC_BS_.closeTabStoreForSites;
 					}
 					
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (!DOMWindow.gBrowser || DOMWindow.gBrowser.tabContainer.childNodes.length === 1) {
-						if ($MC_BS_.closeTabStore) {
-							$MC_BS_.closeTabStore.closesitetabsPreventDefault = true;
+						if ($MC_BS_.closeTabStoreForSites) {
+							$MC_BS_.closeTabStoreForSites.closesitetabsPreventDefault = true;
 						}
 						// just close the window
 						DOMWindow.close();
 						return;
 					}
 					
-					if ($MC_BS_.closeTabStore) {
-						$MC_BS_.closeTabStore.lasturi = DOMWindow.gBrowser.selectedBrowser.currentURI;
+					if ($MC_BS_.closeTabStoreForSites) {
+						$MC_BS_.closeTabStoreForSites.lasturi = DOMWindow.gBrowser.selectedBrowser.currentURI;
 					}
 					
 					DOMWindow.BrowserCloseTabOrWindow();
 				},
 				__uninit__: function() {
-					delete $MC_BS_.closeTabStore;
+					delete $MC_BS_.closeTabStoreForSites;
+					delete $MC_BS_.closeTabStoreForUndo;
 				}
 			}))
 		},
@@ -815,10 +821,26 @@ var gConfigJsonDefault = function() {
 			config:[],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
-					var DOMWindow = Services.wm.getMostRecentWindow(null);
-					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
+					
+					var closetabConfigId = 6;
+					if ($MC_overlaps(closetabConfigId, this, true) == 0.6) {
+						$MC_BS_.undoStoreForClose = {};
+					} else {
+						delete $MC_BS_.undoStoreForClose;
+					}
+					
+					var DOMWindow = Services.wm.getMostRecentWindow('navigator:browser');
+					// :todo: maybe add in here to undo the last closed window. if a window was closed last and not a tab.
+					
+					if (DOMWindow) {
+						if ($MC_BS_.undoStoreForClose) {
+							$MC_BS_.undoStoreForClose.justundid = true;
+						}
 						DOMWindow.undoCloseTab();
 					}
+				},
+				__uninit__: function() {
+					delete $MC_BS_.undoStoreForClose;
 				}
 			}))
 		},
@@ -835,9 +857,9 @@ var gConfigJsonDefault = function() {
 						return;
 					}
 					
-					if ($MC_BS_.closeTabStore) {
-						if ($MC_BS_.closeTabStore.closesitetabsPreventDefault) {
-							delete $MC_BS_.closeTabStore.closesitetabsPreventDefault;
+					if ($MC_BS_.closeTabStoreForSites) {
+						if ($MC_BS_.closeTabStoreForSites.closesitetabsPreventDefault) {
+							delete $MC_BS_.closeTabStoreForSites.closesitetabsPreventDefault;
 							return;
 						}
 					}
@@ -857,14 +879,14 @@ var gConfigJsonDefault = function() {
 					};
 					
 					var targetHost;
-					if (!$MC_BS_.closeTabStore) {
+					if (!$MC_BS_.closeTabStoreForSites) {
 						var selectedTab = DOMWindow.gBrowser.selectedTab;
 						targetHost = extractHost(selectedTab.linkedBrowser.currentURI);
 
 						DOMWindow.BrowserCloseTabOrWindow();
 					} else {
-						targetHost = extractHost($MC_BS_.closeTabStore.lasturi);
-						delete $MC_BS_.closeTabStore.lasturi;
+						targetHost = extractHost($MC_BS_.closeTabStoreForSites.lasturi);
+						delete $MC_BS_.closeTabStoreForSites.lasturi;
 					}
 					
 					var tabsToClose = [];
@@ -1779,13 +1801,20 @@ function $MC_overlaps(aThisConfigId_or_func, aTestConfigId_or_func, aIgnoreSoft)
 				var rezBuild = 0.5 + (aThis[i].multi - 1) + 0.1;
 				/* theorizing that held DOES add to count
 				if (aThis[i].held) {
-					rezBuild += 0.5;	
+					rezBuild += 0.5;
 				}
 				if (aTest[i].held && rezBuild == 0.6) {
 					rezBuild -= 0.5;
 				}
 				// */
 				// theorizing that held does NOT add to count - do nothing special}
+				
+				if (!aIgnoreSoft) {
+					if (aThis[i].held || aTest[i].held) {
+						rezBuild *= -1;
+					}
+				}
+				
 				return rezBuild;
 			} else if (thisMEDir == 'DN' && testMEDir == 'CK') {
 				// aTest overlaps aThis
