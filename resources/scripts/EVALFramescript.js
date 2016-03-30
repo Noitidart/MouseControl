@@ -199,11 +199,13 @@ bootstrapCallbacks.synthMouseup = function(aJsConst) {
 bootstrapCallbacks.prevMouseup = function() {
 	addEventListener('mouseup', prevMouseup, false);
 	addEventListener('click', prevMouseup, false);
+	// content.document.addEventListener('mousemove', prevMouseup, false);
 };
 
 bootstrapCallbacks.unprevMouseup = function() {
 	removeEventListener('mouseup', prevMouseup, false);
 	removeEventListener('click', prevMouseup, false);
+	// content.document.removeEventListener('mousemove', prevMouseup, false);
 };
 
 function prevMouseup(e) {

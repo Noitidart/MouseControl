@@ -1647,8 +1647,8 @@ function handleMouseEvent(aMEStdConst) {
 		rezHandleME = true;
 	} else {
 		// if cMECombo matches then return true else return false
-		rezHandleME = comboIsConfig(cMECombo, true);
-		// rezHandleME = false; // :todo: :debug:, right now if i leave this at true, then it blocks the mouse vent which bugs out. i need to block properly
+		var isConfig = comboIsConfig(cMECombo, true);
+		// rezHandleME = false; // actually i dont set rezHandleME to comboIsConfig anymore so this is doesnt have to be here // important to be here, otherwise. on dbl right click, if comboIsConfig returns true, then on windows i get that lock in mousedown issue, or i can just NOT set rezHandleME = to comboIsConfig
 		console.error('cME.std:', cME.std);
 		if (gMEEnteredMC && (cME.std == gMEEnteredMC + '_CK' || cME.std == gMEEnteredMC + '_UP')) {
 			gMEEnteredMC = 'ALLOWED';
@@ -1663,6 +1663,9 @@ function handleMouseEvent(aMEStdConst) {
 				rezHandleME = true;
 				console.error('BLOCK MEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE');
 			}
+		}
+		if (isConfig && !gMEEnteredMC) {
+			self.postMessage(['closeOpenContextMenus'])
 		}
 	}
 	

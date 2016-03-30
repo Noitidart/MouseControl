@@ -1399,14 +1399,27 @@ var MMWorkerFuncs = {
 		MMWorkerFuncs.prevTargets.push(cDOMWin);
 		cDOMWin.addEventListener('mouseup', prevMouseup, false);
 		cDOMWin.addEventListener('click', prevMouseup, false);
+		// cDOMWin.document.addEventListener('mousemove', prevMouseup, false);
 		
-		console.warn('ok attached prevMouseup');
+		console.log('ok attached prevMouseup');
 		
 		if (cDOMWin.gBrowser) {
 			var browsers = cDOMWin.gBrowser.browsers;
 			for (var i=0; i<browsers.length; i++) {
 				browsers[i].messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['prevMouseup']);
 			}
+			
+			cDOMWin.gBrowser._autoScrollPopup.hidePopup();
+			cDOMWin.gBrowser.selectedBrowser.messageManager.sendAsyncMessage('Autoscroll:Cancel');
+		}
+		
+		MMWorkerFuncs.closeOpenContextMenus();
+	},
+	closeOpenContextMenus: function() {
+		var iLen = gOpenContextMenus.length-1;
+		for (var i=iLen; i>-1; i--) {
+			console.error('hiding:', gOpenContextMenus[i]);
+			gOpenContextMenus[i].hidePopup();
 		}
 	},
 	unprevMouseup: function() {
@@ -1415,6 +1428,7 @@ var MMWorkerFuncs = {
 			var cDOMWin = MMWorkerFuncs.prevTargets.pop();
 			cDOMWin.removeEventListener('mouseup', prevMouseup, false);
 			cDOMWin.removeEventListener('click', prevMouseup, false);
+			// cDOMWin.document.removeEventListener('mousemove', prevMouseup, false);
 			
 			if (cDOMWin.gBrowser) {
 				var browsers = cDOMWin.gBrowser.browsers;
@@ -1448,7 +1462,7 @@ function prevMouseup(e) {
 	// e.target.ownerDocument.defaultView.removeEventListener('click', arguments.callee, false);
 	e.preventDefault();
 	e.stopPropagation();
-	e.target.ownerDocument.defaultView.setTimeout(MMWorkerFuncs.unprevMouseup, 0);
+	// e.target.ownerDocument.defaultView.setTimeout(MMWorkerFuncs.unprevMouseup, 0); // comented this out but may want to put this back. i am currently relying on the chromeworker to send msg of "unprevMouseup" to remove the blocking
 	return false;
 }
 
@@ -1744,6 +1758,8 @@ var windowListener = {
 		aDOMWindow.addEventListener('activate', windowActivated, false);
 		aDOMWindow.addEventListener('deactivate', windowDeactivated, false);
 		
+		aDOMWindow.addEventListener('popupshowing', openingContextMenus, false);
+		
 		$MC_triggerEvent('newwindow_ready', aDOMWindow);
 	},
 	unloadFromWindow: function (aDOMWindow) {
@@ -1751,10 +1767,32 @@ var windowListener = {
 		
 		aDOMWindow.removeEventListener('activate', windowActivated, false);
 		aDOMWindow.removeEventListener('deactivate', windowDeactivated, false);
+		
+		aDOMWindow.removeEventListener('popupshowing', openingContextMenus, false);
 	}
 };
 /*end - windowlistener*/
 
+var gOpenContextMenus = [];
+function openingContextMenus(e) {
+	console.error('context menu opening:', e.target);
+	if (e.target.nodeName == 'menupopup') {
+		gOpenContextMenus.push(e.target);
+		e.target.addEventListener('popuphiding', closingContextMenu, false);
+	}
+}
+
+function closingContextMenu(e) {
+	console.error('context menu CLOSING:', e.target);
+	e.target.removeEventListener('popuphiding', closingContextMenu, false);
+	for (var i=0; i<gOpenContextMenus.length; i++) {
+		if (gOpenContextMenus[i] == e.target) {
+			console.error('found in gOpenContextMenus and spliced');
+			gOpenContextMenus.splice(i, 1);
+			return;
+		}
+	}
+}
 
 // start - functions for use in func of config
 var $MC_BS_ = {}; // a storage area in bootstrap
