@@ -4,7 +4,7 @@
 	   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 	<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
 	  <Description about="urn:mozilla:install-manifest">
-		<em:id>MouseControl@jetpack</em:id>
+		<em:id>MouseControl@neocodex.us</em:id>
 		<em:version>2.0a</em:version>
 		<em:type>2</em:type>
 		<em:bootstrap>true</em:bootstrap>
@@ -16,8 +16,8 @@
 		<em:targetApplication>
 			<Description>
 				<em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
-				<em:minVersion>7.0</em:minVersion> <!-- due to options page -->
-				<em:maxVersion>41.0</em:maxVersion> <!-- the latest version i tested it in -->
+				<em:minVersion>33.0</em:minVersion> <!-- due to e10s -->
+				<em:maxVersion>48.0</em:maxVersion> <!-- the latest version i tested it in -->
 			</Description>
 		</em:targetApplication>
 		

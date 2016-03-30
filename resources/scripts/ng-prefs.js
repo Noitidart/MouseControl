@@ -7,7 +7,7 @@ console.log('this:', this);
 var core = {
 	addon: {
 		name: 'MouseControl',
-		id: 'MouseControl@jetpack',
+		id: 'MouseControl@neocodex.us',
 		path: {
 			name: 'mousecontrol',
 			content: 'chrome://mousecontrol/content/',

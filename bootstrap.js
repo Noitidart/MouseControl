@@ -12,7 +12,7 @@ Cu.import('resource://gre/modules/XPCOMUtils.jsm');
 const core = {
 	addon: {
 		name: 'MouseControl',
-		id: 'MouseControl@jetpack',
+		id: 'MouseControl@neocodex.us',
 		path: {
 			name: 'mousecontrol',
 			content: 'chrome://mousecontrol/content/',
@@ -2141,6 +2141,12 @@ function uninstall(aData, aReason) {
 				}
 			}
 		}
+		
+		// delete storage
+		OS.File.removeDir(OS.Path.dirname(OSPath_simpleStorage), {
+			ignoreAbsent: true,
+			ignorePermissions: true
+		});
 	}
 }
 
