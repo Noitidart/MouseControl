@@ -1657,7 +1657,8 @@ function handleMouseEvent(aMEStdConst) {
 		} else {
 			if (gMEEnteredMC || cMECombo.length > 1) {
 				if (!gMEEnteredMC) {
-					gMEEnteredMC = gMEDown[0].std.substr(0, 2)
+					gMEEnteredMC = gMEDown[0].std.substr(0, 2);
+					self.postMessage(['prevMouseup']);
 				}
 				rezHandleME = true;
 				console.error('BLOCK MEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE');
@@ -1669,6 +1670,7 @@ function handleMouseEvent(aMEStdConst) {
 	if (clearAll) {
 		if (gMEEnteredMC) {
 			gMEEnteredMC = null;
+			self.postMessage(['unprevMouseup']);
 		}
 	}
 	// if (clearAll) {

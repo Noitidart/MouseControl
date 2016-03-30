@@ -196,6 +196,23 @@ bootstrapCallbacks.synthMouseup = function(aJsConst) {
 	utils.sendMouseEvent('mouseup', 1, 1, aJsConst, 1, 0);
 }
 
+bootstrapCallbacks.prevMouseup = function() {
+	addEventListener('mouseup', prevMouseup, false);
+	addEventListener('click', prevMouseup, false);
+};
+
+bootstrapCallbacks.unprevMouseup = function() {
+	removeEventListener('mouseup', prevMouseup, false);
+	removeEventListener('click', prevMouseup, false);
+};
+
+function prevMouseup(e) {
+	console.error('FS prevented mouseup');
+	e.stopPropagation();
+	e.preventDefault();
+	return false;
+}
+
 contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['triggerEvent_framescript_created']);
 
 var $MC_FS_ = {}; // a storage area in framescript

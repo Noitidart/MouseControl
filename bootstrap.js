@@ -1392,20 +1392,44 @@ var MMWorkerFuncs = {
 	triggerEvent: function(aEvent) {
 		$MC_triggerEvent(aEvent, null);
 	},
+	prevTargets: [],
+	prevMouseup: function() {
+		var cDOMWin = Services.wm.getMostRecentWindow(null);
+
+		MMWorkerFuncs.prevTargets.push(cDOMWin);
+		cDOMWin.addEventListener('mouseup', prevMouseup, false);
+		cDOMWin.addEventListener('click', prevMouseup, false);
+		
+		console.warn('ok attached prevMouseup');
+		
+		if (cDOMWin.gBrowser) {
+			var browsers = cDOMWin.gBrowser.browsers;
+			for (var i=0; i<browsers.length; i++) {
+				browsers[i].messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['prevMouseup']);
+			}
+		}
+	},
+	unprevMouseup: function() {
+		var iLen = MMWorkerFuncs.prevTargets.length;
+		for (var i=0; i<iLen; i++) {
+			var cDOMWin = MMWorkerFuncs.prevTargets.pop();
+			cDOMWin.removeEventListener('mouseup', prevMouseup, false);
+			cDOMWin.removeEventListener('click', prevMouseup, false);
+			
+			if (cDOMWin.gBrowser) {
+				var browsers = cDOMWin.gBrowser.browsers;
+				for (var i=0; i<browsers.length; i++) {
+					browsers[i].messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['prevMouseup']);
+				}
+			}
+		}
+	},
 	synthMouseup: function(aJsConst, aOsConst, aOsData) {
 		if (aOsConst) {
 			CommWorker.postMessage(['synthMouseup', aOsConst, aOsData]);
 		}
 		return;
-		var cDOMWin = Services.wm.getMostRecentWindow(null);
 
-		var prevMouseupBound = prevMouseup.bind(null, cDOMWin);
-		cDOMWin.addEventListener('mouseup', prevMouseupBound, false);
-		cDOMWin.addEventListener('click', prevMouseupBound, false);
-		
-		console.warn('ok attached prevMouseup');
-		
-		return;
 		if (!cDOMWin) {
 			console.warn('no cDOMWin');
 		}
@@ -1418,12 +1442,13 @@ var MMWorkerFuncs = {
 	}
 };
 
-function prevMouseup(aDOMWin, e) {
-	console.error('prevMouseup');
-	aDOMWin.removeEventListener('mouseup', arguments.callee, false);
-	aDOMWin.removeEventListener('click', arguments.callee, false);
+function prevMouseup(e) {
+	console.error('prevMouseup, e:', e);
+	// e.target.ownerDocument.defaultView.removeEventListener('mouseup', arguments.callee, false);
+	// e.target.ownerDocument.defaultView.removeEventListener('click', arguments.callee, false);
 	e.preventDefault();
 	e.stopPropagation();
+	MMWorkerFuncs.unprevMouseup();
 	return false;
 }
 
