@@ -1649,60 +1649,92 @@ function handleMouseEvent(aMEStdConst) {
 		// if cMECombo matches then return true else return false
 		rezHandleME = comboIsConfig(cMECombo, true);
 		// rezHandleME = false; // :todo: :debug:, right now if i leave this at true, then it blocks the mouse vent which bugs out. i need to block properly
-		console.error('cME.std:', cME.std);
-		if (gMEEnteredMC && cME.std == gMEEnteredMC) {
-			gMEEnteredMC = 'ALLOWED';
-			console.error('allowing first downed');
-			rezHandleME = false;
-		} else {
+		// console.error('cME.std:', cME.std);
+		// if (gMEEnteredMC && cME.std == gMEEnteredMC) {
+		// 	gMEEnteredMC = 'ALLOWED';
+		// 	console.error('allowing first downed');
+		// 	rezHandleME = false;
+		// } else {
 			if (gMEEnteredMC || cMECombo.length > 1) {
 				if (!gMEEnteredMC) {
-					gMEEnteredMC = gMEDown[0].std.substr(0, 2) + '_CK';
+					// gMEEnteredMC = gMEDown[0].std.substr(0, 2) + '_CK';
 					var cBtnNum = parseInt(gMEDown[0].std.substr(1, 1));
-					var cOsConst;
-					var cJsConst;
-					console.error('cBtnNum:', cBtnNum);
-					switch (core.os.name) {
-						case 'winnt':
-								switch (cBtnNum) {
-									case 1:
-											cJsConst = 0;
-											cOsConst = ostypes.CONST.MOUSEEVENTF_LEFTUP;
-										break;
-									case 2:
-											cJsConst = 2;
-											cOsConst = ostypes.CONST.MOUSEEVENTF_RIGHTUP;
-										break;
-									case 3:
-											cJsConst = 1;
-											cOsConst = ostypes.CONST.MOUSEEVENTF_MIDDLEUP;
-										break;
-									default:
-										cJsConst = undefined;
-										cOsConst = MOUSEEVENTF_XUP;
-								}
-							break;
-						case 'darwin':
-								//
-							break;
-						default:
-								//
-					}
-					console.error('cBtnNum:', cBtnNum);
-					if (cJsConst !== undefined || cOsConst !== undefined) {
-						cOsConst = null;
-						self.postMessage(['synthMouseup', cJsConst, cOsConst]);
-					}
+					gMEEnteredMC = cBtnNum;
+					// var cOsConst;
+					// var cJsConst;
+					// console.error('cBtnNum:', cBtnNum);
+					// switch (core.os.name) {
+					// 	case 'winnt':
+					// 			switch (cBtnNum) {
+					// 				case 1:
+					// 						cJsConst = 0;
+					// 						cOsConst = ostypes.CONST.MOUSEEVENTF_LEFTUP;
+					// 					break;
+					// 				case 2:
+					// 						cJsConst = 2;
+					// 						cOsConst = ostypes.CONST.MOUSEEVENTF_RIGHTUP;
+					// 					break;
+					// 				case 3:
+					// 						cJsConst = 1;
+					// 						cOsConst = ostypes.CONST.MOUSEEVENTF_MIDDLEUP;
+					// 					break;
+					// 				default:
+					// 					cJsConst = undefined;
+					// 					cOsConst = MOUSEEVENTF_XUP;
+					// 			}
+					// 		break;
+					// 	case 'darwin':
+					// 			//
+					// 		break;
+					// 	default:
+					// 			//
+					// }
+					// console.error('cBtnNum:', cBtnNum);
+					// if (cJsConst !== undefined || cOsConst !== undefined) {
+					// 	cOsConst = null;
+					// 	self.postMessage(['synthMouseup', cJsConst, cOsConst]);
+					// }
 				}
 				rezHandleME = true;
 				console.error('BLOCK MEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE');
 			}
-		}
+		// }
 	}
 	
 	// // clean up
 	if (clearAll) {
-		gMEEnteredMC = null;
+		if (gMEEnteredMC) {
+			if (core.os.name.indexOf('win') ===  0) {
+				var cOsConst;
+				var cOsData;
+				switch (gMEEnteredMC) {
+					case 1:
+							cOsConst = ostypes.CONST.MOUSEEVENTF_LEFTUP;
+						break;
+					case 2:
+							cOsConst = ostypes.CONST.MOUSEEVENTF_RIGHTUP;
+						break;
+					case 3:
+							cOsConst = ostypes.CONST.MOUSEEVENTF_MIDDLEUP;
+						break;
+					case 4:
+							cOsConst = ostypes.CONST.MOUSEEVENTF_XUP;
+							cOsData = ostypes.CONST.XBUTTON1;
+						break;
+					case 5:
+							cOsConst = ostypes.CONST.MOUSEEVENTF_XUP;
+							cOsData = ostypes.CONST.XBUTTON2;
+						break;
+					default:
+						console.error('should never get here');
+						// do nothing
+				}
+				if (cOsConst) {
+					self.postMessage(['synthMouseup', null, cOsConst, cOsData]);
+				}
+			}
+			gMEEnteredMC = null;
+		}
 	}
 	// if (clearAll) {
 	// 	// gMEHistory = new METracker();

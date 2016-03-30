@@ -328,7 +328,7 @@ function tellMmWorker(aWhat, infoObjForWorker) {
 	return [];
 }
 
-function synthMouseup(aOsConst) {
+function synthMouseup(aOsConst, aOsData) {
 	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
 		case 'winnt':
 		case 'winmo':
@@ -337,10 +337,10 @@ function synthMouseup(aOsConst) {
 				// send click - i dont know why but the x and y coords of these send clicks is not being respected, it is just clicking where the mouse is
 				
 				var js_pInputs = [
-					ostypes.TYPE.INPUT(ostypes.CONST.INPUT_MOUSE, ostypes.TYPE.MOUSEINPUT(0, 0, 0, aOsConst | ostypes.CONST.MOUSEEVENTF_ABSOLUTE, 0, 0))
+					ostypes.TYPE.INPUT(ostypes.CONST.INPUT_MOUSE, ostypes.TYPE.MOUSEINPUT(0, 0, aOsData ? aOsData : 0, aOsConst | ostypes.CONST.MOUSEEVENTF_ABSOLUTE, 0, 0))
 				];
 				var pInputs = ostypes.TYPE.INPUT.array()(js_pInputs);
-				var rez_SI = SendInput(pInputs.length, pInputs, ostypes.TYPE.INPUT.size);
+				var rez_SI = ostypes.API('SendInput')(pInputs.length, pInputs, ostypes.TYPE.INPUT.size);
 				console.log('rez_SI:', rez_SI);
 			
 			break;

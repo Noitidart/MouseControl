@@ -1392,9 +1392,9 @@ var MMWorkerFuncs = {
 	triggerEvent: function(aEvent) {
 		$MC_triggerEvent(aEvent, null);
 	},
-	synthMouseup: function(aJsConst, aOsConst) {
+	synthMouseup: function(aJsConst, aOsConst, aOsData) {
 		if (aOsConst) {
-			CommWorker.postMessage(['synthMouseup', aBtnNum]);
+			CommWorker.postMessage(['synthMouseup', aOsConst, aOsData]);
 		}
 		return;
 		var cDOMWin = Services.wm.getMostRecentWindow(null);
