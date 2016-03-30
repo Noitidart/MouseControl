@@ -2,7 +2,7 @@
 const {classes: Cc, interfaces: Ci, manager: Cm, results: Cr, utils: Cu, Constructor: CC} = Components;
 Cu.import('resource://gre/modules/Services.jsm');
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
-
+console.log('this:', this);
 // Globals
 var core = {
 	addon: {
@@ -782,15 +782,29 @@ var bootstrapMsgListener = {
 		
 	}
 };
-contentMMFromContentWindow_Method2(content).addMessageListener(core.addon.id, bootstrapMsgListener);
+contentMMFromContentWindow_Method2(window).addMessageListener(core.addon.id, bootstrapMsgListener);
 // end - server/framescript comm layer
 // start - common helper functions
+// rev1 - https://gist.github.com/Noitidart/f2be4ef953e108a027292ae06efd9821
 function contentMMFromContentWindow_Method2(aContentWindow) {
 	if (!gCFMM) {
-		gCFMM = aContentWindow.QueryInterface(Ci.nsIInterfaceRequestor)
-							  .getInterface(Ci.nsIDocShell)
-							  .QueryInterface(Ci.nsIInterfaceRequestor)
-							  .getInterface(Ci.nsIContentFrameMessageManager);
+		console.error('contentMMFromContentWindow_Method2 this:', this);
+		if (this.addMessageListener) {
+			gCFMM = this;
+		// this doesnt work i keep getting "NS_ERROR_XPC_BAD_OP_ON_WN_PROTO: Illegal operation on WrappedNative prototype object" and if i dont use prototype then I get something like addMessageListener doesnt exist
+		// } else if (this.ContentFrameMessageManager) {
+		// 	gCFMM = this.ContentFrameMessageManager;
+		// 	if (!gCFMM.addMessageListener) {
+		// 		gCFMM = this.ContentFrameMessageManager.prototype;
+		// 	}
+		} else {
+			console.error('i dont want to do it this way anymore');
+			// needed as this.ContentFrameMessageManager doesnt work yet even though its available as of march 29 2016
+			gCFMM = aContentWindow.QueryInterface(Ci.nsIInterfaceRequestor)
+								  .getInterface(Ci.nsIDocShell)
+								  .QueryInterface(Ci.nsIInterfaceRequestor)
+								  .getInterface(Ci.nsIContentFrameMessageManager);
+		}
 	}
 	return gCFMM;
 

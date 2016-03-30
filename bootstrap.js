@@ -1248,11 +1248,11 @@ var MMWorkerFuncs = {
 				// so to now communicate with MMWorker i have to CommWorker.postMessage to transferToMMWorker (for windows im in a lock for sure, linux im pretty sure, osx i might not, so for osx i should still send this same post message, but on callback of it, i should then send mmworker a message to read in from the shreables as they were updated)
 				// the other reason to commToMMworker is to tell it to start or stop sending mouse events
 			
-			if (core.os.name.indexOf('win') === 0) {
+			// if (core.os.name.indexOf('win') === 0) {
 				if (!gShutdowned) {
 					windowListener.register();
 				}
-			}
+			// }
 		});
 		
 		// Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
@@ -1401,7 +1401,7 @@ var MMWorkerFuncs = {
 		cDOMWin.addEventListener('click', prevMouseup, false);
 		// cDOMWin.document.addEventListener('mousemove', prevMouseup, false);
 		
-		console.log('ok attached prevMouseup');
+		console.error('ok attached prevMouseup');
 		
 		if (cDOMWin.gBrowser) {
 			var browsers = cDOMWin.gBrowser.browsers;
@@ -1416,6 +1416,7 @@ var MMWorkerFuncs = {
 		MMWorkerFuncs.closeOpenContextMenus();
 	},
 	closeOpenContextMenus: function() {
+		console.error('closeOpenContextMenus');
 		var iLen = gOpenContextMenus.length-1;
 		for (var i=iLen; i>-1; i--) {
 			console.error('hiding:', gOpenContextMenus[i]);
@@ -1423,20 +1424,22 @@ var MMWorkerFuncs = {
 		}
 	},
 	unprevMouseup: function() {
-		var iLen = MMWorkerFuncs.prevTargets.length;
-		for (var i=0; i<iLen; i++) {
-			var cDOMWin = MMWorkerFuncs.prevTargets.pop();
-			cDOMWin.removeEventListener('mouseup', prevMouseup, false);
-			cDOMWin.removeEventListener('click', prevMouseup, false);
-			// cDOMWin.document.removeEventListener('mousemove', prevMouseup, false);
-			
-			if (cDOMWin.gBrowser) {
-				var browsers = cDOMWin.gBrowser.browsers;
-				for (var i=0; i<browsers.length; i++) {
-					browsers[i].messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['unprevMouseup']);
+		xpcomSetTimeout2(0, function() { // need this, otherwise it gets called to fast on ubuntu. and if i do this in windows on the mouseup/click event, then it is also too fast there. i tested this by left btn down on downoad icon in toolbar, then scroll wheel, then release. if too fast it opens the download popup panel
+			var iLen = MMWorkerFuncs.prevTargets.length;
+			for (var i=0; i<iLen; i++) {
+				var cDOMWin = MMWorkerFuncs.prevTargets.pop();
+				cDOMWin.removeEventListener('mouseup', prevMouseup, false);
+				cDOMWin.removeEventListener('click', prevMouseup, false);
+				// cDOMWin.document.removeEventListener('mousemove', prevMouseup, false);
+				
+				if (cDOMWin.gBrowser) {
+					var browsers = cDOMWin.gBrowser.browsers;
+					for (var i=0; i<browsers.length; i++) {
+						browsers[i].messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['unprevMouseup']);
+					}
 				}
 			}
-		}
+		});
 	},
 	synthMouseup: function(aJsConst, aOsConst, aOsData) {
 		if (aOsConst) {
@@ -1696,14 +1699,18 @@ function readConfigFromFile() {
 
 function windowActivated(e) {
 	console.log('win activated time:', e.timeStamp, e);
-	CommWorker.postMessage(['timeoutTellFocused', true, e.timeStamp]);
+	if (core.os.name.indexOf('win') === 0) {
+		CommWorker.postMessage(['timeoutTellFocused', true, e.timeStamp]);
+	}
 	
 	$MC_triggerEvent('window_activated', e.target);
 }
 
 function windowDeactivated(e) {
 	console.log('win deactivated time:', e.timeStamp, e);
-	CommWorker.postMessage(['timeoutTellFocused', false, e.timeStamp]);
+	if (core.os.name.indexOf('win') === 0) {
+		CommWorker.postMessage(['timeoutTellFocused', false, e.timeStamp]);
+	}
 }
 /*start - windowlistener*/
 var windowListener = {
@@ -2200,10 +2207,10 @@ function shutdown(aData, aReason) {
 	
 	if (aReason == APP_SHUTDOWN) { return }
 	
-	if (core.os.name.indexOf('win') === 0) {
+	// if (core.os.name.indexOf('win') === 0) {
 		gShutdowned = true;
 		windowListener.unregister();
-	}
+	// }
 	
 	updateConfigJson([]); // if anything has a __uninit__ and a config then execute it
 	
@@ -2224,6 +2231,11 @@ function shutdown(aData, aReason) {
 	
 	// unregister framescript listener
 	Services.mm.removeMessageListener(core.addon.id + '-framescript', evalFsMsgListener);
+	
+	// cancel timers for xpcomSetTimeout2
+	for (var xpcomTimer in gXpcomTimers) {
+		gXpcomTimers[xpcomTimer].cancel();
+	}
 }
 
 // start - server/framescript comm layer
@@ -2604,6 +2616,9 @@ METracker.prototype.strOfStds = function() {
 		if (this[i].multi > 1) {
 			rezstr[rezstr.length - 1] = this[i].multi + 'x ' + this[i].std;
 		}
+		if (this[i].held) {
+			rezstr[rezstr.length - 1] += ' + HOLD'
+		}
 	}
 	return rezstr.join(', ');
 };
@@ -2618,6 +2633,7 @@ var g_lME; // the last mouse event
 var gMEAllReasedBool = true; // set to true when all is realsed, or false when not
 var gMEAllReasedTime = 0; // is set to the last time that all were released
 
+var gMEEnteredMC = null;
 function handleMouseEvent(aMEStdConst) {
 	// return true if handled else false (handled means block it)
 	
@@ -2656,7 +2672,11 @@ function handleMouseEvent(aMEStdConst) {
 					if (bowserFsWantingMouseEvents) {
 						return true;
 					} else {
-						return false;
+						if (gMEDown.length) {
+							return true; // block mouse event
+						} else {
+							return false;
+						}
 					}
 				}
 			}
@@ -2778,11 +2798,35 @@ function handleMouseEvent(aMEStdConst) {
 		rezHandleME = true;
 	} else {
 		// if cMECombo matches then return true else return false
-		rezHandleME = comboIsConfig(cMECombo, true);
-		rezHandleME = false; // :todo: :debug:, right now if i leave this at true, then it blocks the mouse vent which bugs out. i need to block properly
+		var isConfig = comboIsConfig(cMECombo, true);
+		// rezHandleME = false; // actually i dont set rezHandleME to comboIsConfig anymore so this is doesnt have to be here // important to be here, otherwise. on dbl right click, if comboIsConfig returns true, then on windows i get that lock in mousedown issue, or i can just NOT set rezHandleME = to comboIsConfig
+		console.error('cME.std:', cME.std);
+		if (gMEEnteredMC && (cME.std == gMEEnteredMC + '_CK' || cME.std == gMEEnteredMC + '_UP')) {
+			gMEEnteredMC = 'ALLOWED';
+			console.error('allowing first downed');
+			rezHandleME = false;
+		} else {
+			if (gMEEnteredMC || cMECombo.length > 1) {
+				if (!gMEEnteredMC) {
+					gMEEnteredMC = gMEDown[0].std.substr(0, 2);
+					MMWorkerFuncs.prevMouseup();
+				}
+				rezHandleME = true;
+				console.error('BLOCK MEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE');
+			}
+		}
+		if (isConfig && !gMEEnteredMC) {
+			MMWorkerFuncs.closeOpenContextMenus();
+		}
 	}
 	
 	// // clean up
+	if (clearAll) {
+		if (gMEEnteredMC) {
+			gMEEnteredMC = null;
+			MMWorkerFuncs.unprevMouseup();
+		}
+	}
 	// if (clearAll) {
 	// 	// gMEHistory = new METracker();
 	// 	// cMECombo = new METracker();
@@ -2837,7 +2881,7 @@ function comboIsConfig(aMECombo, boolTriggerFunc) {
 	}
 }
 
-// var g_cMECombo;
+var g_cMECombo;
 function makeMouseEventHeld(a_cMECombo, zeFireTime) {
 	
 	// // test if g_cMECombo matches a_cMECombo, if it doesn't then it means things changed
@@ -3440,6 +3484,20 @@ function tryOsFile_ifDirsNoExistMakeThenRetry(nameOfOsFileFunc, argsOfOsFileFunc
 function xpcomSetTimeout(aNsiTimer, aDelayTimerMS, aTimerCallback) {
 	aNsiTimer.initWithCallback({
 		notify: function() {
+			aTimerCallback();
+		}
+	}, aDelayTimerMS, Ci.nsITimer.TYPE_ONE_SHOT);
+}
+
+var gXpcomTimers = {};
+var gXpcomTimerId = 0;
+function xpcomSetTimeout2(aDelayTimerMS, aTimerCallback) {
+	gXpcomTimerId++;
+	var cXpcomTimerId = gXpcomTimerId;
+	gXpcomTimers[cXpcomTimerId] = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
+	gXpcomTimers[cXpcomTimerId].initWithCallback({
+		notify: function() {
+			delete gXpcomTimers[cXpcomTimerId];
 			aTimerCallback();
 		}
 	}, aDelayTimerMS, Ci.nsITimer.TYPE_ONE_SHOT);
