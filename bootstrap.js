@@ -36,6 +36,7 @@ const core = {
 		version: Services.appinfo.version
 	}
 };
+core.os.mname = core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name; // mname stands for modified-name
 
 const JETPACK_DIR_BASENAME = 'jetpack';
 const OSPath_simpleStorage = OS.Path.join(OS.Constants.Path.profileDir, JETPACK_DIR_BASENAME, core.addon.id, 'simple-storage');
@@ -82,7 +83,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-jumptab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"B1_CK","multi":1}] : [{"std":"B2_DN","multi":1},{"std":"B1_CK","multi":1}],
 			func: BEAUTIFY().js(uneval({
 				__init__: function() {
 					$MC_BS_.jumpStore = {};
@@ -210,7 +211,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-duptab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B3_CK","multi":1.5,"held":true}] : [{"std":"B2_CK","multi":1.5,"held":true}],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
@@ -238,7 +239,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-newtab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B3_CK","multi":2}] : [{"std":"B2_CK","multi":2}],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
@@ -260,7 +261,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-nexttab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"WH_DN","multi":1}] : [{"std":"B2_DN","multi":1},{"std":"WH_DN","multi":1}],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					if ($MC_BS_.jumpStore) {
@@ -279,7 +280,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-prevtab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"WH_UP","multi":1}] : [{"std":"B2_DN","multi":1},{"std":"WH_UP","multi":1}],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					if ($MC_BS_.jumpStore) {
@@ -298,7 +299,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-closetab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"B2_CK","multi":1}] : [{"std":"B2_DN","multi":1},{"std":"B3_CK","multi":1}],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					
@@ -341,7 +342,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-resetzoom'),
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B1_DN","multi":1},{"std":"B2_CK","multi":1}] : [{"std":"B1_DN","multi":1},{"std":"B3_CK","multi":1}],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var domWin = Services.wm.getMostRecentWindow('navigator:browser');
@@ -356,7 +357,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-zoomin'),
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B1_DN","multi":1},{"std":"WH_UP","multi":1}] : [{"std":"B1_DN","multi":1},{"std":"WH_UP","multi":1}],
 			func: BEAUTIFY().js(uneval({
 				__init__: function() {
 					
@@ -595,7 +596,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-zoomout'),
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B1_DN","multi":1},{"std":"WH_DN","multi":1}] : [{"std":"B1_DN","multi":1},{"std":"WH_DN","multi":1}],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var domWin = Services.wm.getMostRecentWindow('navigator:browser');
@@ -610,7 +611,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-removeel'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B1_DN","multi":1},{"std":"B3_CK","multi":1}] : [{"std":"B1_DN","multi":1},{"std":"B2_CK","multi":1}],
 			func: BEAUTIFY().js(uneval({
 				__init__: function() {		
 					$MC_BS_.RemElStore = {
@@ -691,7 +692,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-memscrolltop'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
-			config:[],
+			config: [],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					$MC_execInTab(
@@ -731,7 +732,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-memscrollbot'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
-			config:[],
+			config: [],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					$MC_execInTab(
@@ -771,7 +772,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-memscrollmemy'),
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
-			config:[],
+			config: [],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					$MC_execInTab(
@@ -818,7 +819,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-undoclosetab'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-undoclosetab'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"B2_DN","multi":1,"held":true}] : [{"std":"B2_DN","multi":1},{"std":"B3_DN","multi":1,"held":true}],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					
@@ -849,7 +850,7 @@ var gConfigJsonDefault = function() {
 			name: myServices.sb.GetStringFromName('config_name-closesitetabs'),
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-closesitetabs'),
-			config:[],
+			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"B2_CK","multi":2}] : [{"std":"B2_DN","multi":1},{"std":"B3_CK","multi":2}],
 			func: BEAUTIFY().js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
