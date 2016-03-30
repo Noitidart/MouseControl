@@ -2924,7 +2924,10 @@ function makeMouseEventHeld(a_cMECombo, zeFireTime) {
 	} else {
 		console.log('testing if should trigger a config on mainthread');
 		// if cMECombo matches then return true else return false
-		comboIsConfig(cMECombo, true);
+		var isConfig = comboIsConfig(cMECombo, true);
+		if (isConfig) {
+			MMWorkerFuncs.closeOpenContextMenus();
+		}
 	}
 }
 // start - common helper functions

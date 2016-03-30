@@ -1186,7 +1186,7 @@ function syncMonitorMouse() {
 								// kCGScrollWheelEventDeltaAxis3 - not used according to the docs: https://developer.apple.com/library/mac/documentation/Carbon/Reference/QuartzEventServicesRef/index.html#//apple_ref/c/tdef/CGEventField
 								var wheelLetter;
 								var deltaVert = ostypes.API('CGEventGetIntegerValueField')(event, ostypes.CONST.kCGScrollWheelEventDeltaAxis1);
-								console.error('deltaVert:', deltaVert);
+								console.log('deltaVert:', deltaVert);
 								
 								var deltaHor;
 								if (cutils.jscEqual(deltaVert, 0)) {
@@ -1194,7 +1194,7 @@ function syncMonitorMouse() {
 									wheelLetter = 'H'; // horizontal
 									// assuming if deltaVert is 0, then user must have scrolled horizontal wheel. i think this is safe assumption as kCGScrollWheelEventDeltaAxis3 is unused per docs
 									deltaHor = ostypes.API('CGEventGetIntegerValueField')(event, ostypes.CONST.kCGScrollWheelEventDeltaAxis2);
-									console.error('deltaHor:', deltaHor);
+									console.log('deltaHor:', deltaHor);
 									if (cutils.jscEqual(deltaHor, 0)) {
 										console.error('what on earth this should never happen, vert and hor delats are 0? then how did i get a kCGEventScrollWheel type event');
 									}
