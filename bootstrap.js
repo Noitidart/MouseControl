@@ -1419,7 +1419,7 @@ var MMWorkerFuncs = {
 			if (cDOMWin.gBrowser) {
 				var browsers = cDOMWin.gBrowser.browsers;
 				for (var i=0; i<browsers.length; i++) {
-					browsers[i].messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['prevMouseup']);
+					browsers[i].messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['unprevMouseup']);
 				}
 			}
 		}
@@ -1448,7 +1448,7 @@ function prevMouseup(e) {
 	// e.target.ownerDocument.defaultView.removeEventListener('click', arguments.callee, false);
 	e.preventDefault();
 	e.stopPropagation();
-	MMWorkerFuncs.unprevMouseup();
+	e.target.ownerDocument.defaultView.setTimeout(MMWorkerFuncs.unprevMouseup, 0);
 	return false;
 }
 
