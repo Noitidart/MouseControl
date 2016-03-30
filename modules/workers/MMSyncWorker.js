@@ -1186,12 +1186,15 @@ function syncMonitorMouse() {
 								// kCGScrollWheelEventDeltaAxis3 - not used according to the docs: https://developer.apple.com/library/mac/documentation/Carbon/Reference/QuartzEventServicesRef/index.html#//apple_ref/c/tdef/CGEventField
 								var wheelLetter;
 								var deltaVert = ostypes.API('CGEventGetIntegerValueField')(event, ostypes.CONST.kCGScrollWheelEventDeltaAxis1);
+								console.error('deltaVert:', deltaVert);
 								
+								var deltaHor;
 								if (cutils.jscEqual(deltaVert, 0)) {
 									// then user di horizontal
 									wheelLetter = 'H'; // horizontal
 									// assuming if deltaVert is 0, then user must have scrolled horizontal wheel. i think this is safe assumption as kCGScrollWheelEventDeltaAxis3 is unused per docs
-									var deltaHor = ostypes.API('CGEventGetIntegerValueField')(event, ostypes.CONST.kCGScrollWheelEventDeltaAxis2);
+									deltaHor = ostypes.API('CGEventGetIntegerValueField')(event, ostypes.CONST.kCGScrollWheelEventDeltaAxis2);
+									console.error('deltaHor:', deltaHor);
 									if (cutils.jscEqual(deltaHor, 0)) {
 										console.error('what on earth this should never happen, vert and hor delats are 0? then how did i get a kCGEventScrollWheel type event');
 									}
@@ -1200,11 +1203,18 @@ function syncMonitorMouse() {
 								}
 								
 								var wheelDir;
-								if (cutils.jscEqual(deltaVert, 1)) {
-									wheelDir = wheelLetter == 'V' ? 'UP' : 'LT';
+								if (wheelLetter == 'V') {
+									if (cutils.jscEqual(deltaVert, 1)) {
+										wheelDir = 'UP';
+									} else {
+										wheelDir = 'DN';
+									}
 								} else {
-									// its -1
-									wheelDir = wheelLetter == 'V' ? 'DN' : 'RT';
+									if (cutils.jscEqual(deltaHor, 1)) {
+										wheelDir = 'LT';
+									} else {
+										wheelDir = 'RT';
+									}
 								}
 								// console.info('wheelLetter:', wheelLetter, 'deltaHor:', deltaHor, 'deltaVert:', deltaVert);
 								
@@ -1244,8 +1254,10 @@ function syncMonitorMouse() {
 					
 					if (handleMouseEvent(cMEStdConst)) {
 						// block it as it was handled
+						console.error('mac blocking');
 						return null;
 					} else {
+						console.error('mac allowing');
 						return event;
 					}
 					
