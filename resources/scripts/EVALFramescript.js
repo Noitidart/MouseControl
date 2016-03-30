@@ -189,11 +189,11 @@ bootstrapCallbacks.eval = function(aFuncAsStr) {
 	}
 };
 
-bootstrapCallbacks.synthMouseup = function(aBtnNum) {
+bootstrapCallbacks.synthMouseup = function(aJsConst) {
 	console.log('content.frames:', content.frames);
 	var utils = content.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils);
-	console.error('FS synthesizing mouseup of btn:', aBtnNum, 'utils:', utils);
-	utils.sendMouseEvent('mouseup', 1, 1, aBtnNum, 1, 0);
+	console.error('FS synthesizing mouseup of btn:', aJsConst, 'utils:', utils);
+	utils.sendMouseEvent('mouseup', 1, 1, aJsConst, 1, 0);
 }
 
 contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['triggerEvent_framescript_created']);

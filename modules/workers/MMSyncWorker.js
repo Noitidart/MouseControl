@@ -1659,21 +1659,27 @@ function handleMouseEvent(aMEStdConst) {
 				if (!gMEEnteredMC) {
 					gMEEnteredMC = gMEDown[0].std.substr(0, 2) + '_CK';
 					var cBtnNum = parseInt(gMEDown[0].std.substr(1, 1));
+					var cOsConst;
+					var cJsConst;
 					console.error('cBtnNum:', cBtnNum);
 					switch (core.os.name) {
 						case 'winnt':
 								switch (cBtnNum) {
 									case 1:
-											cBtnNum = 0;
+											cJsConst = 0;
+											cOsConst = ostypes.CONST.MOUSEEVENTF_LEFTUP;
 										break;
 									case 2:
-											cBtnNum = 2;
+											cJsConst = 2;
+											cOsConst = ostypes.CONST.MOUSEEVENTF_RIGHTUP;
 										break;
 									case 3:
-											cBtnNum = 1;
+											cJsConst = 1;
+											cOsConst = ostypes.CONST.MOUSEEVENTF_MIDDLEUP;
 										break;
 									default:
-										cBtnNum = null;
+										cJsConst = undefined;
+										cOsConst = MOUSEEVENTF_XUP;
 								}
 							break;
 						case 'darwin':
@@ -1683,8 +1689,9 @@ function handleMouseEvent(aMEStdConst) {
 								//
 					}
 					console.error('cBtnNum:', cBtnNum);
-					if (cBtnNum !== null) {
-						self.postMessage(['synthMouseup', cBtnNum]);
+					if (cJsConst !== undefined || cOsConst !== undefined) {
+						cOsConst = null;
+						self.postMessage(['synthMouseup', cJsConst, cOsConst]);
 					}
 				}
 				rezHandleME = true;

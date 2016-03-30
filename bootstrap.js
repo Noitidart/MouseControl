@@ -1392,8 +1392,10 @@ var MMWorkerFuncs = {
 	triggerEvent: function(aEvent) {
 		$MC_triggerEvent(aEvent, null);
 	},
-	synthMouseup: function(aBtnNum) {
-		CommWorker.postMessage(['synthMouseup', aBtnNum]);
+	synthMouseup: function(aJsConst, aOsConst) {
+		if (aOsConst) {
+			CommWorker.postMessage(['synthMouseup', aBtnNum]);
+		}
 		return;
 		var cDOMWin = Services.wm.getMostRecentWindow(null);
 
@@ -1409,7 +1411,7 @@ var MMWorkerFuncs = {
 		}
 		if (cDOMWin.gBrowser) {
 			console.warn('synthing mouseup in fs');
-			cDOMWin.gBrowser.selectedBrowser.messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['synthMouseup', aBtnNum]);
+			cDOMWin.gBrowser.selectedBrowser.messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['synthMouseup', aJsConst]);
 		} else {
 			console.warn('no gBrowser on cDOMWin');
 		}
