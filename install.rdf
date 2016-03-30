@@ -24,7 +24,7 @@
 		<!-- Front End MetaData -->
 		<!-- must provide default non-localized because It's used as a default on AMO. It's used as a default by the add-on manager, with the possibility of other locales overriding it. Failure to provide a non-localized name will lead to failed upload on AMO. -->
 		<em:name>MouseControl</em:name>
-		<em:description>Enables user defined mouse action combinations to trigger customizable functions</em:description>
+		<em:description>Enables user-defined "natural mouse combinations" to trigger customizable functions.</em:description>
 		<em:creator>Noitidart</em:creator>
 		<em:contributor>David Vignoni for Icon</em:contributor>
 		<em:contributor>Jochen for C API Sourcecode</em:contributor>
@@ -34,7 +34,7 @@
 			<Description>
 				<em:locale>en-US</em:locale>
 				<em:name>MouseControl</em:name>
-				<em:description>Enables user defined mouse action combinations to trigger customizable functions</em:description>
+				<em:description>Enables user-defined "natural mouse combinations" to trigger customizable functions.</em:description>
 				<em:creator>Noitidart</em:creator>
 				<em:contributor>David Vignoni for Icon</em:contributor>
 				<em:contributor>Jochen for C API Sourcecode</em:contributor>

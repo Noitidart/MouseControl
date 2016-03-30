@@ -181,6 +181,11 @@ var gConfigJsonDefault = function() {
 								tHist.splice(i, 1);
 								continue; // as its a deadobj
 							}
+							if (!cTab.parentNode) {
+								console.error('tab is no longer open');
+								tHist.splice(i, 1);
+								continue;
+							}
 							var cDOMWin = cTab.ownerDocument.defaultView;
 							var rightNowWin = Services.wm.getMostRecentWindow(null);
 							if (rightNowWin != cDOMWin || !rightNowWin.gBrowser || rightNowWin.gBrowser.selectedTab != cTab) {
