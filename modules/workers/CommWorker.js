@@ -327,6 +327,36 @@ function tellMmWorker(aWhat, infoObjForWorker) {
 	
 	return [];
 }
+
+function synthMouseup(aBtnNum) {
+	switch (core.os.toolkit.indexOf('gtk') == 0 ? 'gtk' : core.os.name) {
+		case 'winnt':
+		case 'winmo':
+		case 'wince':
+			
+				// send click - i dont know why but the x and y coords of these send clicks is not being respected, it is just clicking where the mouse is
+				var js_pInputs = [
+					ostypes.TYPE.INPUT(ostypes.CONST.INPUT_MOUSE, ostypes.TYPE.MOUSEINPUT(0, 0, 0, ostypes.CONST.MOUSEEVENTF_LEFTUP | ostypes.CONST.MOUSEEVENTF_ABSOLUTE, 0, 0))
+				];
+				var pInputs = ostypes.TYPE.INPUT.array()(js_pInputs);
+				var rez_SI = SendInput(pInputs.length, pInputs, ostypes.TYPE.INPUT.size);
+				console.log('rez_SI:', rez_SI);
+			
+			break;
+		case 'gtk':
+			
+				// 
+			
+			break;
+		case 'darwin':
+			
+				//
+				
+			break;
+		default:
+			throw new Error('Operating system, "' + OS.Constants.Sys.Name + '" is not supported');
+	}
+}
  
 // End - Addon Functionality
 

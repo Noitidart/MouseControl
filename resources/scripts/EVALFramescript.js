@@ -1,4 +1,4 @@
-// const {classes:Cc, interfaces:Ci} = Components;
+const {classes:Cc, interfaces:Ci} = Components;
 // console.log('FHRFrameScript loaded, this:', Components.stack, Components.stack.filename);
 // var gFhrFsMsgListenerId = Components.stack.filename.match(/fhrFsMsgListenerId=([^&]+)/)[1]; // Components.stack.filename == "chrome://nativeshot/content/resources/scripts/FHRFrameScript.js?fhrFsMsgListenerId=NativeShot@jetpack-fhr_1&v=0.2623310905363082"
 // console.log('in framescript, this:', this);
@@ -188,6 +188,13 @@ bootstrapCallbacks.eval = function(aFuncAsStr) {
 		return [undefined];
 	}
 };
+
+bootstrapCallbacks.synthMouseup = function(aBtnNum) {
+	console.log('content.frames:', content.frames);
+	var utils = content.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils);
+	console.error('FS synthesizing mouseup of btn:', aBtnNum, 'utils:', utils);
+	utils.sendMouseEvent('mouseup', 1, 1, aBtnNum, 1, 0);
+}
 
 contentMMFromContentWindow_Method2(content).sendAsyncMessage(core.addon.id, ['triggerEvent_framescript_created']);
 

@@ -1391,8 +1391,40 @@ var MMWorkerFuncs = {
 	},
 	triggerEvent: function(aEvent) {
 		$MC_triggerEvent(aEvent, null);
+	},
+	synthMouseup: function(aBtnNum) {
+		CommWorker.postMessage(['synthMouseup', aBtnNum]);
+		return;
+		var cDOMWin = Services.wm.getMostRecentWindow(null);
+
+		var prevMouseupBound = prevMouseup.bind(null, cDOMWin);
+		cDOMWin.addEventListener('mouseup', prevMouseupBound, false);
+		cDOMWin.addEventListener('click', prevMouseupBound, false);
+		
+		console.warn('ok attached prevMouseup');
+		
+		return;
+		if (!cDOMWin) {
+			console.warn('no cDOMWin');
+		}
+		if (cDOMWin.gBrowser) {
+			console.warn('synthing mouseup in fs');
+			cDOMWin.gBrowser.selectedBrowser.messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['synthMouseup', aBtnNum]);
+		} else {
+			console.warn('no gBrowser on cDOMWin');
+		}
 	}
 };
+
+function prevMouseup(aDOMWin, e) {
+	console.error('prevMouseup');
+	aDOMWin.removeEventListener('mouseup', arguments.callee, false);
+	aDOMWin.removeEventListener('click', arguments.callee, false);
+	e.preventDefault();
+	e.stopPropagation();
+	return false;
+}
+
 var gHeldTimer = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
 
 function tellMMWorkerPrefsAndConfig() {
@@ -2780,7 +2812,6 @@ function makeMouseEventHeld(a_cMECombo, zeFireTime) {
 		comboIsConfig(cMECombo, true);
 	}
 }
-
 // start - common helper functions
 // rev3 - https://gist.github.com/Noitidart/326f1282c780e3cb7390
 function Deferred() {

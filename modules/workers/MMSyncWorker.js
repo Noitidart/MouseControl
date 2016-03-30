@@ -1481,6 +1481,8 @@ var g_lME; // the last mouse event
 var gMEAllReasedBool = true; // set to true when all is realsed, or false when not
 var gMEAllReasedTime = 0; // is set to the last time that all were released
 
+var gMEEnteredMC = null;
+
 function handleMouseEvent(aMEStdConst) {
 	// return true if handled else false (handled means block it)
 	
@@ -1647,12 +1649,54 @@ function handleMouseEvent(aMEStdConst) {
 		// if cMECombo matches then return true else return false
 		rezHandleME = comboIsConfig(cMECombo, true);
 		// rezHandleME = false; // :todo: :debug:, right now if i leave this at true, then it blocks the mouse vent which bugs out. i need to block properly
-		if (rezHandleME || cMECombo.length > 1) {
-			rezHandleME = true;
+		console.error('cME.std:', cME.std);
+		if (gMEEnteredMC && cME.std == gMEEnteredMC) {
+			gMEEnteredMC = 'ALLOWED';
+			console.error('allowing first downed');
+			rezHandleME = false;
+		} else {
+			if (gMEEnteredMC || cMECombo.length > 1) {
+				if (!gMEEnteredMC) {
+					gMEEnteredMC = gMEDown[0].std.substr(0, 2) + '_CK';
+					var cBtnNum = parseInt(gMEDown[0].std.substr(1, 1));
+					console.error('cBtnNum:', cBtnNum);
+					switch (core.os.name) {
+						case 'winnt':
+								switch (cBtnNum) {
+									case 1:
+											cBtnNum = 0;
+										break;
+									case 2:
+											cBtnNum = 2;
+										break;
+									case 3:
+											cBtnNum = 1;
+										break;
+									default:
+										cBtnNum = null;
+								}
+							break;
+						case 'darwin':
+								//
+							break;
+						default:
+								//
+					}
+					console.error('cBtnNum:', cBtnNum);
+					if (cBtnNum !== null) {
+						self.postMessage(['synthMouseup', cBtnNum]);
+					}
+				}
+				rezHandleME = true;
+				console.error('BLOCK MEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE');
+			}
 		}
 	}
 	
 	// // clean up
+	if (clearAll) {
+		gMEEnteredMC = null;
+	}
 	// if (clearAll) {
 	// 	// gMEHistory = new METracker();
 	// 	// cMECombo = new METracker();
