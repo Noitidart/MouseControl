@@ -2161,6 +2161,14 @@ function startup(aData, aReason) {
 	core.addon.version = aData.version;
 	extendCore();
 	
+	if (core.os.name.indexOf('win') === 0) {
+		Cu.import('resource://gre/modules/ctypes.jsm');
+		var kernel32 = ctypes.open('kernel32');
+		var GetCurrentThreadId = kernel32.declare('GetCurrentThreadId', ctypes.winapi_abi, ctypes.unsigned_long);
+		core.firefox.mainthreadid = parseInt(GetCurrentThreadId().toString());
+		kernel32.close();
+	}
+	
 	var postSetConfig = function() {
 		// startup worker
 		var promise_initCommWorker = SICWorker('CommWorker', core.addon.path.workers + 'CommWorker.js', CommWorkerFuncs);

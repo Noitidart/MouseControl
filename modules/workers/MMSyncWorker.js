@@ -478,66 +478,66 @@ function winRunMessageLoop(wMsgFilterMin, wMsgFilterMax) {
 	stopMonitor(); // must stop monitor when stop loop otherwise mouse will freeze up for like 5sec, well thats what happens to me on win81
 }
 
-// function winCreateHiddenWindowForMessageLoop() {
-// 	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
-// 	
-// 	// based on http://ochameau.github.io/2010/08/24/jsctypes-unleashed/
-// 	if (OSStuff.msgWinHwnd) {
-// 		throw new Error('already registered class window, this message loop thing can only be called once');
-// 	}
-// 	
-// 	var windowProc = function(hwnd, uMsg, wParam, lParam) {
-// 		
-// 		var eventType;
-// 		for (var p in OSStuff.mouseConsts) {
-// 			if (cutils.jscEqual(OSStuff.mouseConsts[p], lParam)) {
-// 				eventType = p;
-// 				break;
-// 			}
-// 		}
-// 		
-// 		console.info('windowProc | ', 'eventType:', eventType, 'uMsg:', uMsg, 'wParam:', wParam, 'lParam:', lParam);
-// 		// 0 means that we handle this event
-// 		// return 0; 
-// 		
-// 		// Mandatory use default win32 procedure!
-// 		var rez_DefWindowProc = ostypes.API('DefWindowProc')(hwnd, uMsg, wParam, lParam);
-// 		console.log('rez_DefWindowProc:', rez_DefWindowProc, rez_DefWindowProc.toString());
-// 		
-// 		return rez_DefWindowProc;
-// 	};
-// 	OSStuff.windowProc = windowProc; // so it doesnt get gc'ed
-// 	
-// 	// Define a custom Window Class in order to bind our custom Window Proc
-// 	var wndclass = ostypes.TYPE.WNDCLASS();
-// 	wndclass.lpszClassName = ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol');
-// 	wndclass.lpfnWndProc = ostypes.TYPE.WNDPROC.ptr(windowProc);
-// 	var rez_registerClass = ostypes.API('RegisterClass')(wndclass.address());
-// 	console.info('rez_registerClass:', rez_registerClass, rez_registerClass.toString());
-// 	if (cutils.jscEqual(rez_registerClass, 0)) {
-// 		console.warn('failed to register class, last error:', ctypes.winLastError);
-// 		// throw new Error('failed to register class');
-// 	}
-// 	
-// 	// Create a Message event only Window using this custom class
-// 	var msgWinHwnd = ostypes.API('CreateWindowEx')(0, wndclass.lpszClassName, ostypes.TYPE.LPCTSTR.targetType.array()('window-mozilla-firefox-addon-mousecontrol'), 0, 0, 0, 0, 0,  ostypes.TYPE.HWND(ostypes.CONST.HWND_MESSAGE), null, null, null);
-// 	console.info('msgWinHwnd:', msgWinHwnd, msgWinHwnd.toString());
-// 	
-// 	if (msgWinHwnd.isNull()) {
-// 		console.error('failed to create window, last error:', ctypes.winLastError);
-// 		throw new Error('failed to create window');
-// 	}
-// 	
-// 	OSStuff.msgWinHwnd = msgWinHwnd; // so it doesnt get gc'ed
-// 	
-// 	terminators.push(function() {
-// 		// var rez_destroyWindow = ostypes.API('DestroyWindow')(OSStuff.msgWinHwnd);
-// 		// console.log('rez_destroyWindow:', rez_destroyWindow);
-// 		
-// 		// var rez_UnregisterClass = ostypes.API('UnregisterClass')(ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol'), null);
-// 		// console.log('rez_UnregisterClass:', rez_UnregisterClass);
-// 	});
-// }
+function winCreateHiddenWindowForMessageLoop() {
+	// as setting hooks requires a message loop, have to do that from a thread. from main thread, we have window message loop so dont need this. but here i do.
+	
+	// based on http://ochameau.github.io/2010/08/24/jsctypes-unleashed/
+	if (OSStuff.msgWinHwnd) {
+		throw new Error('already registered class window, this message loop thing can only be called once');
+	}
+	
+	var windowProc = function(hwnd, uMsg, wParam, lParam) {
+		
+		var eventType;
+		for (var p in OSStuff.mouseConsts) {
+			if (cutils.jscEqual(OSStuff.mouseConsts[p], lParam)) {
+				eventType = p;
+				break;
+			}
+		}
+		
+		console.info('windowProc | ', 'eventType:', eventType, 'uMsg:', uMsg, 'wParam:', wParam, 'lParam:', lParam);
+		// 0 means that we handle this event
+		// return 0; 
+		
+		// Mandatory use default win32 procedure!
+		var rez_DefWindowProc = ostypes.API('DefWindowProc')(hwnd, uMsg, wParam, lParam);
+		console.log('rez_DefWindowProc:', rez_DefWindowProc, rez_DefWindowProc.toString());
+		
+		return rez_DefWindowProc;
+	};
+	OSStuff.windowProc = windowProc; // so it doesnt get gc'ed
+	
+	// Define a custom Window Class in order to bind our custom Window Proc
+	var wndclass = ostypes.TYPE.WNDCLASS();
+	wndclass.lpszClassName = ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol');
+	wndclass.lpfnWndProc = ostypes.TYPE.WNDPROC.ptr(windowProc);
+	var rez_registerClass = ostypes.API('RegisterClass')(wndclass.address());
+	console.info('rez_registerClass:', rez_registerClass, rez_registerClass.toString());
+	if (cutils.jscEqual(rez_registerClass, 0)) {
+		console.warn('failed to register class, last error:', ctypes.winLastError);
+		// throw new Error('failed to register class');
+	}
+	
+	// Create a Message event only Window using this custom class
+	var msgWinHwnd = ostypes.API('CreateWindowEx')(0, wndclass.lpszClassName, ostypes.TYPE.LPCTSTR.targetType.array()('window-mozilla-firefox-addon-mousecontrol'), 0, 0, 0, 0, 0,  ostypes.TYPE.HWND(ostypes.CONST.HWND_MESSAGE), null, null, null);
+	console.info('msgWinHwnd:', msgWinHwnd, msgWinHwnd.toString());
+	
+	if (msgWinHwnd.isNull()) {
+		console.error('failed to create window, last error:', ctypes.winLastError);
+		throw new Error('failed to create window');
+	}
+	
+	OSStuff.msgWinHwnd = msgWinHwnd; // so it doesnt get gc'ed
+	
+	terminators.push(function() {
+		// var rez_destroyWindow = ostypes.API('DestroyWindow')(OSStuff.msgWinHwnd);
+		// console.log('rez_destroyWindow:', rez_destroyWindow);
+		
+		// var rez_UnregisterClass = ostypes.API('UnregisterClass')(ostypes.TYPE.LPCTSTR.targetType.array()('class-mozilla-firefox-addon-mousecontrol'), null);
+		// console.log('rez_UnregisterClass:', rez_UnregisterClass);
+	});
+}
 
 function syncMonitorMouse() {
 	// this will get events and can block them
@@ -590,7 +590,7 @@ function syncMonitorMouse() {
 					};
 				};
 				
-				// winCreateHiddenWindowForMessageLoop();
+				winCreateHiddenWindowForMessageLoop();
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_LBUTTONDOWN, ostypes.CONST.WM_MOUSEHWHEEL);
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT);
 				// winRunMessageLoop(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT); // for async
@@ -807,8 +807,12 @@ function syncMonitorMouse() {
 				// OSStuff.myLLMouseHook_js = myLLMouseHook_js; // so it doesnt get gc'ed
 				// OSStuff.myLLMouseHook_c = myLLMouseHook_c; // so it doesnt get gc'ed
 				
+				var dwThreadId = core.firefox.mainthreadid;
+				var dwThreadId = ostypes.API('GetCurrentThreadId')();
+				console.log('dwThreadId:', dwThreadId);
 				
-				OSStuff.winHooked_aHhk = ostypes.API('SetWindowsHookEx')(ostypes.CONST.WH_MOUSE_LL, OSStuff.myLLMouseHook_c, null, 0);
+				ostypes.CONST.WH_MOUSE = 7;
+				OSStuff.winHooked_aHhk = ostypes.API('SetWindowsHookEx')(ostypes.CONST.WH_MOUSE, OSStuff.myLLMouseHook_c, null, dwThreadId);
 				console.info('OSStuff.winHooked_aHhk:', OSStuff.winHooked_aHhk, OSStuff.winHooked_aHhk.toString());
 				if (OSStuff.winHooked_aHhk.isNull()) {
 					console.error('failed to set hook, winLastError:', ctypes.winLastError);
