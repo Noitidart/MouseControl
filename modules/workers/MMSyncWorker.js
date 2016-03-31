@@ -270,7 +270,7 @@ function actOnDoWhat() {
 				gFxInFocus = false;
 				
 				console.warn('FIREFOX UNFOCUSED');
-				gMEDown = new METracker();
+				// gMEDown = new METracker();
 				
 				return -5;
 				
@@ -621,11 +621,6 @@ function syncMonitorMouse() {
 						// have to return rez callback because nCode is negative, this is per the docs			
 						return rezCallNextEx();
 					} else {
-						
-						// if firefox is not in focus then do nothing
-						if (!gFxInFocus) {
-							return rezCallNextEx();
-						}
 						
 						// get eventType
 						for (var p in OSStuff.mouseConsts) {
@@ -1651,6 +1646,10 @@ function handleMouseEvent(aMEStdConst) {
 	// show cMECombo
 	console.log('cMECombo:', cMECombo.strOfStds());
 	g_cMECombo = cMECombo;
+	
+	if (!gFxInFocus) {
+		return false; // dont block and dont enter mc mode (gMEEnteredMC)
+	}
 	
 	// test if cMECombo is a match to any config
 	var rezHandleME; // need to hold return value here, as i need to pop out fro cMECombo before returning
