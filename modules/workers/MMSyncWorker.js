@@ -590,7 +590,7 @@ function syncMonitorMouse() {
 					};
 				};
 				
-				winCreateHiddenWindowForMessageLoop();
+				// winCreateHiddenWindowForMessageLoop();
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_LBUTTONDOWN, ostypes.CONST.WM_MOUSEHWHEEL);
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT);
 				// winRunMessageLoop(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT); // for async
@@ -615,7 +615,7 @@ function syncMonitorMouse() {
 					};
 					
 					var eventType;
-				
+				return rezCallNextEx();
 					// if (parseInt(cutils.jscGetDeepest(nCode)) < 0) {
 					if (nCode < 0) {
 						// have to return rez callback because nCode is negative, this is per the docs			
@@ -808,7 +808,7 @@ function syncMonitorMouse() {
 				// OSStuff.myLLMouseHook_c = myLLMouseHook_c; // so it doesnt get gc'ed
 				
 				var dwThreadId = core.firefox.mainthreadid;
-				var dwThreadId = ostypes.API('GetCurrentThreadId')();
+				// var dwThreadId = ostypes.API('GetCurrentThreadId')();
 				console.log('dwThreadId:', dwThreadId);
 				
 				ostypes.CONST.WH_MOUSE = 7;
