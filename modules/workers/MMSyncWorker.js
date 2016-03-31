@@ -531,6 +531,7 @@ function winCreateHiddenWindowForMessageLoop() {
 				console.log('usButtonFlagStrs:', usButtonFlagStrs);
 			
 			
+				// return 0;
 			}
 		}
 		
@@ -648,7 +649,7 @@ function syncMonitorMouse() {
 					RI_MOUSE_HORIZONTAL_WHEEL: 0x0800
 				};
 				
-				winCreateHiddenWindowForMessageLoop();
+				// winCreateHiddenWindowForMessageLoop();
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_LBUTTONDOWN, ostypes.CONST.WM_MOUSEHWHEEL);
 				// winStartMessageLoopOLDER(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT);
 				// winRunMessageLoop(ostypes.CONST.WM_INPUT, ostypes.CONST.WM_INPUT); // for async
@@ -656,8 +657,11 @@ function syncMonitorMouse() {
 				
 	// rawinput stuff from tutorial: http://www.toymaker.info/Games/html/raw_input.html#tables
 	
-				var rid_js = new Array(1);
-				rid_js[0] = ostypes.TYPE.RAWINPUTDEVICE(1, 2, ostypes.CONST.RIDEV_INPUTSINK, OSStuff.msgWinHwnd); // mouse
+				var rid_js = []
+				for (var i=0; i<core.firefox.windows.length; i++) {
+					console.error('core.firefox.windows', i, core.firefox.windows[i]);
+					rid_js.push(ostypes.TYPE.RAWINPUTDEVICE(1, 2, ostypes.CONST.RIDEV_INPUTSINK, ostypes.TYPE.HWND(ctypes.UInt64(core.firefox.windows[i]))));
+				}
 				// ostypes.CONST.RIDEV_INPUTSINK because this tells it to get events even when not focused
 				
 				/*

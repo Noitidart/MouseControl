@@ -2160,6 +2160,13 @@ function startup(aData, aReason) {
 	// core.addon.aData = aData;
 	core.addon.version = aData.version;
 	extendCore();
+	core.firefox.windows = [];
+	
+	var DOMWindows = Services.wm.getEnumerator(null);
+	while (DOMWindows.hasMoreElements()) {
+		var aDOMWindow = DOMWindows.getNext();
+		core.firefox.windows.push(getNativeHandlePtrStr(aDOMWindow));
+	}
 	
 	var postSetConfig = function() {
 		// startup worker
@@ -3516,5 +3523,14 @@ function xpcomSetTimeout2(aDelayTimerMS, aTimerCallback) {
 			aTimerCallback();
 		}
 	}, aDelayTimerMS, Ci.nsITimer.TYPE_ONE_SHOT);
+}
+function getNativeHandlePtrStr(aDOMWindow) {
+	var aDOMBaseWindow = aDOMWindow.QueryInterface(Ci.nsIInterfaceRequestor)
+								   .getInterface(Ci.nsIWebNavigation)
+								   .QueryInterface(Ci.nsIDocShellTreeItem)
+								   .treeOwner
+								   .QueryInterface(Ci.nsIInterfaceRequestor)
+								   .getInterface(Ci.nsIBaseWindow);
+	return aDOMBaseWindow.nativeHandle;
 }
 // end - common helper functions
