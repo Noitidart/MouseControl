@@ -2038,6 +2038,20 @@ function $MC_execInTab(aFunc, aCallback, aOptions={}) {
 		aOptions.tab.sendAsyncMessage(core.addon.id + '-framescript', ['eval', cFuncAsStr]);
 	}
 }
+
+function $MC_getMostRecentNonAlertDOMWindow() {
+	var DOMWindows = Services.wm.getZOrderDOMWindowEnumerator(null, true);
+	var DOMWindow;
+	while (DOMWindows.hasMoreElements()) {
+		DOMWindow = DOMWindows.getNext();
+		console.warn('windowtype:', DOMWindow.document.documentElement.getAttribute('windowtype'));
+		if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'alert:alert') {
+			DOMWindow = null;
+		} else {
+			return DOMWindow;
+		}
+	}
+}
 // end - functions for use in func of config
 
 /* examples of the $MC api
