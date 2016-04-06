@@ -274,7 +274,10 @@ var gConfigJsonDefault = function() {
 						$MC_addEventListener('all_buttons_released', $MC_BS_.jumpStore.doneScrollingThruTabs);
 					}
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
-					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
+					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'alert:alert') {
+						DOMWindow = Services.wm.getMostRecentWindow('navigator:browser');
+					}
+					if (DOMWindow && DOMWindow.gBrowser && DOMWindow.gBrowser.mTabContainer) {
 						DOMWindow.gBrowser.mTabContainer.advanceSelectedTab(1, true);
 					}
 				}
@@ -293,7 +296,10 @@ var gConfigJsonDefault = function() {
 						$MC_addEventListener('all_buttons_released', $MC_BS_.jumpStore.doneScrollingThruTabs);
 					}
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
-					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
+					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'alert:alert') {
+						DOMWindow = Services.wm.getMostRecentWindow('navigator:browser');
+					}
+					if (DOMWindow && DOMWindow.gBrowser && DOMWindow.gBrowser.mTabContainer) {
 						DOMWindow.gBrowser.mTabContainer.advanceSelectedTab(-1, true);
 					}
 				}
