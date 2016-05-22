@@ -2,7 +2,7 @@
 const {classes: Cc, interfaces: Ci, manager: Cm, results: Cr, utils: Cu, Constructor: CC} = Components;
 Cm.QueryInterface(Ci.nsIComponentRegistrar);
 Cu.import('resource://gre/modules/AddonManager.jsm');
-Cu.import('resource://gre/modules/devtools/Console.jsm');
+Cu.import('resource://gre/modules/Console.jsm');
 const {TextDecoder, TextEncoder, OS} = Cu.import('resource://gre/modules/osfile.jsm', {});
 Cu.import('resource://gre/modules/Promise.jsm');
 Cu.import('resource://gre/modules/Services.jsm');
@@ -46,28 +46,12 @@ const myPrefBranch = 'extensions.' + core.addon.id + '.';
 var ADDON_MANAGER_ENTRY;
 
 // start - beutify stuff
-
-var devtools;
-try {
-	var { devtools } = Cu.import('resource://devtools/shared/Loader.jsm', {});
-} catch(ex) {
-	var { devtools } = Cu.import('resource://gre/modules/devtools/Loader.jsm', {});
-}
-var beautify1 = {};
-var beautify2 = {};
-devtools.lazyRequireGetter(beautify1, 'beautify', 'devtools/jsbeautify');
-devtools.lazyRequireGetter(beautify2, 'beautify', 'devtools/shared/jsbeautify/beautify');
-
-function BEAUTIFY() {
-	try {
-		beautify1.beautify.js('""');
-		return beautify1.beautify;
-	} catch (ignore) {}
-	try {
-		beautify2.beautify.js('""');
-		return beautify2.beautify;
-	} catch (ignore) {}
-}
+var gBeautify = {};
+(function() {
+	var { require } = Cu.import('resource://devtools/shared/Loader.jsm', {});
+	var { jsBeautify } = require('devtools/shared/jsbeautify/src/beautify-js');
+	gBeautify.js = jsBeautify;
+}());
 // end - beutify stuff
 
 // Global config stuff
@@ -84,11 +68,11 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-jumptab'),
 			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"B1_CK","multi":1}] : [{"std":"B2_DN","multi":1},{"std":"B1_CK","multi":1}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__init__: function() {
 					$MC_BS_.jumpStore = {};
 					var js = $MC_BS_.jumpStore;
-					
+
 					js.tabHistory = [];
 					js.onTabSelect = function(e) {
 						var tab = e.target;
@@ -108,7 +92,7 @@ var gConfigJsonDefault = function() {
 							js.addTabToHistory(tab);
 						}
 					};
-					
+
 					js.initWin = function(aDOMWin) {
 						var aGBrowser = aDOMWin.gBrowser;
 						if (!aGBrowser) {
@@ -121,14 +105,14 @@ var gConfigJsonDefault = function() {
 						var aGBrowser = aDOMWin.gBrowser;
 						aGBrowser.tabContainer.removeEventListener('TabSelect', js.onTabSelect, false);
 					};
-					
+
 					js.scrollingThruTabs = false; // for use by nexttab and prevtab
 					js.doneScrollingThruTabs = function() {
 						js.scrollingThruTabs = false;
 						js.addTabToHistory(js.lastScrolledTab);
 						$MC_removeEventListener('all_buttons_released', js.doneScrollingThruTabs);
 					};
-					
+
 					js.addTabToHistory = function(aTab) {
 						// aTab must be a tab not a tab weak!
 						var prevTab;
@@ -142,10 +126,10 @@ var gConfigJsonDefault = function() {
 							js.tabHistory.push(Cu.getWeakReference(aTab));
 						}
 					};
-					
+
 					$MC_addEventListener('newwindow_ready', js.initWin);
 					$MC_addEventListener('window_activated', js.onWindowActivate);
-					
+
 					var DOMWindows = Services.wm.getEnumerator('navigator:browser');
 					while (DOMWindows.hasMoreElements()) {
 						var aDOMWindow = DOMWindows.getNext();
@@ -154,12 +138,12 @@ var gConfigJsonDefault = function() {
 							js.tabHistory.push(Cu.getWeakReference(aDOMWindow.gBrowser.selectedTab));
 						}
 					}
-					
-					
+
+
 				},
 				__exec__: function() {
 					var tHist = $MC_BS_.jumpStore.tabHistory;
-					
+
 					var debPrintArr = [];
 					for (var i=tHist.length-1; i>=0; i--) {
 						try {
@@ -172,7 +156,7 @@ var gConfigJsonDefault = function() {
 						} catch(deadobj) {}
 					}
 					console.log('tHist:', debPrintArr);
-					
+
 					for (var i=tHist.length-1; i>=0; i--) {
 						try {
 							var cTab = tHist[i].get();
@@ -217,7 +201,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-duptab'),
 			config: core.os.mname == 'gtk' ? [{"std":"B3_CK","multi":1.5,"held":true}] : [{"std":"B2_CK","multi":1.5,"held":true}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					var gBrowser = DOMWindow.gBrowser;
@@ -228,14 +212,14 @@ var gConfigJsonDefault = function() {
 						} else {
 							var newPos = gBrowser.tabContainer.childNodes.length;
 						}
-						
+
 						DOMWindow.duplicateTabIn(DOMWindow.gBrowser.selectedTab, 'tab', 1);
 
 						if (gBrowser.selectedTab._tPos != newPos) {
 							gBrowser.moveTabTo(gBrowser.selectedTab, newPos);
 						}
 					}
-					
+
 				}
 			}))
 		},
@@ -245,7 +229,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-newtab'),
 			config: core.os.mname == 'gtk' ? [{"std":"B3_CK","multi":2}] : [{"std":"B2_CK","multi":2}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (DOMWindow.document.documentElement.getAttribute('windowtype') == 'navigator:browser') {
@@ -267,7 +251,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-nexttab'),
 			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"WH_DN","multi":1}] : [{"std":"B2_DN","multi":1},{"std":"WH_DN","multi":1}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					if ($MC_BS_.jumpStore) {
 						$MC_BS_.jumpStore.scrollingThruTabs = true;
@@ -289,7 +273,7 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-prevtab'),
 			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"WH_UP","multi":1}] : [{"std":"B2_DN","multi":1},{"std":"WH_UP","multi":1}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					if ($MC_BS_.jumpStore) {
 						$MC_BS_.jumpStore.scrollingThruTabs = true;
@@ -311,21 +295,21 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-closetab'),
 			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"B2_CK","multi":1}] : [{"std":"B2_DN","multi":1},{"std":"B3_CK","multi":1}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
-					
+
 					if ($MC_BS_.undoStoreForClose && $MC_BS_.undoStoreForClose.justundid) {
 						delete $MC_BS_.undoStoreForClose.justundid;
 						return;
 					}
-					
+
 					var closesitesConfigId = 15;
 					if ($MC_overlaps(closesitesConfigId, this)) {
 						$MC_BS_.closeTabStoreForSites = {};
 					} else {
 						delete $MC_BS_.closeTabStoreForSites;
 					}
-					
+
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (!DOMWindow.gBrowser || DOMWindow.gBrowser.tabContainer.childNodes.length === 1) {
 						if ($MC_BS_.closeTabStoreForSites) {
@@ -335,11 +319,11 @@ var gConfigJsonDefault = function() {
 						DOMWindow.close();
 						return;
 					}
-					
+
 					if ($MC_BS_.closeTabStoreForSites) {
 						$MC_BS_.closeTabStoreForSites.lasturi = DOMWindow.gBrowser.selectedBrowser.currentURI;
 					}
-					
+
 					DOMWindow.BrowserCloseTabOrWindow();
 				},
 				__uninit__: function() {
@@ -354,11 +338,11 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-resetzoom'),
 			config: core.os.mname == 'gtk' ? [{"std":"B1_DN","multi":1},{"std":"B2_CK","multi":1}] : [{"std":"B1_DN","multi":1},{"std":"B3_CK","multi":1}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					var domWin = Services.wm.getMostRecentWindow('navigator:browser');
 					domWin.FullZoom.reset();
-					
+
 					$MC_BS_.zoomStore.updateIndicator(domWin, domWin.ZoomManager.zoom);
 				}
 			}))
@@ -369,9 +353,9 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomin'),
 			config: core.os.mname == 'gtk' ? [{"std":"B1_DN","multi":1},{"std":"WH_UP","multi":1}] : [{"std":"B1_DN","multi":1},{"std":"WH_UP","multi":1}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__init__: function() {
-					
+
 					$MC_BS_.zoomStore = {
 						prefs: { // holds what the values of the prefs were on init
 							context: prefs['zoom-context'].value,
@@ -380,16 +364,16 @@ var gConfigJsonDefault = function() {
 						}
 					};
 					var zs = $MC_BS_.zoomStore;
-					
+
 					Services.prefs.setBoolPref('browser.zoom.full', zs.prefs.context === 0 ? true : false);
 
 					// if (styleChanged) {
 						switch(zs.prefs.style) {
 							case 0:
-							
+
 									// global
 									Services.prefs.setBoolPref('browser.zoom.siteSpecific', true);
-									
+
 									zs.cps = Cc['@mozilla.org/content-pref/service;1'].getService(Ci.nsIContentPrefService2);
 									zs.removeAllButGlobal = function() {
 										var domainsToRemoveFor = [];
@@ -402,7 +386,7 @@ var gConfigJsonDefault = function() {
 											},
 											handleCompletion: function() {
 												console.log('ok complete, args:', arguments)
-												
+
 												for (var i=0; i<domainsToRemoveFor.length; i++) {
 													console.log('removing for domain:', domainsToRemoveFor[i]);
 													zs.cps.removeByDomainAndName(domainsToRemoveFor[i], 'browser.content.full-zoom', null);
@@ -413,7 +397,7 @@ var gConfigJsonDefault = function() {
 									zs.applyZoomToAllDomains = function(aNewZoom, boolDontSetGlobal, boolRemoveAll) {
 										// sets the zoom level of all currently open domains to aNewZoom
 											// including global zoom value
-										
+
 										// get all currently open domains, and set site specific for each domain so they update in background, then remove all
 										var allDomains = new Set();
 										var domWins = Services.wm.getEnumerator('navigator:browser');
@@ -427,9 +411,9 @@ var gConfigJsonDefault = function() {
 												allDomains.add(zs.cps.extractDomain(gbrowser.browsers[i].currentURI.spec));
 											}
 										}
-										
+
 										var promiseAllArr_siteSpecificSet = [];
-										
+
 										if (!boolDontSetGlobal) {
 											var deferred_globalSet = new Deferred();
 											promiseAllArr_siteSpecificSet.push(deferred_globalSet.promise);
@@ -441,11 +425,11 @@ var gConfigJsonDefault = function() {
 												}
 											});
 										}
-										
+
 										allDomains.forEach(function(domain) {
 											var deferred_siteSpecificSet = new Deferred();
 											promiseAllArr_siteSpecificSet.push(promiseAllArr_siteSpecificSet.promise);
-											
+
 											// set zoom for this domain
 											zs.cps.set(domain, 'browser.content.full-zoom', aNewZoom, null, {
 												handleCompletion: function() {
@@ -454,12 +438,12 @@ var gConfigJsonDefault = function() {
 												}
 											});
 										});
-										
+
 										var promiseAll_siteSpecificSet = Promise.all(promiseAllArr_siteSpecificSet);
 										promiseAll_siteSpecificSet.then(
 											function(aVal) {
 												console.log('Fullfilled - promiseAll_siteSpecificSet - ', aVal);
-												
+
 												if (boolRemoveAll) {
 													zs.cps.removeByName('browser.content.full-zoom', null);
 												} else {
@@ -474,18 +458,18 @@ var gConfigJsonDefault = function() {
 										observers: {
 											'browser-fullZoom:zoomReset': function (aSubject, aTopic, aData) {
 												console.log('zoom reset!', aSubject, aTopic, aData);
-												
+
 												// have to do this because see link99993
 												// CPS2.setGlobal('browser.content.full-zoom', 1, null);
-												
+
 												zs.applyZoomToAllDomains(1);
 											},
 											'browser-fullZoom:zoomChange': function (aSubject, aTopic, aData) {
 												console.log('zoom changed!', aSubject, aTopic, aData);
-												
+
 												var newZoom = Services.wm.getMostRecentWindow('navigator:browser').ZoomManager.zoom;
 												console.log('newZoom:', newZoom);
-												
+
 												zs.applyZoomToAllDomains(newZoom);
 											}
 										},
@@ -494,7 +478,7 @@ var gConfigJsonDefault = function() {
 											console.log('this.observers:', this.observers);
 											for (var o in this.observers) {
 												console.log('initing o:', o);
-												
+
 												// register it
 												// make it an object so i can addObserver and removeObserver to it
 												zs.Observes.observers[o] = {
@@ -507,26 +491,26 @@ var gConfigJsonDefault = function() {
 											for (var o in this.observers) {
 												// unregister it
 												Services.obs.removeObserver(this.observers[o], o);
-												
+
 												// restore it as a function so it can be re-inited
 												this.observers[o] = this.observers[o].observe;
 											}
 										}
 									};
-									
+
 									// remove all currently site site specific stuff - this will instantly (because observers are setup by the FullZoom module) change zoom to the global value default of 1 per dxr - https://dxr.mozilla.org/mozilla-central/source/browser/base/content/browser-fullZoom.js#281 - `value === undefined ? 1 : value` because value there is the global default value // link99993
 									zs.removeAllButGlobal();
-									
+
 									zs.Observes.init();
-									
+
 								break;
 							default:
-							
+
 								Services.prefs.setBoolPref('browser.zoom.siteSpecific', zs.prefs.style === 1 ? true /*sitespec*/ : false /*tabspec*/);
-								
+
 						}
 					// }
-					
+
 					var thisFuncObj = this;
 					zs.prefChange = function(aTarget) {
 						if (aTarget.name == 'zoom-context') {
@@ -537,7 +521,7 @@ var gConfigJsonDefault = function() {
 						}
 					};
 					$MC_addEventListener('setpref_from_options', zs.prefChange);
-					
+
 					zs.hideAllIndicator = function() {
 						if (prefs['zoom-indicator'].value) {
 							var DOMWindows = Services.wm.getEnumerator('navigator:browser');
@@ -550,7 +534,7 @@ var gConfigJsonDefault = function() {
 							}
 						}
 					};
-					
+
 					zs.updateIndicator = function(aDOMWin, aZoomLevel) {
 						if (prefs['zoom-indicator'].value) {
 							var domElIndic = aDOMWin.document.getElementById('MC_zoomIndic');
@@ -560,32 +544,32 @@ var gConfigJsonDefault = function() {
 								domElIndic.setAttribute('style','-moz-appearance:none;-moz-border-radius:10px;border-radius:20px;background-color:#f9f9f9;border:1px solid #AAA;opacity:.9;color:#336666;font-weight:bold;font-size:40px;padding:0px 15px 3px 15px;text-shadow:#AAA 2px 2px 4px;');
 								domElIndic.setAttribute('noautohide',true);
 								domElIndic.setAttribute('noautofocus',true);
-								
+
 								var domElLbl = aDOMWin.document.createElement('label');
 								domElLbl.setAttribute('style','margin:0;padding:0;text-align:center;');
 								domElIndic.appendChild(domElLbl);
 								aDOMWin.document.getElementById('content').appendChild(domElIndic);
-								
+
 								domElIndic.addEventListener('popuphidden', function() {
 									domElIndic.parentNode.removeChild(domElIndic);
 								}, false);
 							}
-							
+
 							domElIndic.childNodes[0].textContent = Math.round(aZoomLevel * 100) + '%';
-							
+
 							if (domElIndic.state != 'open') {
 								domElIndic.openPopup(aDOMWin.gBrowser.mPanelContainer, 'overlap', 5, 5, false, false);
 							}
 						}
 					};
 					$MC_addEventListener('all_buttons_released', zs.hideAllIndicator);
-					
+
 				},
 				__exec__: function() {
 
 					var domWin = Services.wm.getMostRecentWindow('navigator:browser');
 					domWin.FullZoom.enlarge();
-					
+
 					$MC_BS_.zoomStore.updateIndicator(domWin, domWin.ZoomManager.zoom);
 				},
 				__uninit__: function(aReason) {
@@ -594,10 +578,10 @@ var gConfigJsonDefault = function() {
 						$MC_BS_.zoomStore.applyZoomToAllDomains(1, true, true);
 						$MC_BS_.zoomStore.Observes.uninit();
 					}
-					
+
 					$MC_removeEventListener('all_buttons_released', $MC_BS_.zoomStore.hideAllIndicator);
 					$MC_removeEventListener('setpref_from_options', $MC_BS_.zoomStore.prefChange);
-					
+
 					delete $MC_BS_.zoomStore;
 				}
 			}))
@@ -608,11 +592,11 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-zoom'),
 			desc: myServices.sb.GetStringFromName('config_desc-zoomout'),
 			config: core.os.mname == 'gtk' ? [{"std":"B1_DN","multi":1},{"std":"WH_DN","multi":1}] : [{"std":"B1_DN","multi":1},{"std":"WH_DN","multi":1}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					var domWin = Services.wm.getMostRecentWindow('navigator:browser');
 					domWin.FullZoom.reduce();
-					
+
 					$MC_BS_.zoomStore.updateIndicator(domWin, domWin.ZoomManager.zoom);
 				}
 			}))
@@ -623,8 +607,8 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-removeel'),
 			config: core.os.mname == 'gtk' ? [{"std":"B1_DN","multi":1},{"std":"B3_CK","multi":1}] : [{"std":"B1_DN","multi":1},{"std":"B2_CK","multi":1}],
-			func: BEAUTIFY().js(uneval({
-				__init__: function() {		
+			func: gBeautify.js(uneval({
+				__init__: function() {
 					$MC_BS_.RemElStore = {
 						onFsCreated: function(aTarget) {
 							// runs in bootstrap scope
@@ -658,7 +642,7 @@ var gConfigJsonDefault = function() {
 									console.error('over this.el:', $MC_FS_.RemElStore.el);
 								}
 							};
-							
+
 							addEventListener('mousedown', $MC_FS_.RemElStore.ondown, false);
 						},
 						fsInjectUninit: function() {
@@ -674,7 +658,7 @@ var gConfigJsonDefault = function() {
 							);
 						}
 					};
-					
+
 					console.log('$MC_BS_:', $MC_BS_);
 					$MC_execInAllTabs($MC_BS_.RemElStore.fsInjectInit);
 					$MC_addEventListener('framescript_created', $MC_BS_.RemElStore.onFsCreated);
@@ -683,7 +667,7 @@ var gConfigJsonDefault = function() {
 				__uninit__: function() {
 					$MC_removeEventListener('framescript_created', $MC_BS_.RemElStore.onFsCreated);
 					$MC_removeEventListener('framescript_uninit', $MC_BS_.RemElStore.onFsUninit);
-					
+
 					$MC_execInAllTabs($MC_BS_.RemElStore.fsInjectUninit);
 					delete $MC_BS_.RemElStore;
 				},
@@ -704,27 +688,27 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrolltop'),
 			config: [],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					$MC_execInTab(
 						function() {
 							var contentWithFocus = $MC_FS_getDeepestFocusedContentWindow(content);
 							console.log('contentWithFocus:', contentWithFocus);
-							
+
 							var activeDomEl = contentWithFocus.document.activeElement;
 							if (!activeDomEl || !activeDomEl.scrollTopMax) {
 								activeDomEl = contentWithFocus.document.documentElement;
 							}
-							
+
 							console.log('activeDomEl:', activeDomEl, activeDomEl.scrollTop, activeDomEl.scrollTopMin, activeDomEl.scrollTopMax);
-							
+
 							if (activeDomEl.scrollTop > 0 && activeDomEl.scrollTop < activeDomEl.scrollTopMax) {
 								$MC_FS_.memScrollStore = {
 									el: activeDomEl,
 									top: activeDomEl.scrollTop
 								};
 							}
-							
+
 							activeDomEl.scrollTop = activeDomEl.scrollTopMin;
 						}
 					);
@@ -744,27 +728,27 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollbot'),
 			config: [],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					$MC_execInTab(
 						function() {
 							var contentWithFocus = $MC_FS_getDeepestFocusedContentWindow(content);
 							console.log('contentWithFocus:', contentWithFocus);
-							
+
 							var activeDomEl = contentWithFocus.document.activeElement;
 							if (!activeDomEl || !activeDomEl.scrollTopMax) {
 								activeDomEl = contentWithFocus.document.documentElement;
 							}
-							
+
 							console.log('activeDomEl:', activeDomEl, activeDomEl.scrollTop, activeDomEl.scrollTopMin, activeDomEl.scrollTopMax);
-							
+
 							if (activeDomEl.scrollTop > 0 && activeDomEl.scrollTop < activeDomEl.scrollTopMax) {
 								$MC_FS_.memScrollStore = {
 									el: activeDomEl,
 									top: activeDomEl.scrollTop
 								};
 							}
-							
+
 							activeDomEl.scrollTop = activeDomEl.scrollTopMax;
 						}
 					);
@@ -784,19 +768,19 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-dom'),
 			desc: myServices.sb.GetStringFromName('config_desc-memscrollmemy'),
 			config: [],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					$MC_execInTab(
 						function() {
 							if ($MC_FS_.memScrollStore) {
 								var contentWithFocus = $MC_FS_getDeepestFocusedContentWindow(content);
 								console.log('contentWithFocus:', contentWithFocus);
-								
+
 								var activeDomEl = contentWithFocus.document.activeElement;
 								if (!activeDomEl || !activeDomEl.scrollTopMax) {
 									activeDomEl = contentWithFocus.document.documentElement;
 								}
-								
+
 								try {
 									// make sure $MC_FS_.memScrollStore.el is not a dead object
 									String($MC_FS_.memScrollStore.el);
@@ -806,7 +790,7 @@ var gConfigJsonDefault = function() {
 									delete $MC_FS_.memScrollStore;
 									return;
 								}
-								
+
 								if (activeDomEl == $MC_FS_.memScrollStore.el) {
 									activeDomEl.scrollTop = $MC_FS_.memScrollStore.top;
 								} else {
@@ -831,19 +815,19 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-undoclosetab'),
 			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"B2_DN","multi":1,"held":true}] : [{"std":"B2_DN","multi":1},{"std":"B3_DN","multi":1,"held":true}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
-					
+
 					var closetabConfigId = 6;
 					if ($MC_overlaps(closetabConfigId, this, true) == 0.6) {
 						$MC_BS_.undoStoreForClose = {};
 					} else {
 						delete $MC_BS_.undoStoreForClose;
 					}
-					
+
 					var DOMWindow = Services.wm.getMostRecentWindow('navigator:browser');
 					// :todo: maybe add in here to undo the last closed window. if a window was closed last and not a tab.
-					
+
 					if (DOMWindow) {
 						if ($MC_BS_.undoStoreForClose) {
 							$MC_BS_.undoStoreForClose.justundid = true;
@@ -862,34 +846,34 @@ var gConfigJsonDefault = function() {
 			group: myServices.sb.GetStringFromName('config_group-tabs'),
 			desc: myServices.sb.GetStringFromName('config_desc-closesitetabs'),
 			config: core.os.mname == 'gtk' ? [{"std":"B3_DN","multi":1},{"std":"B2_CK","multi":2}] : [{"std":"B2_DN","multi":1},{"std":"B3_CK","multi":2}],
-			func: BEAUTIFY().js(uneval({
+			func: gBeautify.js(uneval({
 				__exec__: function() {
 					var DOMWindow = Services.wm.getMostRecentWindow(null);
 					if (!DOMWindow.gBrowser) {
 						return;
 					}
-					
+
 					if ($MC_BS_.closeTabStoreForSites) {
 						if ($MC_BS_.closeTabStoreForSites.closesitetabsPreventDefault) {
 							delete $MC_BS_.closeTabStoreForSites.closesitetabsPreventDefault;
 							return;
 						}
 					}
-					
+
 					var extractHost = function(aURI) {
 						try {
 							if (aURI.host) {
 								return aURI.host;
 							}
 						} catch(ignore) {}
-						
+
 						if (aURI.spec.toLowerCase().indexOf('about:') === 0) {
 							return aURI.spec.toLowerCase().match(/about\:[a-z]*/i)[0];
 						} else {
 							return aURI.spec;
 						}
 					};
-					
+
 					var targetHost;
 					if (!$MC_BS_.closeTabStoreForSites) {
 						var selectedTab = DOMWindow.gBrowser.selectedTab;
@@ -900,9 +884,9 @@ var gConfigJsonDefault = function() {
 						targetHost = extractHost($MC_BS_.closeTabStoreForSites.lasturi);
 						delete $MC_BS_.closeTabStoreForSites.lasturi;
 					}
-					
+
 					var tabsToClose = [];
-					
+
 					var cTabs = DOMWindow.gBrowser.tabContainer.childNodes;
 					for (var i=0; i<cTabs.length; i++) {
 						var cHost = extractHost(cTabs[i].linkedBrowser.currentURI);
@@ -910,7 +894,7 @@ var gConfigJsonDefault = function() {
 							tabsToClose.push(cTabs[i]);
 						}
 					}
-					
+
 					for (var i=0; i<tabsToClose.length; i++) {
 						DOMWindow.gBrowser.removeTab(tabsToClose[i]);
 					}
@@ -934,14 +918,14 @@ var prefs = {
 		get value () { // false - disabled, true - enabled - uses the autoUpdateDefault value to convert default value
 
 			var deferredMain_autoup = new Deferred();
-			
+
 			if (ADDON_MANAGER_ENTRY) {
 				// block link16515151
 				var autoupRaw = parseInt(ADDON_MANAGER_ENTRY.applyBackgroundUpdates); // have to parseInt because its string
 				// addon.applyBackgroundUpdates = '0'; // off
 				// addon.applyBackgroundUpdates = '1'; // default
 				// addon.applyBackgroundUpdates = '2'; // on
-				
+
 				if (autoupRaw === 1) {
 					AddonManager.autoUpdateDefault ? deferredMain_autoup.resolve(true) : deferredMain_autoup.resolve(false);
 					// return AddonManager.autoUpdateDefault ? true : false;
@@ -961,13 +945,13 @@ var prefs = {
 					// addon.applyBackgroundUpdates = '1'; //default
 					// addon.applyBackgroundUpdates = '2'; //on
 					ADDON_MANAGER_ENTRY = addon_manager_entry;
-					
+
 					// copy of block link16515151
 					var autoupRaw = parseInt(ADDON_MANAGER_ENTRY.applyBackgroundUpdates); // have to parseInt because its string
 					// addon.applyBackgroundUpdates = '0'; // off
 					// addon.applyBackgroundUpdates = '1'; // default
 					// addon.applyBackgroundUpdates = '2'; // on
-					
+
 					if (autoupRaw === 1) {
 						AddonManager.autoUpdateDefault ? deferredMain_autoup.resolve(true) : deferredMain_autoup.resolve(false);
 						// return AddonManager.autoUpdateDefault ? true : false;
@@ -983,7 +967,7 @@ var prefs = {
 					// end copy of block link16515151
 				});
 			}
-			
+
 			return deferredMain_autoup.promise;
 		},
 		set value (aApplyBackgroundUpdates) {
@@ -1088,14 +1072,14 @@ var prefs = {
 // set up getters and setters on .value
 function prefGetter(aPrefName) {
 	var typeAsStr = prefTypeAsStr(prefs[aPrefName].type);
-	
+
 	try {
 		var rez_pref_val = Services.prefs['get' + typeAsStr + 'Pref'](myPrefBranch + aPrefName);
 	} catch (ex) {
 		// probably the pref doesnt exist
 		return prefs[aPrefName].default;
 	}
-	
+
 	if (prefs[aPrefName].values && prefs[aPrefName].values.indexOf(rez_pref_val) === -1) {
 		console.error('WARN will not return gotten pref from pref system, will return default. BECAUSE gotten pref from pref system is:', rez_pref_val, 'and this prefName has a list of accepted values, and the aNewVal is not among them, the accepted values are:', prefs[aPrefName].values);
 		return prefs[aPrefName].default;
@@ -1125,12 +1109,12 @@ function prefSetter(aPrefName, aNewVal) {
 }
 for (var aPrefName in prefs) {
 	if (prefs[aPrefName].type != -1) {
-		
+
 		// set the values arr on bool type
 		if (prefs[aPrefName].type == Ci.nsIPrefBranch.PREF_BOOL) {
 			prefs[aPrefName].values = [0, 1, false, true]; // it seems firefox pref system stores them as 0 or 1, not as false or true
 		}
-		
+
 		// set the setter and getter
 		Object.defineProperty(prefs[aPrefName], 'value', {
 			get: prefGetter.bind(null, aPrefName),
@@ -1174,14 +1158,14 @@ function initAndRegisterAbout() {
 				channel = Services.io.newChannel(redirUrl, null, null);
 			}
 			channel.originalURI = aURI;
-			
+
 			return channel;
 		}
 	});
-	
+
 	// register it
 	aboutFactory_instance = new AboutFactory(AboutPage);
-	
+
 	console.log('aboutFactory_instance:', aboutFactory_instance);
 }
 
@@ -1209,19 +1193,19 @@ var MMWorkerThreadId;
 var MMWorkerFuncs = {
 	init: function(aInitInfoObj) {
 		console.log('ok Comm and MM workers are inited');
-		
+
 		// send init info obj of MMWorker to CommWorker, along with multiClickSpeed, holdDuration, and config
 			// CommWorker will create a shareable int which will be dowhat int. and a 4th which will be shareable string of 40 characters. this will hold the address of the json that MMWorker should read then upate its json. then it should set dowhat saying its done.
 			// also needs shareable int for length of string arr
 		infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
-		
+
 		// steup prefs for worker
 		infoObjForWorker.prefs = {};
 		infoObjForWorker.prefs['multi-speed'] = prefs['multi-speed'].value;
 		infoObjForWorker.prefs['hold-duration'] = prefs['hold-duration'].value;
 		// infoObjForWorker.prefs['click-speed'] = prefs['click-speed'].value;
 		infoObjForWorker.prefs['ignore-autorepeat-duration'] = prefs['ignore-autorepeat-duration'].value;
-		
+
 		// setup config for worker
 		infoObjForWorker.config = {};
 		for (var i=0; i<gConfigJson.length; i++) {
@@ -1229,11 +1213,11 @@ var MMWorkerFuncs = {
 				infoObjForWorker.config[gConfigJson[i].id] = gConfigJson[i].config;
 			}
 		}
-		
+
 		// if (core.os.toolkit.indexOf('gtk') == 0) {
-		// 	
+		//
 		// 	infoObjForWorker.gtk_handles = [];
-		// 
+		//
 		// 	var DOMWindows = Services.wm.getEnumerator('navigator:browser');
 		// 	while (DOMWindows.hasMoreElements()) {
 		// 		var aDOMWindow = DOMWindows.getNext();
@@ -1246,11 +1230,11 @@ var MMWorkerFuncs = {
 		// 		var aGdkWindowPtr_str = aBaseWindow.nativeHandle;
 		// 		infoObjForWorker.gtk_handles.push(aGdkWindowPtr_str);
 		// 	}
-		// 	
+		//
 		// 	console.log('infoObjForWorker.gtk_handles:', infoObjForWorker.gtk_handles);
-		// 	
+		//
 		// }
-		
+
 		CommWorker.postMessageWithCallback(['createShareables_andSecondaryInit', aInitInfoObj, infoObjForWorker], function(aShareableAddiesObj) {
 			// aShareableAddiesObj is what CommWorker sends to me, it is key holding ctypes.TYPE and value a string address
 			// ill send these to MMWorker, who will then store them in global, and of course its secondary init so it reads them in
@@ -1259,14 +1243,14 @@ var MMWorkerFuncs = {
 			// so now from this point, assume mouse monitor is in a infinite js loop
 				// so to now communicate with MMWorker i have to CommWorker.postMessage to transferToMMWorker (for windows im in a lock for sure, linux im pretty sure, osx i might not, so for osx i should still send this same post message, but on callback of it, i should then send mmworker a message to read in from the shreables as they were updated)
 				// the other reason to commToMMworker is to tell it to start or stop sending mouse events
-			
+
 			// if (core.os.name.indexOf('win') === 0) {
 				if (!gShutdowned) {
 					windowListener.register();
 				}
 			// }
 		});
-		
+
 		// Services.wm.getMostRecentWindow('navigator:browser').setTimeout(function() {
 			// console.error('stopping mouse monitor');
 			// CommWorker.postMessage(['tellMmWorker', 'stop-mouse-monitor']);
@@ -1326,7 +1310,7 @@ var MMWorkerFuncs = {
 			} else {
 				// ignore as it is not a button press/release, probably mouse move or something like that
 			}
-			
+
 			if (stdConst) {
 				var cMEStdConst = stdConst;
 				if (handleMouseEvent(cMEStdConst)) {
@@ -1335,7 +1319,7 @@ var MMWorkerFuncs = {
 				} else {
 					return ostypes.CONST.GDK_FILTER_CONTINUE;
 				}
-				
+
 				// MMWorker.postMessage(['gtkMainthreadMouseCallback', stdConst]);
 				// if (bowserFsWantingMouseEvents) { // || mouseTracker found a match - need to devise how to detect this, because the mouseTracker is over in the worker
 				// 	return ostypes.CONST.GDK_FILTER_REMOVE;
@@ -1345,17 +1329,17 @@ var MMWorkerFuncs = {
 			} else {
 				return ostypes.CONST.GDK_FILTER_CONTINUE;
 			}
-			
+
 
 		};
 		OSStuff.mouse_filter_c = ostypes.TYPE.GdkFilterFunc(OSStuff.mouse_filter_js);
-		
+
 		// var tWin = ostypes.HELPER.xidToGdkWinPtr(ostypes.HELPER.cachedDefaultRootWindow())
 		// console.log('tWin root x way:', tWin.toString());
-		
+
 		// var tWin = ostypes.API('gdk_get_default_root_window')()
 		// console.log('tWin root default way:', tWin.toString());
-		
+
 		// var tWin = null;
 		// var baseWindow = Services.wm.getMostRecentWindow('navigator:browser').QueryInterface(Components.interfaces.nsIInterfaceRequestor)
         //                 .getInterface(Components.interfaces.nsIWebNavigation)
@@ -1365,17 +1349,17 @@ var MMWorkerFuncs = {
         //                 .getInterface(Components.interfaces.nsIBaseWindow);
 		// var tWin = ostypes.TYPE.GdkWindow.ptr(ctypes.UInt64(baseWindow.nativeHandle));
 		// console.log('most rec tWin:', tWin.toString());
-		// 
+		//
 		// var tScr = ostypes.API('gdk_screen_get_default')();
 		// var tWin = ostypes.API('gdk_screen_get_root_window')(tScr);
 		// console.log('tWin root:', tWin.toString());
-		
+
 		// var tWin = ostypes.API('gdk_screen_get_active_window')(tScr);
 		// console.log('tWin active:', tWin.toString());
 		// return;  // :debug:
 		// ostypes.API('gdk_window_set_events')(tWin, ostypes.CONST.ALL_EVENTS_MASK);
 		// console.log('ok set events');
-		
+
 		ostypes.API('gdk_window_add_filter')(null, OSStuff.mouse_filter_c, null);
 		console.log('ok added filter');
 
@@ -1390,7 +1374,7 @@ var MMWorkerFuncs = {
 		OSStuff.mouse_filter_js = null;
 		OSStuff.mouse_filter_c = null;
 		OSStuff.mouse_filter_c = null;
-		
+
 		console.log('ok gtk monitor stopped');
 	},
 	// end - gtk mainthread technique functions
@@ -1412,19 +1396,19 @@ var MMWorkerFuncs = {
 		cDOMWin.addEventListener('mouseup', prevMouseup, false);
 		cDOMWin.addEventListener('click', prevMouseup, false);
 		// cDOMWin.document.addEventListener('mousemove', prevMouseup, false);
-		
+
 		console.error('ok attached prevMouseup');
-		
+
 		if (cDOMWin.gBrowser) {
 			var browsers = cDOMWin.gBrowser.browsers;
 			for (var i=0; i<browsers.length; i++) {
 				browsers[i].messageManager.sendAsyncMessage(core.addon.id + '-framescript', ['prevMouseup']);
 			}
-			
+
 			cDOMWin.gBrowser._autoScrollPopup.hidePopup();
 			cDOMWin.gBrowser.selectedBrowser.messageManager.sendAsyncMessage('Autoscroll:Cancel');
 		}
-		
+
 		MMWorkerFuncs.closeOpenContextMenus();
 	},
 	closeOpenContextMenus: function() {
@@ -1443,7 +1427,7 @@ var MMWorkerFuncs = {
 				cDOMWin.removeEventListener('mouseup', prevMouseup, false);
 				cDOMWin.removeEventListener('click', prevMouseup, false);
 				// cDOMWin.document.removeEventListener('mousemove', prevMouseup, false);
-				
+
 				if (cDOMWin.gBrowser) {
 					var browsers = cDOMWin.gBrowser.browsers;
 					for (var i=0; i<browsers.length; i++) {
@@ -1484,20 +1468,20 @@ function prevMouseup(e) {
 var gHeldTimer = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
 
 function tellMMWorkerPrefsAndConfig() {
-	
+
 	// will not tell worker about any config that has blank config arr
-	
+
 	// for use once mouse monitor is running
-	
+
 	infoObjForWorker = {}; // this is a concise info obj for worker // this is what will be transfered to MMWorker, via shared string json, so it can read it even during js thread lock, while c callbacks are running
-	
+
 	// steup prefs for worker
 	infoObjForWorker.prefs = {};
 	infoObjForWorker.prefs['multi-speed'] = prefs['multi-speed'].value;
 	infoObjForWorker.prefs['hold-duration'] = prefs['hold-duration'].value;
 	// infoObjForWorker.prefs['click-speed'] = prefs['click-speed'].value;
 	infoObjForWorker.prefs['ignore-autorepeat-duration'] = prefs['ignore-autorepeat-duration'].value;
-	
+
 	// setup config for worker
 	infoObjForWorker.config = {};
 	for (var i=0; i<gConfigJson.length; i++) {
@@ -1505,7 +1489,7 @@ function tellMMWorkerPrefsAndConfig() {
 			infoObjForWorker.config[gConfigJson[i].id] = gConfigJson[i].config;
 		}
 	}
-	
+
 	CommWorker.postMessage(['tellMmWorker', 'update-prefs-config', infoObjForWorker]);
 }
 
@@ -1522,11 +1506,11 @@ var _cache_func = {}; // key is id of config group. and value is eval of func
 function updateConfigJson(aNewConfigJson) {
 	// if finds any new/removed/changed func/config combination, it stores the new on in the _cache_func and runs __init__ or __uninit__ as necessary
 	// it then updates gConfigJson
-	
+
 	// check to see if anything new was ADDED or if an EXISTING CHANGED, by id - if something found then eval its func and store it in _cache_func and run __init__
 	for (var j=0; j<aNewConfigJson.length; j++) {
 		var nEntry = aNewConfigJson[j];
-		
+
 		var gEntry = getConfigById(nEntry.id, gConfigJson);
 		if (!gEntry) {
 			// this one is new
@@ -1550,7 +1534,7 @@ function updateConfigJson(aNewConfigJson) {
 			// test if the func changed
 			if (gEntry.func != nEntry.func) {
 				// ok func changed so recache it
-				
+
 				// but first run __uninit__ if it had one AND it had a config
 				if (gEntry.config.length && _cache_func[nEntry.id].__uninit__) {
 					try {
@@ -1559,7 +1543,7 @@ function updateConfigJson(aNewConfigJson) {
 						console.error('Error on __uninit__ of "' + nEntry.name + '":', ignore);
 					}
 				}
-				
+
 				// ok now recache it
 				try {
 					eval('_cache_func["' + nEntry.id + '"] = ' + nEntry.func);
@@ -1567,7 +1551,7 @@ function updateConfigJson(aNewConfigJson) {
 					console.error('Error on eval of "' + nEntry.name + '":', ignore);
 					_cache_func[nEntry.id] = {};
 				}
-				
+
 				// if it has a __init__ AND a config then run it
 				if (nEntry.config.length && _cache_func[nEntry.id].__init__) {
 					try {
@@ -1578,11 +1562,11 @@ function updateConfigJson(aNewConfigJson) {
 				}
 			} else {
 				// the func is unchanged
-				
+
 				// lets see if config is now removed and it was there before
 				if (gEntry.config.length) {
 					// it HAD a config - so its __init__ was run
-					
+
 					// lets see if it does NOT have one anymore
 					if (!nEntry.config.length) {
 						// no longer does, so if it has an __uninit__ then run it
@@ -1596,7 +1580,7 @@ function updateConfigJson(aNewConfigJson) {
 					} // else it still has one
 				} else {
 					// it did NOT have a config so its __init__ had not run
-					
+
 					// lets see if it HAS one now
 					if (nEntry.config.length) {
 						// but now DOES have one so __init__ if it has one
@@ -1612,14 +1596,14 @@ function updateConfigJson(aNewConfigJson) {
 			}
 		}
 	}
-	
+
 	// check to see if anything was removed
 	for (var j=0; j<gConfigJson.length; j++) {
 		var gEntry = gConfigJson[j];
 		var nEntry = getConfigById(gEntry.id, aNewConfigJson);
 		if (!nEntry) {
 			// it was removed
-			
+
 			// run __uninit__ if it had one AND if it had a config (if it had no config then the __init__ would never have ran)
 			if (gEntry.config.length && _cache_func[gEntry.id].__uninit__) {
 				try {
@@ -1628,12 +1612,12 @@ function updateConfigJson(aNewConfigJson) {
 					console.error('Error on __uninit__ of "' + gEntry.name + '":', ignore);
 				}
 			}
-			
+
 			// remove it from cache
 			delete _cache_func[gEntry.id];
 		} // else it was not removed
 	}
-	
+
 	gConfigJson = aNewConfigJson;
 }
 
@@ -1675,7 +1659,7 @@ function readConfigFromFile() {
 	// reads file and sets global
 	// resolves with array with single element being json. if file does not exist it gives gConfigJsonDefault
 		// array because this function is used by fsFuncs
-		
+
 	var mainDeferred_readConfigFromFile = new Deferred();
 	var promise_readConfig = OS.File.read(OSPath_config, {encoding:'utf-8'});
 	promise_readConfig.then(
@@ -1705,7 +1689,7 @@ function readConfigFromFile() {
 			mainDeferred_readConfigFromFile.reject(rejObj);
 		}
 	);
-	
+
 	return mainDeferred_readConfigFromFile.promise;
 }
 
@@ -1714,7 +1698,7 @@ function windowActivated(e) {
 	if (core.os.name.indexOf('win') === 0) {
 		CommWorker.postMessage(['timeoutTellFocused', true, e.timeStamp]);
 	}
-	
+
 	$MC_triggerEvent('window_activated', e.target);
 }
 
@@ -1738,7 +1722,7 @@ var windowListener = {
 	onCloseWindow: function (aXULWindow) {},
 	onWindowTitleChange: function (aXULWindow, aNewTitle) {},
 	register: function () {
-		
+
 		// Load into any existing windows
 		var DOMWindows = Services.wm.getEnumerator(null);
 		while (DOMWindows.hasMoreElements()) {
@@ -1773,20 +1757,20 @@ var windowListener = {
 	//END - DO NOT EDIT HERE
 	loadIntoWindow: function (aDOMWindow) {
 		if (!aDOMWindow) { return }
-		
+
 		aDOMWindow.addEventListener('activate', windowActivated, false);
 		aDOMWindow.addEventListener('deactivate', windowDeactivated, false);
-		
+
 		aDOMWindow.addEventListener('popupshowing', openingContextMenus, false);
-		
+
 		$MC_triggerEvent('newwindow_ready', aDOMWindow);
 	},
 	unloadFromWindow: function (aDOMWindow) {
 		if (!aDOMWindow) { return }
-		
+
 		aDOMWindow.removeEventListener('activate', windowActivated, false);
 		aDOMWindow.removeEventListener('deactivate', windowDeactivated, false);
-		
+
 		aDOMWindow.removeEventListener('popupshowing', openingContextMenus, false);
 	}
 };
@@ -1821,14 +1805,14 @@ function $MC_addEventListener(aEvent, aFunc) {
 	// aEvent's currently supported (for target for the event see comment at start of $MC_triggerEvent function)
 		// framescript_created
 		// framescript_uninit
-	
+
 	for (var i=0; i<$MC_listeners.length; i++) {
 		if ($MC_listeners[i].event == aEvent && $MC_listeners[i].func == aFunc) {
 			console.warn('func is already added for this event, so not adding it again');
 			return;
 		}
 	}
-	
+
 	$MC_listeners.push({
 		event: aEvent,
 		func: aFunc
@@ -1836,7 +1820,7 @@ function $MC_addEventListener(aEvent, aFunc) {
 }
 
 function $MC_removeEventListener(aEvent, aFunc) {
-	
+
 	for (var i=0; i<$MC_listeners.length; i++) {
 		if ($MC_listeners[i].event == aEvent && $MC_listeners[i].func == aFunc) {
 			$MC_listeners.splice(i, 1);
@@ -1846,7 +1830,7 @@ function $MC_removeEventListener(aEvent, aFunc) {
 }
 
 function $MC_triggerEvent(aEvent, aTarget) {
-	
+
 	// aTarget's
 		// framescript_created - messageManager
 		// framescript_uninit - messageManager
@@ -1854,7 +1838,7 @@ function $MC_triggerEvent(aEvent, aTarget) {
 		// all_buttons_released - null
 		// newwindow_ready - aDOMWindow
 		// window_activated - aDOMWindow
-		
+
 	for (var i=0; i<$MC_listeners.length; i++) {
 		if ($MC_listeners[i].event == aEvent) {
 			$MC_listeners[i].func(aTarget);
@@ -1869,18 +1853,18 @@ function $MC_overlaps(aThisConfigId_or_func, aTestConfigId_or_func, aIgnoreSoft)
 		// a number (plus 0.1) indicating how much aTestConfigId is overlapped by aThisConfigId_or_func (minimum is 0.5)
 		// if aIgnoreSoft is true - then value is always positive. if false, then value is negative if aTestConfigId_or_func contains a "HOLD". its considered soft because it MAY not have triggered
 	// so this means it returns 0.1 if exactly the same
-	
+
 	var aThis = $MC_getConfig(aThisConfigId_or_func, gConfigJson).config;
 	var aTest = $MC_getConfig(aTestConfigId_or_func, gConfigJson).config;
-	
+
 	if (aThis.length < aTest.length) {
 		return 0;
 	}
-	
+
 	if (!aThis.length || !aTest.length) {
 		return 0;
 	}
-	
+
 	// var underlapCnt = 0;
 	// var overlapCnt = 0;
 	for (var i=0; i<aTest.length - 1; i++) {
@@ -1890,16 +1874,16 @@ function $MC_overlaps(aThisConfigId_or_func, aTestConfigId_or_func, aIgnoreSoft)
 			console.log('match i:', i);
 		}
 	}
-	
+
 	// if get here it means aTest perfectly overlaps the start of aThis
-	
+
 	// var i = aTest.length - 1;
 	console.log('i:', i);
 	var thisMEDir = aThis[i].std.substr(3);
 	var thisMEBtn = aThis[i].std.substr(0, 2);
 	var testMEDir = aTest[i].std.substr(3);
 	var testMEBtn = aTest[i].std.substr(0, 2);
-	
+
 	// calc diff of multi as if both std were same
 	var diffOfMulti;
 	if (aThis[i].multi >= aTest[i].multi) {
@@ -1908,7 +1892,7 @@ function $MC_overlaps(aThisConfigId_or_func, aTestConfigId_or_func, aIgnoreSoft)
 		// aTest overlaps aThis as the multi of aTest is greater
 		return 0;
 	}
-	
+
 	// if (aThis[i].std != aTest[i].std && aThis[i].multi !== aTest[i].multi && aThis[i].held != aTest[i].held) {
 	if (aThis[i].std != aTest[i].std) {
 		// aTest is exactly the start of aThis
@@ -1924,13 +1908,13 @@ function $MC_overlaps(aThisConfigId_or_func, aTestConfigId_or_func, aIgnoreSoft)
 				}
 				// */
 				// theorizing that held does NOT add to count - do nothing special}
-				
+
 				if (!aIgnoreSoft) {
 					if (aThis[i].held || aTest[i].held) {
 						rezBuild *= -1;
 					}
 				}
-				
+
 				return rezBuild;
 			} else if (thisMEDir == 'DN' && testMEDir == 'CK') {
 				// aTest overlaps aThis
@@ -1981,7 +1965,7 @@ function $MC_overlaps(aThisConfigId_or_func, aTestConfigId_or_func, aIgnoreSoft)
 			// */
 		}
 	}
-	
+
 }
 
 function $MC_getConfig(aEvaledFunc_or_id) {
@@ -1997,9 +1981,9 @@ function $MC_getConfig(aEvaledFunc_or_id) {
 	}
 }
 
-function $MC_execInAllTabs(aFunc, aCallback) {	
+function $MC_execInAllTabs(aFunc, aCallback) {
 	var cFuncAsStr = uneval(aFunc);
-	
+
 	var DOMWindows = Services.wm.getEnumerator('navigator:browser');
 	while (DOMWindows.hasMoreElements()) {
 		var aDOMWindow = DOMWindows.getNext();
@@ -2021,14 +2005,14 @@ function $MC_execInAllTabs(aFunc, aCallback) {
 function $MC_execInTab(aFunc, aCallback, aOptions={}) {
 	// aOptions:
 		// tab - message manager of the linkedBrowser of the tab you want to exec in. if not set it is the current tab of the most recent window
-	
+
 	var cFuncAsStr = uneval(aFunc);
-	
+
 	if (!aOptions.tab) {
 		// make it the current tab of the most recent window
 		aOptions.tab = Services.wm.getMostRecentWindow('navigator:browser').gBrowser.selectedBrowser.messageManager;
 	}
-	
+
 	if (aCallback) {
 		sendAsyncMessageWithCallback(aOptions.tab, core.addon.id + '-framescript', ['eval', cFuncAsStr], evalFsMsgListener.funcScope, function(aReturn) {
 			// console.log('ok back in bootstrap, aReturn:', aReturn);
@@ -2107,18 +2091,18 @@ var evalFsMsgListener = {
 		var aMsgEventData = aMsgEvent.data;
 		console.log('fsMsgListener getting aMsgEventData:', aMsgEventData, 'aMsgEvent:', aMsgEvent);
 		// aMsgEvent.data should be an array, with first item being the unfction name in bootstrapCallbacks
-		
+
 		var callbackPendingId;
 		if (typeof aMsgEventData[aMsgEventData.length-1] == 'string' && aMsgEventData[aMsgEventData.length-1].indexOf(SAM_CB_PREFIX) == 0) {
 			callbackPendingId = aMsgEventData.pop();
 		}
-		
+
 		aMsgEventData.push(aMsgEvent); // this is special for server side, so the function can do aMsgEvent.target.messageManager to send a response
-		
+
 		var funcName = aMsgEventData.shift();
 		if (funcName in this.funcScope) {
 			var rez_parentscript_call = this.funcScope[funcName].apply(null, aMsgEventData);
-			
+
 			if (callbackPendingId) {
 				// rez_parentscript_call must be an array or promise that resolves with an array
 				if (rez_parentscript_call.constructor.name == 'Promise') {
@@ -2145,7 +2129,7 @@ var evalFsMsgListener = {
 			}
 		}
 		else { console.warn('funcName', funcName, 'not in scope of this.funcScope') } // else is intentionally on same line with console. so on finde replace all console. lines on release it will take this out
-		
+
 	}
 };
 
@@ -2167,7 +2151,7 @@ function uninstall(aData, aReason) {
 				}
 			}
 		}
-		
+
 		// delete storage
 		OS.File.removeDir(OS.Path.dirname(OSPath_simpleStorage), {
 			ignoreAbsent: true,
@@ -2180,7 +2164,7 @@ function startup(aData, aReason) {
 	// core.addon.aData = aData;
 	core.addon.version = aData.version;
 	extendCore();
-	
+
 	var postSetConfig = function() {
 		// startup worker
 		var promise_initCommWorker = SICWorker('CommWorker', core.addon.path.workers + 'CommWorker.js', CommWorkerFuncs);
@@ -2191,14 +2175,14 @@ function startup(aData, aReason) {
 			},
 			genericReject.bind(null, 'promise_initCommWorker', 0)
 		).catch(genericCatch.bind(null, 'promise_initCommWorker', 0));
-		
+
 		// register about page
 		initAndRegisterAbout();
-		
+
 		// register about pages listener
 		Services.mm.addMessageListener(core.addon.id, fsMsgListener);
 	};
-	
+
 	// read in config from file
 	var promise_configInit = readConfigFromFile();
 	promise_configInit.then(
@@ -2208,14 +2192,14 @@ function startup(aData, aReason) {
 		},
 		genericReject.bind(null, 'promise_configInit', 0)
 	).catch(genericCatch.bind(null, 'promise_configInit', 0));
-	
+
 	var aTimer = Cc['@mozilla.org/timer;1'].createInstance(Ci.nsITimer);
 	aTimer.initWithCallback({
 		notify: function() {
 			console.error('ok starting up adding');
 			// register framescript listener
 			Services.mm.addMessageListener(core.addon.id + '-framescript', evalFsMsgListener);
-			
+
 			// register framescript injector
 			Services.mm.loadFrameScript(core.addon.path.scripts + 'EVALFramescript.js?' + core.addon.cache_key, true);
 		}
@@ -2236,34 +2220,34 @@ function shutdown(aData, aReason) {
 			})
 		});
 	}
-	
+
 	if (aReason == APP_SHUTDOWN) { return }
-	
+
 	// if (core.os.name.indexOf('win') === 0) {
 		gShutdowned = true;
 		windowListener.unregister();
 	// }
-	
+
 	updateConfigJson([]); // if anything has a __uninit__ and a config then execute it
-	
+
 	// an issue with this unload is that framescripts are left over, i want to destory them eventually
 	aboutFactory_instance.unregister();
-	
+
 	// unregister about pages listener
 	Services.mm.removeMessageListener(core.addon.id, fsMsgListener);
-	
-	
+
+
 	///// eval framescript stuff
-	
+
 	// unregister framescript injector
 	Services.mm.removeDelayedFrameScript(core.addon.path.scripts + 'EVALFramescript.js?' + core.addon.cache_key);
-	
+
 	// kill framescripts
 	Services.mm.broadcastAsyncMessage(core.addon.id + '-framescript', ['destroySelf']);
-	
+
 	// unregister framescript listener
 	Services.mm.removeMessageListener(core.addon.id + '-framescript', evalFsMsgListener);
-	
+
 	// cancel timers for xpcomSetTimeout2
 	for (var xpcomTimer in gXpcomTimers) {
 		gXpcomTimers[xpcomTimer].cancel();
@@ -2286,11 +2270,11 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 		return [core];
 	},
 	getPref: function(aPrefName) {
-		
+
 		var rezPrefVal = prefs[aPrefName].value;
 		if (rezPrefVal.constructor.name == 'Promise') {
 			var deferredMain_fsGetPref = new Deferred();
-			
+
 			rezPrefVal.then(
 				function(aVal) {
 					console.log('Fullfilled - rezPrefVal - ', aVal);
@@ -2311,7 +2295,7 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 				}
 			);
 			return deferredMain_fsGetPref.promise;
-			
+
 		} else {
 			return [rezPrefVal];
 		}
@@ -2319,10 +2303,10 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 	setPref: function(aPrefName, aNewVal) {
 		var oldval = prefs[aPrefName].value;
 		prefs[aPrefName].value = aNewVal;
-		
+
 		// update worker:
 		tellMMWorkerPrefsAndConfig();
-		
+
 		$MC_triggerEvent('setpref_from_options', {
 			name: aPrefName,
 			newval: aNewVal,
@@ -2337,17 +2321,17 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 			// edit
 			// I MADE IT NOW route restore defaults to route through here
 		// currently i think this is ONLY ever called, when framescript needs to send an updated config, so this is only sent when user makes change, so here i can test if there is a diff between the old and new script, and run the shutdown/init appropriately
-		
+
 		updateConfigJson(aNewConfigJson);
-		
+
 		// update worker:
 		tellMMWorkerPrefsAndConfig();
-		
+
 		var promise_saveConfigs = tryOsFile_ifDirsNoExistMakeThenRetry('writeAtomic', [OSPath_config, JSON.stringify(aNewConfigJson), {
 			tmpPath: OSPath_config + '.tmp',
 			encoding: 'utf-8'
 		}], OS.Constants.Path.profileDir);
-		
+
 		promise_saveConfigs.then(
 			function(aVal) {
 				console.log('Fullfilled - promise_saveConfigs - ', aVal);
@@ -2369,22 +2353,22 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 	},
 	restoreDefaults: function() {
 		// :todo: in future add bool for just config restore, or all. (meaning prefs and config)
-		
+
 		// reset prefs
 		for (var aPrefName in prefs) {
 			prefs[aPrefName].value = prefs[aPrefName].default;
 			// the setter on the value will update the Services.prefs system
 		}
-		
+
 		// reset config
 		// gConfigJson = gConfigJsonDefault(); // need to send it through fsFuncs.updateConfigsOnServer see note on next line
 		// send it through the fsFuncs so it init's and uninit's the funcs as necessary
 		fsFuncs.updateConfigsOnServer(gConfigJsonDefault());
-		
+
 		// no more need to do this as fsFuncs.updateConfigsOnServer handles it
 		// // update worker:
 		// tellMMWorkerPrefsAndConfig();
-		
+
 		var promise_delteConfig = OS.File.remove(OSPath_config);
 		promise_delteConfig.then(
 			function(aVal) {
@@ -2395,7 +2379,7 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 			function(aReason) {
 				var rejObj = {name:'promise_delteConfig', aReason:aReason};
 				console.error('Rejected - promise_delteConfig - ', rejObj);
-				
+
 				// if it fails, i really need to ensure it deletes, cuz if it exists on next addon startup or read it will get that instead of the defaults
 				// deferred_createProfile.reject(rejObj);
 			}
@@ -2406,7 +2390,7 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 				// deferred_createProfile.reject(rejObj);
 			}
 		);
-		
+
 		return [];
 	},
 	exportSettings: function() {
@@ -2416,20 +2400,20 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 
 		var rv = fp.show();
 		if (rv == Ci.nsIFilePicker.returnOK || rv == Ci.nsIFilePicker.returnReplace) {
-			
+
 			var exportFileContent = {
 				config: gConfigJson,
 				prefs: {}
 			};
-			
+
 			var promiseAllArr_gotValues = [];
-			
+
 			for (var aPrefName in prefs) {
 				var cPrefVal = prefs[aPrefName].value;
 				if (cPrefVal.constructor.name == 'Promise') {
 					var deferred_cPrefVal = new Deferred();
 					promiseAllArr_gotValues.push(deferred_cPrefVal.promise);
-					
+
 					cPrefVal.then(
 						function(aAPrefName, aVal) {
 							console.log('Fullfilled - cPrefVal - ', aVal);
@@ -2454,19 +2438,19 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 					exportFileContent.prefs[aPrefName] = cPrefVal;
 				}
 			}
-			
+
 			var promiseAll_gotValues = Promise.all(promiseAllArr_gotValues);
 			promiseAll_gotValues.then(
 				function(aVal) {
 					console.log('Fullfilled - promiseAll_gotValues - ', aVal);
 					// start - do stuff here - promiseAll_gotValues
-					
+
 					var fixedFilePath = fp.file.path;
-					
+
 					if (!/\.mousecontrol\.json/i.test(fixedFilePath)) {
 						fixedFilePath += '.mousecontrol.json';
 					}
-					
+
 					console.error('writing to:', fixedFilePath);
 					var promise_export = OS.File.writeAtomic(fixedFilePath, JSON.stringify(exportFileContent), {
 						encoding: 'utf-8',
@@ -2490,7 +2474,7 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 							// deferred_createProfile.reject(rejObj);
 						}
 					);
-					
+
 					// end - do stuff here - promiseAll_gotValues
 				},
 				function(aReason) {
@@ -2508,9 +2492,9 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 		}// else { // cancelled	}
 	},
 	importSettings: function() {
-		
+
 		var mainDeferred_importSettings = new Deferred();
-		
+
 		var fp = Cc['@mozilla.org/filepicker;1'].createInstance(Ci.nsIFilePicker);
 		fp.init(Services.wm.getMostRecentWindow('navigator:browser'), myServices.sb.GetStringFromName('importtitle'), Ci.nsIFilePicker.modeOpen);
 		fp.appendFilter(myServices.sb.GetStringFromName('exportimportfilterlabel') + ' (*.mousecontrol.json)', '*.mousecontrol.json');
@@ -2527,7 +2511,7 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 					// start - do stuff here - promise_import
 					var importFileContents = JSON.parse(aVal);
 					updateConfigJson(importFileContents.config);
-					
+
 					for (var aPrefName in importFileContents.prefs) {
 						prefs[aPrefName].value = importFileContents.prefs[aPrefName];
 					}
@@ -2549,11 +2533,11 @@ var fsFuncs = { // can use whatever, but by default its setup to use this
 					// deferred_createProfile.reject(rejObj);
 				}
 			);
-		} else { 
+		} else {
 			// cancelled
 			mainDeferred_importSettings.resolve([false])
 		}
-		
+
 		return mainDeferred_importSettings.promise;
 	},
 	requestingMouseEvents: function(aMsgEvent) {
@@ -2571,18 +2555,18 @@ var fsMsgListener = {
 		var aMsgEventData = aMsgEvent.data;
 		console.log('fsMsgListener getting aMsgEventData:', aMsgEventData, 'aMsgEvent:', aMsgEvent);
 		// aMsgEvent.data should be an array, with first item being the unfction name in bootstrapCallbacks
-		
+
 		var callbackPendingId;
 		if (typeof aMsgEventData[aMsgEventData.length-1] == 'string' && aMsgEventData[aMsgEventData.length-1].indexOf(SAM_CB_PREFIX) == 0) {
 			callbackPendingId = aMsgEventData.pop();
 		}
-		
+
 		aMsgEventData.push(aMsgEvent); // this is special for server side, so the function can do aMsgEvent.target.messageManager to send a response
-		
+
 		var funcName = aMsgEventData.shift();
 		if (funcName in this.funcScope) {
 			var rez_parentscript_call = this.funcScope[funcName].apply(null, aMsgEventData);
-			
+
 			if (callbackPendingId) {
 				// rez_parentscript_call must be an array or promise that resolves with an array
 				if (rez_parentscript_call.constructor.name == 'Promise') {
@@ -2608,7 +2592,7 @@ var fsMsgListener = {
 			}
 		}
 		else { console.warn('funcName', funcName, 'not in scope of this.funcScope') } // else is intentionally on same line with console. so on finde replace all console. lines on release it will take this out
-		
+
 	}
 };
 // end - server/framescript comm layer
@@ -2668,13 +2652,13 @@ var gMEAllReasedTime = 0; // is set to the last time that all were released
 var gMEEnteredMC = null;
 function handleMouseEvent(aMEStdConst) {
 	// return true if handled else false (handled means block it)
-	
+
 	// console.log('incoming aMEStdConst:', aMEStdConst, 'gFxInFocus:', gFxInFocus);
-	
+
 	// :todo: consider cancel the hold timer if there was one
-	
+
 	var cMECombo = new METracker();
-	
+
 	var cME = {
 		std: aMEStdConst,
 		time: (new Date()).getTime(),
@@ -2682,11 +2666,11 @@ function handleMouseEvent(aMEStdConst) {
 	};
 	var cMEDir = cME.std.substr(3);
 	var cMEBtn = cME.std.substr(0, 2);
-	
+
 	var lME = g_lME; // lastMouseEvent
 	var lMEDir;
 	var lMEBtn;
-	
+
 	if (lME) {
 		lMEDir = lME.std.substr(3);
 		lMEBtn = lME.std.substr(0, 2);
@@ -2713,13 +2697,13 @@ function handleMouseEvent(aMEStdConst) {
 				}
 			}
 		}
-		
+
 		// test should we maek cME a click?
 	}
-	
+
 	g_lME = cME;
 	console.log('lME:', lME);
-	
+
 	// set previous down mouse event
 	var pMEDown;
 	var pMEDir;
@@ -2729,7 +2713,7 @@ function handleMouseEvent(aMEStdConst) {
 		pMEDir = pMEDown.std.substr(3);
 		pMEBtn = pMEDown.std.substr(0, 2);
 	}
-	
+
 	console.log('gMEDown:', gMEDown.strOfStds());
 	var clearAll = false; // set to true, if no more triggers are held, used in clean up section
 	// add to gMEDown that a trigger is held or no longer held && transform previous event to click if it was
@@ -2751,7 +2735,7 @@ function handleMouseEvent(aMEStdConst) {
 					MMWorkerFuncs.triggerEvent('all_buttons_released');
 				}
 			}
-			
+
 			// if the previous was the DN of this cMEBtn then transform cME to click
 			// if (lME) {
 				// console.log('cME.time - pMEDown.time:', cME.time - lME.time, 'click-speed:', infoObjForWorker.prefs['click-speed']);
@@ -2773,7 +2757,7 @@ function handleMouseEvent(aMEStdConst) {
 			}
 		}
 	}
-	
+
 	if (lME) {
 		// test if cME is a multi action
 		if (cME.time - lME.time <= infoObjForWorker.prefs['multi-speed']) {
@@ -2804,12 +2788,12 @@ function handleMouseEvent(aMEStdConst) {
 			}
 		}
 	}
-	
+
 	// clone gMEDown to cMECombo
 	for (var i=0; i<gMEDown.length; i++) {
 		cMECombo.push(gMEDown[i]);
 	}
-	
+
 	// add to cMECombo
 	if (cMEBtn != 'WH' && cMEDir == 'DN') {
 		// if the cME is DN, then its already in cMECombo as gMEDown was cloned to cMECombo so dont add
@@ -2818,11 +2802,11 @@ function handleMouseEvent(aMEStdConst) {
 			cMECombo.push(cME);
 		}
 	}
-	
+
 	// show cMECombo
 	console.log('cMECombo:', cMECombo.strOfStds());
 	// g_cMECombo = cMECombo;
-	
+
 	// test if cMECombo is a match to any config
 	var rezHandleME; // need to hold return value here, as i need to pop out fro cMECombo before returning
 	if (bowserFsWantingMouseEvents) {
@@ -2851,7 +2835,7 @@ function handleMouseEvent(aMEStdConst) {
 			MMWorkerFuncs.closeOpenContextMenus();
 		}
 	}
-	
+
 	// // clean up
 	if (clearAll) {
 		if (gMEEnteredMC) {
@@ -2868,18 +2852,18 @@ function handleMouseEvent(aMEStdConst) {
 	// 		cMECombo.pop(); // remove it
 	// 	}
 	// }
-	
+
 	if (infoObjForWorker.prefs['hold-duration'] > 0) {
 		// is cMECombo holdable
 		if (cMEBtn != 'WH' && cMEDir == 'DN' || (cMEDir == 'CK' && cME.multi % 1 == 0.5)) {
 			console.log('ok holdable');
-			
+
 			MMWorkerFuncs.startHeldTimer(cMECombo.asArray(), (new Date()).getTime() + infoObjForWorker.prefs['hold-duration']);
 		} else {
 			MMWorkerFuncs.cancelAnyPendingHeldTimer();
 		}
 	}
-	
+
 	return rezHandleME;
 }
 
@@ -2915,20 +2899,20 @@ function comboIsConfig(aMECombo, boolTriggerFunc) {
 
 var g_cMECombo;
 function makeMouseEventHeld(a_cMECombo, zeFireTime) {
-	
+
 	// // test if g_cMECombo matches a_cMECombo, if it doesn't then it means things changed
 	// if (g_cMECombo.strOfStds() != a_cMECombo.strOfStds()) {
 	// 	console.warn('a_cMECombo no longer matches the global one so dont make it held', 'g_cMECombo:', g_cMECombo.strOfStds(), 'a_cMECombo:', a_cMECombo.strOfStds());
 	// 	return;
 	// }
-	
-	
+
+
 	// make a referenced copy so i can push to it a final element that wont affect the global
 	var cMECombo = new METracker();
 	for (var i=0; i<a_cMECombo.length-1; i++) {
 		cMECombo.push(a_cMECombo[i]);
 	}
-	
+
 	// add in the last one as a copy so when i add to .held it wont affect the lME in handleMouseEvent
 	var last_cMEComboEntry = a_cMECombo[a_cMECombo.length - 1];
 	cMECombo.push(
@@ -2941,9 +2925,9 @@ function makeMouseEventHeld(a_cMECombo, zeFireTime) {
 	);
 
 	var actualFireTime = (new Date()).getTime();
-	
+
 	console.error('diff between actual fire and should have fired is:', actualFireTime - zeFireTime, 'actualFireTime:', actualFireTime, 'zeFireTime:', zeFireTime);
-	// send to mainthread	
+	// send to mainthread
 	if (bowserFsWantingMouseEvents) {
 		console.log('sending held to prefs page');
 		MMWorkerFuncs.currentMouseEventCombo(cMECombo.asArray());
@@ -3029,32 +3013,32 @@ function SICWorker(workerScopeName, aPath, aFuncExecScope=bootstrap, aCore=core)
 	// returns promise
 		// resolve value: jsBool true
 	// aCore is what you want aCore to be populated with
-	// aPath is something like `core.addon.path.content + 'modules/workers/blah-blah.js'`	
+	// aPath is something like `core.addon.path.content + 'modules/workers/blah-blah.js'`
 	var deferredMain_SICWorker = new Deferred();
 
 	if (!(workerScopeName in bootstrap)) {
 		bootstrap[workerScopeName] = new ChromeWorker(aPath);
-		
+
 		if ('addon' in aCore && 'aData' in aCore.addon) {
 			delete aCore.addon.aData; // we delete this because it has nsIFile and other crap it, but maybe in future if I need this I can try JSON.stringify'ing it
 		}
-		
+
 		var afterInitListener = function(aMsgEvent) {
 			// note:all msgs from bootstrap must be postMessage([nameOfFuncInWorker, arg1, ...])
 			var aMsgEventData = aMsgEvent.data;
 			console.log('mainthread receiving message:', aMsgEventData);
-			
+
 			// postMessageWithCallback from worker to mt. so worker can setup callbacks after having mt do some work
 			var callbackPendingId;
 			if (typeof aMsgEventData[aMsgEventData.length-1] == 'string' && aMsgEventData[aMsgEventData.length-1].indexOf(SIC_CB_PREFIX) == 0) {
 				callbackPendingId = aMsgEventData.pop();
 			}
-			
+
 			var funcName = aMsgEventData.shift();
-			
+
 			if (funcName in aFuncExecScope) {
 				var rez_mainthread_call = aFuncExecScope[funcName].apply(null, aMsgEventData);
-				
+
 				if (callbackPendingId) {
 					if (rez_mainthread_call.constructor.name == 'Promise') {
 						rez_mainthread_call.then(
@@ -3093,7 +3077,7 @@ function SICWorker(workerScopeName, aPath, aFuncExecScope=bootstrap, aCore=core)
 			else { console.warn('funcName', funcName, 'not in scope of aFuncExecScope') } // else is intentionally on same line with console. so on finde replace all console. lines on release it will take this out
 
 		};
-		
+
 		var beforeInitListener = function(aMsgEvent) {
 			// note:all msgs from bootstrap must be postMessage([nameOfFuncInWorker, arg1, ...])
 			var aMsgEventData = aMsgEvent.data;
@@ -3106,7 +3090,7 @@ function SICWorker(workerScopeName, aPath, aFuncExecScope=bootstrap, aCore=core)
 				}
 			}
 		};
-		
+
 		// var lastCallbackId = -1; // dont do this, in case multi SICWorker's are sharing the same aFuncExecScope so now using new Date().getTime() in its place // link8888881
 		bootstrap[workerScopeName].postMessageWithCallback = function(aPostMessageArr, aCB, aPostMessageTransferList) {
 			// lastCallbackId++; // link8888881
@@ -3121,16 +3105,16 @@ function SICWorker(workerScopeName, aPath, aFuncExecScope=bootstrap, aCore=core)
 			// console.log('aPostMessageArr:', aPostMessageArr);
 			bootstrap[workerScopeName].postMessage(aPostMessageArr, aPostMessageTransferList);
 		};
-		
+
 		bootstrap[workerScopeName].addEventListener('message', beforeInitListener);
 		bootstrap[workerScopeName].postMessage(['init', aCore]);
-		
+
 	} else {
 		deferredMain_SICWorker.reject('Something is loaded into bootstrap[workerScopeName] already');
 	}
-	
+
 	return deferredMain_SICWorker.promise;
-	
+
 }
 
 function SIPWorker(workerScopeName, aPath, aCore=core) {
@@ -3139,18 +3123,18 @@ function SIPWorker(workerScopeName, aPath, aCore=core) {
 		// resolve value: jsBool true
 	// aCore is what you want aCore to be populated with
 	// aPath is something like `core.addon.path.content + 'modules/workers/blah-blah.js'`
-	
+
 	// :todo: add support and detection for regular ChromeWorker // maybe? cuz if i do then ill need to do ChromeWorker with callback
-	
+
 	var deferredMain_SIPWorker = new Deferred();
 
 	if (!(workerScopeName in bootstrap)) {
 		bootstrap[workerScopeName] = new PromiseWorker(aPath);
-		
+
 		if ('addon' in aCore && 'aData' in aCore.addon) {
 			delete aCore.addon.aData; // we delete this because it has nsIFile and other crap it, but maybe in future if I need this I can try JSON.stringify'ing it
 		}
-		
+
 		var promise_initWorker = bootstrap[workerScopeName].post('init', [aCore]);
 		promise_initWorker.then(
 			function(aVal) {
@@ -3171,13 +3155,13 @@ function SIPWorker(workerScopeName, aPath, aCore=core) {
 				deferredMain_SIPWorker.reject(rejObj);
 			}
 		);
-		
+
 	} else {
 		deferredMain_SIPWorker.reject('Something is loaded into bootstrap[workerScopeName] already');
 	}
-	
+
 	return deferredMain_SIPWorker.promise;
-	
+
 }
 
 function aReasonMax(aReason) {
@@ -3199,9 +3183,9 @@ function sendAsyncMessageWithCallback(aMessageManager, aGroupId, aMessageArr, aC
 	sam_last_cb_id++;
 	var thisCallbackId = SAM_CB_PREFIX + sam_last_cb_id;
 	aCallbackScope = aCallbackScope ? aCallbackScope : bootstrap;
-	aCallbackScope[thisCallbackId] = function(aMessageArr) {
+	aCallbackScope[thisCallbackId] = function(aMessageReceivedArr) {
 		delete aCallbackScope[thisCallbackId];
-		aCallback.apply(null, aMessageArr);
+		aCallback.apply(null, aMessageReceivedArr);
 	}
 	aMessageArr.push(thisCallbackId);
 	aMessageManager.sendAsyncMessage(aGroupId, aMessageArr);
@@ -3226,13 +3210,13 @@ function extendCore() {
 				core.os.version_name = 'xp';
 			}
 			break;
-			
+
 		case 'darwin':
 			var userAgent = myServices.hph.userAgent;
 
 			var version_osx = userAgent.match(/Mac OS X 10\.([\d\.]+)/);
 
-			
+
 			if (!version_osx) {
 				throw new Error('Could not identify Mac OS X version.');
 			} else {
@@ -3250,14 +3234,14 @@ function extendCore() {
 				// this makes it so that 10.10.0 becomes 10.100
 				// 10.10.1 => 10.101
 				// so can compare numerically, as 10.100 is less then 10.101
-				
+
 				//core.os.version = 6.9; // note: debug: temporarily forcing mac to be 10.6 so we can test kqueue
 			}
 			break;
 		default:
 			// nothing special
 	}
-	
+
 
 }
 
@@ -3268,19 +3252,19 @@ function prefTypeAsStr(aTypeAsInt) {
 	// Ci.nsIPrefBranch.PREF_BOOL 128
 	switch (prefs[aPrefName].type) {
 		case Ci.nsIPrefBranch.PREF_BOOL:
-				
+
 				return 'Bool';
-				
+
 			break;
 		case Ci.nsIPrefBranch.PREF_INT:
-				
+
 				return 'Int';
-				
+
 			break;
 		case Ci.nsIPrefBranch.PREF_STRING:
-				
+
 				return 'Char';
-				
+
 			break;
 		default:
 			console.error('got invalid aTypeAsInt:', aTypeAsInt);
@@ -3301,7 +3285,7 @@ function makeDir_Bug934283(path, options) {
 	// the `from` option should be a string of a folder that you know exists for sure. then the dirs after that, in path will be created
 	// for example: path should be: `OS.Path.join('C:', 'thisDirExistsForSure', 'may exist', 'may exist2')`, and `from` should be `OS.Path.join('C:', 'thisDirExistsForSure')`
 	// options of like ignoreExisting is exercised on final dir
-	
+
 	if (!options || !('from' in options)) {
 		console.error('you have no need to use this, as this is meant to allow creation from a folder that you know for sure exists, you must provide options arg and the from key');
 		throw new Error('you have no need to use this, as this is meant to allow creation from a folder that you know for sure exists, you must provide options arg and the from key');
@@ -3360,21 +3344,21 @@ function tryOsFile_ifDirsNoExistMakeThenRetry(nameOfOsFileFunc, argsOfOsFileFunc
 	//last update: 061215 0303p - verified worker version didnt have the fix i needed to land here ALSO FIXED so it handles neutering of Fx37 for writeAtomic and I HAD TO implement this fix to worker version, fix was to introduce aOptions.causesNeutering
 	// aOptions:
 		// causesNeutering - default is false, if you use writeAtomic or another function and use an ArrayBuffer then set this to true, it will ensure directory exists first before trying. if it tries then fails the ArrayBuffer gets neutered and the retry will fail with "invalid arguments"
-		
+
 	// i use this with writeAtomic, copy, i havent tested with other things
 	// argsOfOsFileFunc is array of args
 	// will execute nameOfOsFileFunc with argsOfOsFileFunc, if rejected and reason is directories dont exist, then dirs are made then rexecute the nameOfOsFileFunc
 	// i added makeDir as i may want to create a dir with ignoreExisting on final dir as was the case in pickerIconset()
 	// returns promise
-	
+
 	var deferred_tryOsFile_ifDirsNoExistMakeThenRetry = new Deferred();
-	
+
 	if (['writeAtomic', 'copy', 'makeDir'].indexOf(nameOfOsFileFunc) == -1) {
 		deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject('nameOfOsFileFunc of "' + nameOfOsFileFunc + '" is not supported');
 		// not supported because i need to know the source path so i can get the toDir for makeDir on it
 		return deferred_tryOsFile_ifDirsNoExistMakeThenRetry.promise; //just to exit further execution
 	}
-	
+
 	// setup retry
 	var retryIt = function() {
 		console.info('tryosFile_ retryIt', 'nameOfOsFileFunc:', nameOfOsFileFunc, 'argsOfOsFileFunc:', argsOfOsFileFunc);
@@ -3397,7 +3381,7 @@ function tryOsFile_ifDirsNoExistMakeThenRetry(nameOfOsFileFunc, argsOfOsFileFunc
 			}
 		);
 	};
-	
+
 	// popToDir
 	var toDir;
 	var popToDir = function() {
@@ -3405,7 +3389,7 @@ function tryOsFile_ifDirsNoExistMakeThenRetry(nameOfOsFileFunc, argsOfOsFileFunc
 			case 'writeAtomic':
 				toDir = OS.Path.dirname(argsOfOsFileFunc[0]);
 				break;
-				
+
 			case 'copy':
 				toDir = OS.Path.dirname(argsOfOsFileFunc[1]);
 				break;
@@ -3413,13 +3397,13 @@ function tryOsFile_ifDirsNoExistMakeThenRetry(nameOfOsFileFunc, argsOfOsFileFunc
 			case 'makeDir':
 				toDir = OS.Path.dirname(argsOfOsFileFunc[0]);
 				break;
-				
+
 			default:
 				deferred_tryOsFile_ifDirsNoExistMakeThenRetry.reject('nameOfOsFileFunc of "' + nameOfOsFileFunc + '" is not supported');
 				return; // to prevent futher execution
 		}
 	};
-	
+
 	// setup recurse make dirs
 	var makeDirs = function() {
 		if (!toDir) {
@@ -3481,7 +3465,7 @@ function tryOsFile_ifDirsNoExistMakeThenRetry(nameOfOsFileFunc, argsOfOsFileFunc
 			}
 		);
 	};
-	
+
 	if (!aOptions.causesNeutering) {
 		doInitialAttempt();
 	} else {
@@ -3512,8 +3496,8 @@ function tryOsFile_ifDirsNoExistMakeThenRetry(nameOfOsFileFunc, argsOfOsFileFunc
 			}
 		);
 	}
-	
-	
+
+
 	return deferred_tryOsFile_ifDirsNoExistMakeThenRetry.promise;
 }
 function xpcomSetTimeout(aNsiTimer, aDelayTimerMS, aTimerCallback) {
