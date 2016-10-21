@@ -8,7 +8,7 @@ const {classes:Cc, interfaces:Ci} = Components;
 // start - rev3 - https://gist.github.com/Noitidart/03c84a4fc1e566bd0fe5
 var core = {
 	addon: {
-		id: 'MouseControl@neocodex.us' + '-framescript' // heeded for rev3 - https://gist.github.com/Noitidart/03c84a4fc1e566bd0fe5
+		id: 'MouseControl@unlisted' + '-framescript' // heeded for rev3 - https://gist.github.com/Noitidart/03c84a4fc1e566bd0fe5
 	}
 }
 

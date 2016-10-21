@@ -4,14 +4,14 @@
 	   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 	<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
 	  <Description about="urn:mozilla:install-manifest">
-		<em:id>MouseControl@neocodex.us</em:id>
-		<em:version>2.0a</em:version>
+		<em:id>MouseControl@unlisted</em:id>
+		<em:version>2.0</em:version>
 		<em:type>2</em:type>
 		<em:bootstrap>true</em:bootstrap>
 		<em:multiprocessCompatible>true</em:multiprocessCompatible>
 		<em:optionsType>3</em:optionsType>
 		<em:optionsURL>about:mousecontrol</em:optionsURL>
-		
+
 		<!-- Firefox -->
 		<em:targetApplication>
 			<Description>
@@ -20,7 +20,7 @@
 				<em:maxVersion>48.0</em:maxVersion> <!-- the latest version i tested it in -->
 			</Description>
 		</em:targetApplication>
-		
+
 		<!-- Front End MetaData -->
 		<!-- must provide default non-localized because It's used as a default on AMO. It's used as a default by the add-on manager, with the possibility of other locales overriding it. Failure to provide a non-localized name will lead to failed upload on AMO. -->
 		<em:name>MouseControl</em:name>
@@ -28,7 +28,7 @@
 		<em:creator>Noitidart</em:creator>
 		<em:contributor>David Vignoni for Icon</em:contributor>
 		<em:contributor>Jochen for C API Sourcecode</em:contributor>
-		
+
 		<!-- start localizing - For each entry in default data MUST have equivalent in each localized block -->
 		<em:localized>
 			<Description>

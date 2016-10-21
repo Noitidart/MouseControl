@@ -12,7 +12,7 @@ Cu.import('resource://gre/modules/XPCOMUtils.jsm');
 const core = {
 	addon: {
 		name: 'MouseControl',
-		id: 'MouseControl@neocodex.us',
+		id: 'MouseControl@unlisted',
 		path: {
 			name: 'mousecontrol',
 			content: 'chrome://mousecontrol/content/',
