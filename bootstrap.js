@@ -343,7 +343,7 @@ var gConfigJsonDefault = function() {
 					var domWin = Services.wm.getMostRecentWindow('navigator:browser');
 					domWin.FullZoom.reset();
 
-					$MC_BS_.zoomStore.updateIndicator(domWin, domWin.ZoomManager.zoom);
+					domWin.setTimeout(function() { $MC_BS_.zoomStore.updateIndicator(domWin, domWin.ZoomManager.zoom) }, 0);
 				}
 			}))
 		},
